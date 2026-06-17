@@ -21,6 +21,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    // Server-side security: ensure the user owns this company
+    if (companyId !== user.companyId) {
+      return NextResponse.json({ error: "Company mismatch" }, { status: 403 })
+    }
+
     const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } })
     if (!plan) {
       return NextResponse.json({ error: "Subscription plan not found" }, { status: 404 })

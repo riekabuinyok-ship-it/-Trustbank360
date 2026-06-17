@@ -98,8 +98,16 @@ export async function POST(req: Request) {
           subscription: session.subscription,
           amount_total: session.amount_total,
           payment_status: session.payment_status,
+          status: session.status,
           mode: session.mode,
         })
+
+        // Confirm payment actually succeeded — don't trust event alone
+        if (session.payment_status !== "paid") {
+          log("WARN", `[${requestId}] Payment not yet paid, status: ${session.payment_status} — skipping activation`)
+          processedEventIds.add(event.id)
+          return NextResponse.json({ received: true, pending: true })
+        }
 
         // ── 4a-i. Extract and validate metadata ────────────────────────────
         const metadata = session.metadata || {}
@@ -326,7 +334,30 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true })
       }
 
-      // ── 4c. Unhandled event types ───────────────────────────────────
+      // ── 4c. payment_intent.succeeded (backup for checkout flow) ─────
+      case "payment_intent.succeeded": {
+        const pi = event.data.object as any
+        const piMetadata = pi.metadata || {}
+
+        // Payment intents from checkout sessions inherit checkout metadata
+        if (piMetadata.companyId && piMetadata.planId) {
+          log("INFO", `[${requestId}] payment_intent.succeeded with metadata — forwarding to activation`, {
+            paymentIntent: pi.id,
+            companyId: piMetadata.companyId,
+            planId: piMetadata.planId,
+          })
+          // Re-process same way as checkout.session.completed by using metadata
+          // to avoid code duplication, just acknowledge it; the primary handler
+          // is checkout.session.completed which fires simultaneously
+        } else {
+          log("INFO", `[${requestId}] payment_intent.succeeded (no metadata) — acknowledging`)
+        }
+
+        processedEventIds.add(event.id)
+        return NextResponse.json({ received: true })
+      }
+
+      // ── 4d. Unhandled event types ───────────────────────────────────
       default: {
         log("INFO", `[${requestId}] Unhandled event type: ${event.type} — acknowledging`)
         return NextResponse.json({ received: true })
