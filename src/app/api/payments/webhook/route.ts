@@ -52,11 +52,19 @@ export async function POST(req: Request) {
   const startTime = Date.now()
 
   try {
-    // ─── 1. Read raw body as Buffer (preserves exact bytes for Stripe) ────
+    // ─── 1. Read raw body via ReadableStream (preserves exact bytes) ────
     let rawBody: Buffer
     try {
-      const arrayBuffer = await req.arrayBuffer()
-      rawBody = Buffer.from(arrayBuffer)
+      const chunks: Uint8Array[] = []
+      const reader = req.body?.getReader()
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          chunks.push(value)
+        }
+      }
+      rawBody = Buffer.concat(chunks)
     } catch (err) {
       log("ERROR", `[${requestId}] Failed to read request body`, err)
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
