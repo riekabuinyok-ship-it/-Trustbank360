@@ -70,7 +70,7 @@ export default function OnboardingPage() {
 
       toast.success("Onboarding complete!")
       await update()
-      router.push("/dashboard")
+      router.push("/company/dashboard")
     } catch {
       toast.error("An error occurred")
     } finally {
