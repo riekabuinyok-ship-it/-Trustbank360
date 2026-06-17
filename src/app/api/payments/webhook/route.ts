@@ -15,6 +15,38 @@ function log(level: "INFO" | "WARN" | "ERROR", message: string, data?: any) {
   }
 }
 
+// GET handler for diagnostics — visit /api/payments/webhook in browser
+export async function GET() {
+  const hasStripeKey = !!process.env.STRIPE_SECRET_KEY
+  const hasWebhookSecret = !!process.env.STRIPE_WEBHOOK_SECRET
+  const webhookSecretPrefix = process.env.STRIPE_WEBHOOK_SECRET
+    ? process.env.STRIPE_WEBHOOK_SECRET.startsWith("whsec_")
+      ? "whsec_... (valid prefix)"
+      : "INVALID — does not start with whsec_"
+    : "MISSING"
+  const hasDbUrl = !!process.env.DATABASE_URL
+  const hasNextAuthSecret = !!process.env.NEXTAUTH_SECRET
+
+  return NextResponse.json({
+    status: "diagnostic",
+    env: {
+      STRIPE_SECRET_KEY: hasStripeKey ? "set" : "MISSING",
+      STRIPE_WEBHOOK_SECRET: webhookSecretPrefix,
+      DATABASE_URL: hasDbUrl ? "set" : "MISSING",
+      NEXTAUTH_SECRET: hasNextAuthSecret ? "set" : "MISSING",
+    },
+    required_actions: [
+      ...(!hasStripeKey ? ["Set STRIPE_SECRET_KEY"] : []),
+      ...(!hasWebhookSecret ? ["Set STRIPE_WEBHOOK_SECRET"] : []),
+      ...(hasWebhookSecret && !process.env.STRIPE_WEBHOOK_SECRET!.startsWith("whsec_")
+        ? ["STRIPE_WEBHOOK_SECRET should start with whsec_"]
+        : []),
+      ...(!hasDbUrl ? ["Set DATABASE_URL"] : []),
+      ...(!hasNextAuthSecret ? ["Set NEXTAUTH_SECRET"] : []),
+    ],
+  })
+}
+
 export async function POST(req: Request) {
   const requestId = crypto.randomUUID().slice(0, 8)
   const startTime = Date.now()
