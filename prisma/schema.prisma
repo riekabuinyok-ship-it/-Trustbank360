@@ -1,0 +1,658 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  platform_owner
+  company_owner
+  company_admin
+  branch_manager
+  teller
+  compliance_officer
+  auditor
+  // Legacy values—mapped via mapRole() during migration
+  PLATFORM_ADMIN
+  SUPER_ADMIN
+  COMPANY_OWNER
+  COMPANY_ADMIN
+  BRANCH_MANAGER
+  TELLER
+  COMPLIANCE_OFFICER
+  AUDITOR
+}
+
+enum StaffStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+  INACTIVE
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REVERSED
+}
+
+enum TransactionType {
+  CASH_TO_CASH
+  CASH_TO_MOBILE
+  MOBILE_TO_CASH
+  MOBILE_TO_MOBILE
+  DEPOSIT
+}
+
+enum CommissionType {
+  INCLUDED
+  SEPARATE
+}
+
+enum Currency {
+  SSP
+  USD
+  KES
+  UGX
+  EUR
+  GBP
+  AED
+}
+
+enum BusinessType {
+  MONEY_TRANSFER_COMPANY
+  MOBILE_MONEY_AGENT
+  FOREX_BUREAU
+  REMITTANCE_COMPANY
+}
+
+enum CommissionMode {
+  FIXED
+  PERCENTAGE
+  HYBRID
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Company {
+  id                   String    @id @default(cuid())
+  name                 String
+  businessTypes        BusinessType[]
+  country              String
+  registrationNumber   String?
+  taxId                String?
+  numberOfBranches     Int       @default(1)
+  numberOfStaff        Int       @default(1)
+  mainCurrency         Currency  @default(SSP)
+  additionalCurrencies Currency[]
+  address              String?
+  phone                String?
+  email                String?
+  website              String?
+  logo                 String?
+  primaryColor         String    @default("#0F4C81")
+  secondaryColor       String    @default("#00A86B")
+  accentColor          String    @default("#F4B400")
+  customDomain         String?
+  isActive             Boolean   @default(true)
+  onboardingComplete   Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  users              User[]
+  branches           Branch[]
+  exchangeRates      ExchangeRate[]
+  customers          Customer[]
+  transfers          Transfer[]
+  wallets            Wallet[]
+  mobileProviders    CompanyMobileProvider[]
+  floatWallets       FloatWallet[]
+  messages           Message[]
+  announcements      Announcement[]
+  auditLogs          AuditLog[]
+  commissionSetting  CommissionSetting?
+  subscription       Subscription?
+  payments           Payment[]
+  violationLogs      ViolationLog[]
+
+  @@map("companies")
+}
+
+model CommissionSetting {
+  id        String         @id @default(cuid())
+  companyId String         @unique
+  mode      CommissionMode @default(PERCENTAGE)
+  value     Float          @default(2)
+  minFee    Float?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("commission_settings")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  phone          String?
+  password       String
+  role           UserRole
+  position       String?
+  status         StaffStatus @default(INVITED)
+  mustChangePassword Boolean @default(false)
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
+  image          String?
+  emailVerified  DateTime?
+  lastLoginAt    DateTime?
+  lastActiveAt   DateTime?
+  companyId      String?
+  branchId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company  Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch   Branch?  @relation(fields: [branchId], references: [id])
+  
+  sentMessages     Message[]     @relation("SentMessages")
+  receivedMessages Message[]     @relation("ReceivedMessages")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  issuedTransfers  Transfer[]    @relation("IssuedByUser")
+  paidTransfers    Transfer[]    @relation("PaidByUser")
+  createdRates     ExchangeRate[]
+  events           TransactionEvent[]
+  adminMessages    AdminMessage[]
+  violationLogs    ViolationLog[]
+  verifiedPayments Payment[]     @relation("VerifiedByUser")
+
+  @@map("users")
+}
+
+model Branch {
+  id              String   @id @default(cuid())
+  name            String
+  code            String   @unique
+  country         String
+  state           String?
+  city            String
+  address         String?
+  managerId       String?
+  contactPhone    String?
+  contactEmail    String?
+  isActive        Boolean  @default(true)
+  companyId       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  users    User[]
+  wallets  Wallet[]
+  transfersFrom BranchTransaction[] @relation("SenderBranch")
+  transfersTo   BranchTransaction[] @relation("ReceiverBranch")
+  events        TransactionEvent[]
+
+  @@unique([code, companyId])
+  @@map("branches")
+}
+
+model BranchTransaction {
+  id             String   @id @default(cuid())
+  transferId     String
+  senderBranchId String
+  receiverBranchId String
+
+  transfer       Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  senderBranch   Branch   @relation("SenderBranch", fields: [senderBranchId], references: [id])
+  receiverBranch Branch   @relation("ReceiverBranch", fields: [receiverBranchId], references: [id])
+
+  @@index([senderBranchId])
+  @@index([receiverBranchId])
+  @@unique([transferId])
+  @@map("branch_transactions")
+}
+
+model Wallet {
+  id         String   @id @default(cuid())
+  currency   Currency
+  balance    Float    @default(0)
+  openingBalance Float @default(0)
+  branchId   String
+  companyId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@unique([branchId, currency])
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id        String   @id @default(cuid())
+  type      String
+  amount    Float
+  reference String?
+  description String?
+  walletId  String
+  companyId String
+  branchId  String
+  createdAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+model MobileMoneyProvider {
+  id        String   @id @default(cuid())
+  name      String
+  country   Currency
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  companyProviders CompanyMobileProvider[]
+  floatWallets     FloatWallet[]
+  transfers        Transfer[]
+
+  @@map("mobile_money_providers")
+}
+
+model CompanyMobileProvider {
+  id         String   @id @default(cuid())
+  companyId  String
+  providerId String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  company  Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider MobileMoneyProvider @relation(fields: [providerId], references: [id])
+
+  @@unique([companyId, providerId])
+  @@map("company_mobile_providers")
+}
+
+model FloatWallet {
+  id         String   @id @default(cuid())
+  balance    Float    @default(0)
+  currency   Currency
+  companyId  String
+  providerId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company  Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider MobileMoneyProvider @relation(fields: [providerId], references: [id])
+  transactions FloatTransaction[]
+
+  @@unique([companyId, providerId])
+  @@map("float_wallets")
+}
+
+model FloatTransaction {
+  id          String   @id @default(cuid())
+  type        String
+  amount      Float
+  description String?
+  floatWalletId String
+  companyId   String
+  createdAt   DateTime @default(now())
+
+  floatWallet FloatWallet @relation(fields: [floatWalletId], references: [id], onDelete: Cascade)
+
+  @@map("float_transactions")
+}
+
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  fromCurrency   Currency
+  toCurrency     Currency
+  buyRate        Float
+  sellRate       Float
+  isActive       Boolean  @default(true)
+  isPublic       Boolean  @default(true)
+  scheduledAt    DateTime?
+  expiresAt      DateTime?
+  companyId      String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id])
+
+  @@map("exchange_rates")
+}
+
+model Customer {
+  id                 String             @id @default(cuid())
+  fullName           String
+  phone              String
+  nationality        String?
+  idType             String?
+  idNumber           String?
+  idDocument         String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  riskLevel          RiskLevel          @default(LOW)
+  notes              String?
+  companyId          String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  transfersAsSender   Transfer[] @relation("Sender")
+  transfersAsReceiver Transfer[] @relation("Receiver")
+
+  @@map("customers")
+}
+
+model Transfer {
+  id                String         @id @default(cuid())
+  transactionNumber String         @unique
+  secretCode        String         @unique
+  transactionType   TransactionType
+  amount            Float
+  currency          Currency
+  exchangeRate      Float?
+  commission        Float          @default(0)
+  commissionType    CommissionType @default(INCLUDED)
+  totalAmount       Float
+  senderAmount      Float?
+  receiverAmount    Float?
+  status            TransferStatus @default(PENDING)
+  cancellationReason String?
+  cancelledAt       DateTime?
+  reversalReason    String?
+  reversedAt        DateTime?
+  notes             String?
+  
+  mobileProviderId  String?
+  receiverMobile    String?
+  receiverIdNumber  String?
+
+  senderId          String
+  receiverId        String
+  companyId         String
+  issuedById        String
+  paidById          String?
+  paidAt            DateTime?
+  receiptPrintedAt  DateTime?
+  receiptReprintedAt DateTime?
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  company          Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sender           Customer               @relation("Sender", fields: [senderId], references: [id])
+  receiver         Customer               @relation("Receiver", fields: [receiverId], references: [id])
+  issuedBy         User                   @relation("IssuedByUser", fields: [issuedById], references: [id])
+  paidBy           User?                  @relation("PaidByUser", fields: [paidById], references: [id])
+  mobileProvider   MobileMoneyProvider?   @relation(fields: [mobileProviderId], references: [id])
+  branchLink       BranchTransaction?
+  events           TransactionEvent[]
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("transfers")
+}
+
+model TransactionEvent {
+  id         String   @id @default(cuid())
+  transferId String
+  userId     String
+  action     String
+  details    String?
+  branchId   String?
+  createdAt  DateTime @default(now())
+
+  transfer Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+  branch   Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("transaction_events")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  subject   String?
+  content   String
+  type      String   @default("DIRECT")
+  imageUrl  String?
+  documentUrl String?
+  deliveredAt DateTime?
+  readAt    DateTime?
+  senderId  String
+  receiverId String?
+  branchId  String?
+  companyId String
+  createdAt DateTime @default(now())
+
+  sender   User    @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User?   @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  priority  String   @default("NORMAL")
+  companyId String
+  createdById String
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("announcements")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String
+  readAt    DateTime?
+  userId    String
+  companyId String?
+  link      String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  details   String?
+  branchId  String?
+  companyId String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}
+
+model FraudAlert {
+  id          String   @id @default(cuid())
+  type        String
+  severity    RiskLevel @default(MEDIUM)
+  description String
+  resolved    Boolean  @default(false)
+  companyId   String
+  customerId  String?
+  transferId  String?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  resolvedById String?
+
+  @@map("fraud_alerts")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+  TRIALING
+}
+
+enum PaymentMethod {
+  STRIPE
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  REFUNDED
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  currency    Currency @default(USD)
+  durationDays Int
+  features    String[] @default([])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                  String             @id @default(cuid())
+  companyId           String
+  planId              String
+  status              SubscriptionStatus @default(PENDING)
+  paymentMethod       PaymentMethod?
+  startDate           DateTime?
+  endDate             DateTime?
+  stripeSubscriptionId String?
+  stripeSessionId     String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  company Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan    SubscriptionPlan  @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@unique([companyId])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  companyId       String
+  subscriptionId  String
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  amount          Float
+  currency        Currency      @default(USD)
+  transactionId   String?
+  stripeSessionId String?
+  stripePaymentIntentId String?
+  proofUrl        String?
+  notes           String?
+  verifiedById    String?
+  verifiedAt      DateTime?
+  createdAt       DateTime      @default(now())
+
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subscription Subscription   @relation(fields: [subscriptionId], references: [id])
+  verifiedBy   User?          @relation("VerifiedByUser", fields: [verifiedById], references: [id])
+
+   @@map("payments")
+}
+
+model AdminMessage {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  type        String   @default("BROADCAST")
+  targetRole  String?
+  targetPlan  String?
+  targetStatus String?
+  sentCount   Int      @default(0)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@map("admin_messages")
+}
+
+model ViolationLog {
+  id        String   @id @default(cuid())
+  companyId String
+  action    String
+  reason    String
+  createdById String
+  createdAt DateTime @default(now())
+
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy  User    @relation(fields: [createdById], references: [id])
+
+  @@map("violation_logs")
+}
+
+model PlatformSetting {
+  id              String  @id @default("platform")
+  platformName    String  @default("Trustbank360")
+  platformLogo    String?
+  primaryColor    String  @default("#0F4C81")
+  secondaryColor  String  @default("#00A86B")
+  stripePublicKey String?
+  stripeSecretKey String? @default("")
+  stripeWebhookSecret String?
+  bankInstructions String?
+  bankAccountName String?
+  bankAccountNumber String?
+  bankName        String?
+  currencySettings String? @default("USD,SSP,UGX,KES")
+  maintenanceMode Boolean @default(false)
+  maintenanceMessage String?
+  emailConfig     String?
+  smsConfig       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("platform_settings")
+}

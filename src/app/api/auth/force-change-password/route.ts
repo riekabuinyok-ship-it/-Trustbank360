@@ -1,0 +1,49 @@
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
+
+export async function POST(request: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const user = session.user as any
+
+  try {
+    const { currentPassword, newPassword } = await request.json()
+
+    if (!currentPassword || !newPassword) {
+      return NextResponse.json({ error: "Current password and new password are required" }, { status: 400 })
+    }
+
+    if (newPassword.length < 6) {
+      return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 })
+    }
+
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
+    if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+    const isValid = await bcrypt.compare(currentPassword, dbUser.password)
+    if (!isValid) return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 })
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword, mustChangePassword: false },
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "PASSWORD_CHANGE",
+        resource: "USER",
+        details: "Password changed (forced)",
+        companyId: user.companyId,
+      },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: "Failed to change password" }, { status: 500 })
+  }
+}

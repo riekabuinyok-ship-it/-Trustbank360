@@ -1,0 +1,146 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { UserPlus, Loader2, ArrowLeft } from "lucide-react"
+import toast from "react-hot-toast"
+
+const roles = [
+  { value: "COMPANY_ADMIN", label: "Company Admin" },
+  { value: "BRANCH_MANAGER", label: "Branch Manager" },
+  { value: "TELLER", label: "Teller" },
+  { value: "COMPLIANCE_OFFICER", label: "Compliance Officer" },
+  { value: "AUDITOR", label: "Auditor" },
+]
+
+export default function NewStaffPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [branches, setBranches] = useState<any[]>([])
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    position: "",
+    branchId: "",
+    role: "TELLER",
+  })
+
+  useEffect(() => {
+    fetch("/api/branches").then((r) => r.json()).then(setBranches)
+  }, [])
+
+  function updateField(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || "Failed to invite staff")
+        return
+      }
+      const data = await res.json()
+      toast.success(`Staff invited! Temporary password: ${data.tempPassword}`)
+      router.push("/company/staff")
+    } catch {
+      toast.error("An error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1">
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </button>
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+          <UserPlus className="h-6 w-6 text-primary-500" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Invite Staff</h1>
+          <p className="text-muted-foreground">Add a new team member</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Staff Details</CardTitle>
+            <CardDescription>Enter the staff member&apos;s information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Full Name *</Label>
+                <Input placeholder="John Doe" value={form.name} onChange={(e) => updateField("name", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input type="email" placeholder="john@company.com" value={form.email} onChange={(e) => updateField("email", e.target.value)} required />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input placeholder="+211 123 456 789" value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Position</Label>
+                <Input placeholder="Senior Teller" value={form.position} onChange={(e) => updateField("position", e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Branch *</Label>
+                <Select value={form.branchId} onValueChange={(v) => updateField("branchId", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Role *</Label>
+                <Select value={form.role} onValueChange={(v) => updateField("role", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {roles.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-4 mt-6">
+          <Button type="button" variant="outline" onClick={() => router.back()} className="w-full" size="lg">Cancel</Button>
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Send Invitation
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+}
