@@ -20,49 +20,66 @@ export async function POST(req: Request) {
   const startTime = Date.now()
 
   try {
-    // ─── 1. Read raw body ──────────────────────────────────────────────────
-    let body: string
+    // ─── 1. Read raw body as Buffer (preserves exact bytes for Stripe) ────
+    let rawBody: Buffer
     try {
-      body = await req.text()
+      const arrayBuffer = await req.arrayBuffer()
+      rawBody = Buffer.from(arrayBuffer)
     } catch (err) {
       log("ERROR", `[${requestId}] Failed to read request body`, err)
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
     }
 
-    if (!body || body.length === 0) {
+    if (!rawBody || rawBody.length === 0) {
       log("ERROR", `[${requestId}] Empty request body`)
       return NextResponse.json({ error: "Empty request body" }, { status: 400 })
     }
 
-    log("INFO", `[${requestId}] Webhook received, body length: ${body.length}`)
+    log("INFO", `[${requestId}] Webhook received, body length: ${rawBody.length}`)
 
-    // ─── 2. Verify signature ────────────────────────────────────────────────
+    // ─── 2. Extract and log signature header ──────────────────────────────
     const signature = req.headers.get("stripe-signature")
     if (!signature) {
       log("ERROR", `[${requestId}] Missing stripe-signature header`)
       return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 })
     }
+    log("INFO", `[${requestId}] stripe-signature header present, length: ${signature.length}`)
 
+    // ─── 3. Check and log webhook secret ─────────────────────────────────
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
     if (!webhookSecret) {
       log("ERROR", `[${requestId}] STRIPE_WEBHOOK_SECRET is not configured in environment`)
       return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 })
     }
+    const maskedSecret = webhookSecret.length > 8
+      ? webhookSecret.slice(0, 4) + "****" + webhookSecret.slice(-4)
+      : "(too short)"
+    log("INFO", `[${requestId}] STRIPE_WEBHOOK_SECRET exists, length: ${webhookSecret.length}, masked: ${maskedSecret}`)
 
+    // ─── 4. Construct event (uses raw Buffer for exact byte match) ────────
     let event: any
     try {
-      event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
+      event = getStripe().webhooks.constructEvent(rawBody, signature, webhookSecret)
+      log("INFO", `[${requestId}] Signature verified successfully, event type: ${event.type}, event id: ${event.id}`)
     } catch (sigErr: any) {
       log("ERROR", `[${requestId}] Signature verification failed`, {
         message: sigErr.message,
         type: sigErr.type,
+        header: sigErr.header,
+        code: sigErr.code,
+        stack: sigErr.stack,
       })
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
+      // Try to parse body as JSON for debugging even if sig fails
+      try {
+        const parsed = JSON.parse(rawBody.toString("utf8"))
+        log("ERROR", `[${requestId}] Parsed body event type for debugging`, { type: parsed.type, id: parsed.id })
+      } catch {
+        log("ERROR", `[${requestId}] Could not parse body as JSON for debugging`)
+      }
+      return NextResponse.json({ error: "Invalid signature", requestId }, { status: 400 })
     }
 
-    log("INFO", `[${requestId}] Signature verified, event type: ${event.type}, event id: ${event.id}`)
-
-    // ─── 3. Idempotency check ──────────────────────────────────────────────
+    // ─── 5. Idempotency check ──────────────────────────────────────────────
     if (processedEventIds.has(event.id)) {
       log("INFO", `[${requestId}] Event ${event.id} already processed, skipping`)
       return NextResponse.json({ received: true, idempotent: true })
