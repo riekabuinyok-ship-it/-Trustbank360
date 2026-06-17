@@ -77,7 +77,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
         token.role = (user as any).role
@@ -90,6 +90,16 @@ export const authOptions: NextAuthOptions = {
         token.onboardingComplete = (user as any).onboardingComplete
         token.twoFactorEnabled = (user as any).twoFactorEnabled
         token.mustChangePassword = (user as any).mustChangePassword
+      }
+      if (trigger === "update" && token.companyId) {
+        const company = await prisma.company.findUnique({ where: { id: token.companyId as string } })
+        if (company) {
+          token.companyName = company.name ?? null
+          token.businessTypes = company.businessTypes ?? []
+          token.isActive = company.isActive
+          token.companyIsActive = company.isActive
+          token.onboardingComplete = company.onboardingComplete
+        }
       }
       return token
     },
