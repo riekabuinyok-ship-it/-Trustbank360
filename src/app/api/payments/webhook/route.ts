@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
+import crypto from "crypto"
 
 // In-memory set for idempotency (resets on redeploy — acceptable for debugging)
 const processedEventIds = new Set<string>()
@@ -96,7 +97,37 @@ export async function POST(req: Request) {
       : "(too short)"
     log("INFO", `[${requestId}] STRIPE_WEBHOOK_SECRET exists, length: ${webhookSecret.length}, masked: ${maskedSecret}`)
 
-    // ─── 4. Construct event (uses raw Buffer for exact byte match) ────────
+    // ─── 4. Manual HMAC verification for debugging ────────────────────────
+    // Parse the stripe-signature header to extract timestamp and signatures
+    const sigParts = signature.split(",").map((p) => p.trim())
+    let sigTimestamp = ""
+    const sigValues: string[] = []
+    for (const part of sigParts) {
+      if (part.startsWith("t=")) sigTimestamp = part.slice(2)
+      if (part.startsWith("v1=")) sigValues.push(part.slice(3))
+    }
+
+    // Compute expected HMAC manually
+    const payloadToSign = `${sigTimestamp}.${rawBody.toString("utf8")}`
+    const expectedSig = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(payloadToSign)
+      .digest("hex")
+
+    const sigMatch = sigValues.some((s) => crypto.timingSafeEqual(Buffer.from(s), Buffer.from(expectedSig)))
+
+    log("INFO", `[${requestId}] Manual HMAC diagnostics`, {
+      bodyLength: rawBody.length,
+      bodyFirstChars: rawBody.slice(0, 200).toString("utf8"),
+      bodyHexPrefix: rawBody.slice(0, 32).toString("hex"),
+      timestamp: sigTimestamp,
+      signatureCount: sigValues.length,
+      firstSignaturePrefix: sigValues[0]?.slice(0, 16) || "(none)",
+      expectedSigPrefix: expectedSig.slice(0, 16),
+      sigMatch,
+    })
+
+    // ─── 5. Construct event via Stripe library ───────────────────────────
     let event: any
     try {
       event = getStripe().webhooks.constructEvent(rawBody, signature, webhookSecret)
@@ -107,16 +138,20 @@ export async function POST(req: Request) {
         type: sigErr.type,
         header: sigErr.header,
         code: sigErr.code,
+        manualSigMatch: sigMatch,
+        bodyLength: rawBody.length,
+        expectedSigPrefix: expectedSig.slice(0, 16),
+        receivedSigPrefix: sigValues[0]?.slice(0, 16),
         stack: sigErr.stack,
       })
       // Try to parse body as JSON for debugging even if sig fails
       try {
         const parsed = JSON.parse(rawBody.toString("utf8"))
-        log("ERROR", `[${requestId}] Parsed body event type for debugging`, { type: parsed.type, id: parsed.id })
+        log("ERROR", `[${requestId}] Parsed body event type for debugging`, { type: parsed.type, id: parsed.id, evtId: parsed.id })
       } catch {
         log("ERROR", `[${requestId}] Could not parse body as JSON for debugging`)
       }
-      return NextResponse.json({ error: "Invalid signature", requestId }, { status: 400 })
+      return NextResponse.json({ error: "Invalid signature", requestId, manualSigMatch, bodyLength: rawBody.length }, { status: 400 })
     }
 
     // ─── 5. Idempotency check ──────────────────────────────────────────────
