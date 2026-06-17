@@ -138,10 +138,10 @@ export async function POST(req: Request) {
         type: sigErr.type,
         header: sigErr.header,
         code: sigErr.code,
-        manualSigMatch: sigMatch,
         bodyLength: rawBody.length,
         expectedSigPrefix: expectedSig.slice(0, 16),
         receivedSigPrefix: sigValues[0]?.slice(0, 16),
+        sigMatch,
         stack: sigErr.stack,
       })
       // Try to parse body as JSON for debugging even if sig fails
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
       } catch {
         log("ERROR", `[${requestId}] Could not parse body as JSON for debugging`)
       }
-      return NextResponse.json({ error: "Invalid signature", requestId, manualSigMatch, bodyLength: rawBody.length }, { status: 400 })
+      return NextResponse.json({ error: "Invalid signature", requestId, manualSigMatch: sigMatch, bodyLength: rawBody.length }, { status: 400 })
     }
 
     // ─── 5. Idempotency check ──────────────────────────────────────────────
