@@ -2,6 +2,40 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
+
+async function getBasicDashboard(user: any, whereBase: any, isOperational: boolean) {
+  const [transferCount, customerCount, walletGroup, recentTransfers] = await Promise.all([
+    prisma.transfer.count({ where: whereBase }),
+    prisma.customer.count({ where: { companyId: user.companyId } }),
+    prisma.wallet.groupBy({
+      by: ["currency"],
+      where: { companyId: user.companyId },
+      _sum: { balance: true },
+    }),
+    prisma.transfer.findMany({
+      where: whereBase,
+      select: {
+        id: true, transactionNumber: true, amount: true, currency: true,
+        status: true, createdAt: true,
+        issuedBy: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+  ])
+
+  const totalBalance = walletGroup.reduce((s, w) => s + (w._sum.balance || 0), 0)
+
+  return NextResponse.json({
+    basic: true,
+    totalBalance,
+    transferCount,
+    customerCount,
+    walletBalances: walletGroup.map(w => ({ currency: w.currency, balance: w._sum.balance || 0 })),
+    recentTransfers,
+  })
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -12,6 +46,16 @@ export async function GET() {
   const isOperational = user.role === "BRANCH_MANAGER" || user.role === "branch_manager" || user.role === "TELLER" || user.role === "teller"
 
   try {
+    // Gate advanced analytics behind plan check
+    try {
+      await checkPlanLimit({ companyId: user.companyId, feature: "advancedAnalytics" })
+    } catch (err) {
+      if (err instanceof PlanEnforcementError) {
+        return getBasicDashboard(user, { companyId: user.companyId }, isOperational)
+      }
+      throw err
+    }
+
     const now = new Date()
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const startOfWeek = new Date(startOfDay)

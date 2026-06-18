@@ -33,13 +33,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Plan not found or inactive" }, { status: 404 })
     }
 
-    // Check if company already has a subscription
-    let subscription = await prisma.subscription.findUnique({ where: { companyId } })
+    // If switching to a different plan, validate current usage against target plan limits
+    const currentSub = await prisma.subscription.findUnique({ where: { companyId } })
+    if (currentSub && currentSub.planId !== planId) {
+      const targetPlan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } })
+      if (targetPlan) {
+        const [branchCount, staffCount, walletCurrencies] = await Promise.all([
+          prisma.branch.count({ where: { companyId } }),
+          prisma.user.count({ where: { companyId } }),
+          prisma.wallet.groupBy({ by: ["currency"], where: { companyId } }),
+        ])
+        const currencyCount = walletCurrencies.length
 
-    if (subscription) {
+        const errors: string[] = []
+        if (targetPlan.maxBranches < 999999 && branchCount > targetPlan.maxBranches) {
+          errors.push(`${branchCount} branches (limit: ${targetPlan.maxBranches})`)
+        }
+        if (targetPlan.maxStaff < 999999 && staffCount > targetPlan.maxStaff) {
+          errors.push(`${staffCount} staff (limit: ${targetPlan.maxStaff})`)
+        }
+        if (targetPlan.maxCurrencies < 999999 && currencyCount > targetPlan.maxCurrencies) {
+          errors.push(`${currencyCount} currencies (limit: ${targetPlan.maxCurrencies})`)
+        }
+
+        if (errors.length > 0) {
+          return NextResponse.json({
+            success: false, errorCode: "PLAN_DOWNGRADE_BLOCKED", title: "Cannot switch plan",
+            message: `Your current usage exceeds the ${targetPlan.name} plan limits: ${errors.join(", ")}. Remove some resources or upgrade to a larger plan.`,
+            upgradeRequired: true,
+          }, { status: 403 })
+        }
+      }
+    }
+
+    // Check if company already has a subscription
+    let subscription: any
+
+    if (currentSub) {
       // Update existing subscription
       subscription = await prisma.subscription.update({
-        where: { id: subscription.id },
+        where: { id: currentSub.id },
         data: {
           planId,
           paymentMethod: paymentMethod || null,

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
-import { PlanEnforcementError } from "@/lib/plan-enforcement"
+import { PlanEnforcementError, updateOverLimit } from "@/lib/plan-enforcement"
 import { formatApiError, formatPlanError } from "@/lib/api-error"
 import { getLimit, getPlanByName } from "@/lib/plan-config"
 
@@ -94,6 +94,8 @@ export async function POST(request: Request) {
 
       return created
     })
+
+    updateOverLimit(user.companyId).catch(() => {})
 
     await prisma.auditLog.create({
       data: {

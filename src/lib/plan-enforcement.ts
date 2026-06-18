@@ -147,6 +147,32 @@ export async function checkPlanLimit(params: PlanLimitCheckParams): Promise<void
   }
 }
 
+export async function updateOverLimit(companyId: string): Promise<boolean> {
+  try {
+    const { planName } = await getCompanyPlan(companyId)
+    const branchCount = await prisma.branch.count({ where: { companyId } })
+    const staffCount = await prisma.user.count({ where: { companyId } })
+    const walletCurrencies = await prisma.wallet.groupBy({
+      by: ["currency"], where: { companyId },
+    })
+    const currencyCount = walletCurrencies.length
+
+    const branchLimit = getLimit(planName, "branches")
+    const staffLimit = getLimit(planName, "staff")
+    const currencyLimit = getLimit(planName, "currencies")
+
+    const over =
+      (branchLimit !== Infinity && branchCount > branchLimit) ||
+      (staffLimit !== Infinity && staffCount > staffLimit) ||
+      (currencyLimit !== Infinity && currencyCount > currencyLimit)
+
+    await prisma.company.update({ where: { id: companyId }, data: { overLimit: over } })
+    return over
+  } catch {
+    return false
+  }
+}
+
 const FEATURE_USAGE_FETCHERS: Record<string, (companyId: string) => Promise<number>> = {
   branches: (cid) => prisma.branch.count({ where: { companyId: cid } }),
   staff: (cid) => prisma.user.count({ where: { companyId: cid } }),

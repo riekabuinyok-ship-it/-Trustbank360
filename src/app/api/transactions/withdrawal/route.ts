@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateTransactionNumber, generateSecretCode } from "@/lib/utils"
+import { formatApiError } from "@/lib/api-error"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -26,9 +27,26 @@ export async function POST(request: Request) {
       })
     }
 
-    const transactionNumber = generateTransactionNumber()
     const company = await prisma.company.findUnique({ where: { id: user.companyId } })
-    const secretCode = generateSecretCode(company?.name || "TRUST")
+    if (!company) return NextResponse.json({ error: "Company not found" }, { status: 404 })
+
+    if (company.overLimit) {
+      return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
+    }
+
+    const walletExists = await prisma.wallet.findFirst({
+      where: { companyId: user.companyId, currency: currency as any },
+    })
+    if (!walletExists) {
+      return NextResponse.json(formatApiError("CURRENCY_LIMIT_REACHED", {
+        title: "Currency not available",
+        message: "Withdrawals in this currency are not allowed under your current plan.",
+        upgradeRequired: true,
+      }), { status: 403 })
+    }
+
+    const transactionNumber = generateTransactionNumber()
+    const secretCode = generateSecretCode(company.name)
 
     const transfer = await prisma.transfer.create({
       data: {
