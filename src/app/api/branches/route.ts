@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
-import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
-import { formatApiError } from "@/lib/api-error"
+import { PlanEnforcementError } from "@/lib/plan-enforcement"
+import { formatApiError, formatPlanError } from "@/lib/api-error"
+import { getLimit, getPlanByName } from "@/lib/plan-config"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -37,35 +38,61 @@ export async function POST(request: Request) {
       return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
     }
 
-    await checkPlanLimit({ companyId: user.companyId, feature: "branches" })
-
-    const existingBranches = await prisma.branch.findMany({ where: { companyId: user.companyId }, select: { id: true } })
-
-    const branch = await prisma.branch.create({
-      data: {
-        name: body.name,
-        code: generateBranchCode(body.name, existingBranches.length),
-        country: body.country,
-        state: body.state,
-        city: body.city,
-        address: body.address,
-        contactPhone: body.contactPhone,
-        contactEmail: body.contactEmail,
-        companyId: user.companyId,
-      },
+    const sub = await prisma.subscription.findUnique({
+      where: { companyId: user.companyId },
+      select: { plan: { select: { name: true } } },
     })
+    if (!sub || !getPlanByName(sub.plan.name)) {
+      return NextResponse.json(formatApiError("NO_SUBSCRIPTION"), { status: 403 })
+    }
+    const planName = sub.plan.name
 
-    // Create wallets for the new branch
-    const currencies = ["SSP", "USD", "KES", "UGX"]
-    await checkPlanLimit({ companyId: user.companyId, feature: "currencies" })
-    await prisma.wallet.createMany({
-      data: currencies.map((currency) => ({
-        currency: currency as any,
-        balance: 0,
-        openingBalance: 0,
-        branchId: branch.id,
-        companyId: user.companyId,
-      })),
+    const branch = await prisma.$transaction(async (tx) => {
+      const branchCount = await tx.branch.count({ where: { companyId: user.companyId } })
+      const limit = getLimit(planName, "branches")
+      if (limit !== Infinity && branchCount >= limit) {
+        throw new PlanEnforcementError(formatPlanError("BRANCH_LIMIT_REACHED", planName, branchCount, limit))
+      }
+
+      const existingBranches = await tx.branch.findMany({ where: { companyId: user.companyId }, select: { id: true } })
+
+      const created = await tx.branch.create({
+        data: {
+          name: body.name,
+          code: generateBranchCode(body.name, existingBranches.length),
+          country: body.country,
+          state: body.state,
+          city: body.city,
+          address: body.address,
+          contactPhone: body.contactPhone,
+          contactEmail: body.contactEmail,
+          companyId: user.companyId,
+        },
+      })
+
+      const newCurrencies = ["SSP", "USD", "KES", "UGX"]
+      const walletCurrencies = await tx.wallet.groupBy({
+        by: ["currency"],
+        where: { companyId: user.companyId },
+      })
+      const currencyLimit = getLimit(planName, "currencies")
+      const existingSet = new Set(walletCurrencies.map((w) => w.currency))
+      const addedCurrencies = newCurrencies.filter((c) => !existingSet.has(c as any))
+      if (currencyLimit !== Infinity && (walletCurrencies.length + addedCurrencies.length > currencyLimit)) {
+        throw new PlanEnforcementError(formatPlanError("CURRENCY_LIMIT_REACHED", planName, walletCurrencies.length, currencyLimit))
+      }
+
+      await tx.wallet.createMany({
+        data: addedCurrencies.map((currency) => ({
+          currency: currency as any,
+          balance: 0,
+          openingBalance: 0,
+          branchId: created.id,
+          companyId: user.companyId,
+        })),
+      })
+
+      return created
     })
 
     await prisma.auditLog.create({

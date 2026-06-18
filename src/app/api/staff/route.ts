@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
-import { formatApiError } from "@/lib/api-error"
+import { PlanEnforcementError } from "@/lib/plan-enforcement"
+import { formatApiError, formatPlanError } from "@/lib/api-error"
+import { getLimit, getPlanByName } from "@/lib/plan-config"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -37,24 +38,39 @@ export async function POST(request: Request) {
       return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
     }
 
-    await checkPlanLimit({ companyId: user.companyId, feature: "staff" })
+    const sub = await prisma.subscription.findUnique({
+      where: { companyId: user.companyId },
+      select: { plan: { select: { name: true } } },
+    })
+    if (!sub || !getPlanByName(sub.plan.name)) {
+      return NextResponse.json(formatApiError("NO_SUBSCRIPTION"), { status: 403 })
+    }
+    const planName = sub.plan.name
 
     const tempPassword = Math.random().toString(36).slice(-10)
     const hashedPassword = await bcrypt.hash(tempPassword, 12)
 
-    const staff = await prisma.user.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        phone: body.phone,
-        position: body.position,
-        role: body.role,
-        branchId: body.branchId,
-        companyId: user.companyId,
-        password: hashedPassword,
-        status: "INVITED",
-        mustChangePassword: true,
-      },
+    const staff = await prisma.$transaction(async (tx) => {
+      const staffCount = await tx.user.count({ where: { companyId: user.companyId } })
+      const limit = getLimit(planName, "staff")
+      if (limit !== Infinity && staffCount >= limit) {
+        throw new PlanEnforcementError(formatPlanError("STAFF_LIMIT_REACHED", planName, staffCount, limit))
+      }
+
+      return tx.user.create({
+        data: {
+          name: body.name,
+          email: body.email,
+          phone: body.phone,
+          position: body.position,
+          role: body.role,
+          branchId: body.branchId,
+          companyId: user.companyId,
+          password: hashedPassword,
+          status: "INVITED",
+          mustChangePassword: true,
+        },
+      })
     })
 
     await prisma.auditLog.create({

@@ -65,10 +65,12 @@ export async function POST(request: Request) {
       include: { branches: true, users: true },
     })
 
-    // Create default wallets for main branch
-    const currencies = ["SSP", "USD", "KES", "UGX", "EUR", "GBP", "AED"]
+    // Create default wallets for main branch (respect plan currency limit)
+    const allCurrencies = ["SSP", "USD", "KES", "UGX", "EUR", "GBP", "AED"]
+    const maxCurrencies = plan.maxCurrencies >= 999999 ? allCurrencies.length : plan.maxCurrencies
+    const initialCurrencies = allCurrencies.slice(0, maxCurrencies)
     await prisma.wallet.createMany({
-      data: currencies.map((currency) => ({
+      data: initialCurrencies.map((currency) => ({
         currency: currency as any,
         balance: 0,
         openingBalance: 0,
