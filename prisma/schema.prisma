@@ -541,16 +541,20 @@ enum PaymentStatus {
 }
 
 model SubscriptionPlan {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  currency    Currency @default(USD)
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  price        Float
+  currency     Currency @default(USD)
   durationDays Int
-  features    String[] @default([])
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  trialDays    Int      @default(30)
+  maxBranches  Int      @default(2)
+  maxStaff     Int      @default(5)
+  maxCurrencies Int     @default(2)
+  features     String[] @default([])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   subscriptions Subscription[]
 
@@ -558,17 +562,19 @@ model SubscriptionPlan {
 }
 
 model Subscription {
-  id                  String             @id @default(cuid())
-  companyId           String
-  planId              String
-  status              SubscriptionStatus @default(PENDING)
-  paymentMethod       PaymentMethod?
-  startDate           DateTime?
-  endDate             DateTime?
+  id                   String             @id @default(cuid())
+  companyId            String
+  planId               String
+  status               SubscriptionStatus @default(PENDING)
+  paymentMethod        PaymentMethod?
+  startDate            DateTime?
+  endDate              DateTime?
+  trialEndsAt          DateTime?
+  stripeCustomerId     String?
   stripeSubscriptionId String?
-  stripeSessionId     String?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  stripeSessionId      String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   company Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   plan    SubscriptionPlan  @relation(fields: [planId], references: [id])

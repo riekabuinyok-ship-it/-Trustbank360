@@ -14,6 +14,10 @@ import {
   Clock,
   Loader2,
   DollarSign,
+  Building2,
+  Users,
+  Globe,
+  Zap,
 } from "lucide-react"
 
 interface Plan {
@@ -23,6 +27,10 @@ interface Plan {
   price: number
   currency: string
   durationDays: number
+  trialDays: number
+  maxBranches: number
+  maxStaff: number
+  maxCurrencies: number
   features: string[]
   isActive: boolean
 }
@@ -43,16 +51,12 @@ interface Subscription {
   paymentMethod: string | null
   startDate: string | null
   endDate: string | null
+  trialEndsAt: string | null
   plan: Plan
   payments: Payment[]
 }
 
-interface BankInfo {
-  bankName: string | null
-  bankAccountName: string | null
-  bankAccountNumber: string | null
-  bankInstructions: string | null
-}
+const currencySymbols: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", KES: "KSh", UGX: "USh", SSP: "£" }
 
 export default function BillingPage() {
   const { data: session } = useSession()
@@ -62,7 +66,6 @@ export default function BillingPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [payments, setPayments] = useState<Payment[]>([])
-  const [bankInfo, setBankInfo] = useState<BankInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [switchingPlan, setSwitchingPlan] = useState<string | null>(null)
 
@@ -111,14 +114,15 @@ export default function BillingPage() {
         setPlans(data.plans || [])
         setSubscription(data.subscription || null)
         setPayments(data.payments || [])
-        setBankInfo(data.bankInfo || null)
       })
       .catch(() => toast.error("Failed to load billing data"))
       .finally(() => setLoading(false))
   }, [])
 
-  const hasActiveSubscription = subscription?.status === "ACTIVE"
-  const currentPlan = hasActiveSubscription ? (subscription?.plan ?? null) : null
+  const hasPlan = subscription && (subscription.status === "ACTIVE" || subscription.status === "TRIALING")
+  const currentPlan = hasPlan ? subscription!.plan : null
+
+  const isTrialing = subscription?.status === "TRIALING"
 
   const statusLabels: Record<string, string> = {
     ACTIVE: "Active", INACTIVE: "Inactive", CANCELLED: "Cancelled",
@@ -161,14 +165,18 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {/* Current Plan Summary */}
-      {currentPlan && subscription ? (
-        <Card>
+      {/* Current Plan Summary — shown for both ACTIVE and TRIALING */}
+      {hasPlan && currentPlan && subscription && (
+        <Card className="border-primary-200 dark:border-primary-800">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Current Plan</CardTitle>
-                <CardDescription>Your active subscription details</CardDescription>
+                <CardDescription>
+                  {isTrialing
+                    ? "Your trial period is active"
+                    : "Your active subscription details"}
+                </CardDescription>
               </div>
               <Badge variant={statusVariants[subscription.status] || "outline"}>
                 {statusLabels[subscription.status] || subscription.status}
@@ -177,29 +185,47 @@ export default function BillingPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2 mb-6">
-              <span className="text-3xl font-bold">${currentPlan.price}</span>
-              <span className="text-muted-foreground">/{currentPlan.durationDays} days</span>
-              {subscription.endDate && (
+              <span className="text-3xl font-bold">
+                {currencySymbols[currentPlan.currency] || "$"}{currentPlan.price}
+              </span>
+              <span className="text-muted-foreground">/month</span>
+              {subscription.trialEndsAt && isTrialing && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 ml-2 font-medium">
+                  Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}
+                </span>
+              )}
+              {subscription.endDate && !isTrialing && (
                 <span className="text-xs text-muted-foreground ml-2">
-                  {subscription.status === "ACTIVE" || subscription.status === "TRIALING"
+                  {subscription.status === "ACTIVE"
                     ? `Renews ${new Date(subscription.endDate).toLocaleDateString()}`
                     : `Expired ${new Date(subscription.endDate).toLocaleDateString()}`}
                 </span>
               )}
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4 mb-6">
+            {/* Plan limits summary */}
+            <div className="grid sm:grid-cols-4 gap-4 mb-6">
               <div className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
                 <p className="text-xs text-muted-foreground">Plan</p>
                 <p className="text-lg font-bold">{currentPlan.name}</p>
               </div>
               <div className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
-                <p className="text-xs text-muted-foreground">Price</p>
-                <p className="text-lg font-bold">${currentPlan.price}/month</p>
+                <p className="text-xs text-muted-foreground">Branches</p>
+                <p className="text-lg font-bold">
+                  {currentPlan.maxBranches >= 999999 ? "Unlimited" : currentPlan.maxBranches}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
-                <p className="text-xs text-muted-foreground">Duration</p>
-                <p className="text-lg font-bold">{currentPlan.durationDays} Days</p>
+                <p className="text-xs text-muted-foreground">Staff</p>
+                <p className="text-lg font-bold">
+                  {currentPlan.maxStaff >= 999999 ? "Unlimited" : currentPlan.maxStaff}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
+                <p className="text-xs text-muted-foreground">Currencies</p>
+                <p className="text-lg font-bold">
+                  {currentPlan.maxCurrencies >= 999999 ? "Unlimited" : currentPlan.maxCurrencies}
+                </p>
               </div>
             </div>
 
@@ -213,21 +239,9 @@ export default function BillingPage() {
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">No Active Subscription</CardTitle>
-            <CardDescription>Choose a plan below to get started</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              You don&apos;t have an active subscription. Select a plan below to activate your account.
-            </p>
-          </CardContent>
-        </Card>
       )}
 
-      {/* Plan Cards with Proceed to Payment */}
+      {/* Plan Cards */}
       {plans.length > 0 && (
         <Card>
           <CardHeader>
@@ -239,6 +253,7 @@ export default function BillingPage() {
               {plans.map((p) => {
                 const isCurrent = currentPlan?.id === p.id
                 const isLoading = switchingPlan === p.id
+                const symbol = currencySymbols[p.currency] || "$"
 
                 return (
                   <div
@@ -256,12 +271,26 @@ export default function BillingPage() {
                       )}
                     </div>
                     <div className="flex items-baseline gap-1 mb-3">
-                      <span className="text-2xl font-bold">${p.price}</span>
+                      <span className="text-2xl font-bold">{symbol}{p.price}</span>
                       <span className="text-xs text-muted-foreground">/month</span>
                     </div>
-                    {!isCurrent && (
+                    {!isCurrent && p.description && (
                       <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{p.description}</p>
                     )}
+                    <p className="text-xs text-muted-foreground mb-3">{p.trialDays}-day free trial</p>
+
+                    {/* Plan limits */}
+                    <div className="space-y-1 mb-3">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Building2 className="h-3 w-3" /> Up to {p.maxBranches >= 999999 ? "unlimited" : p.maxBranches} branches
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" /> Up to {p.maxStaff >= 999999 ? "unlimited" : p.maxStaff} staff
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Globe className="h-3 w-3" /> Up to {p.maxCurrencies >= 999999 ? "unlimited" : p.maxCurrencies} currencies
+                      </div>
+                    </div>
 
                     <div className="space-y-1 flex-1 mb-4">
                       {p.features.map((f, i) => (

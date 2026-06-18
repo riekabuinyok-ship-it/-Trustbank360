@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
+import { enforceBranchLimit } from "@/lib/plan-enforcement"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const branches = await prisma.branch.findMany({ where: { companyId: user.companyId } })
+
+    await enforceBranchLimit(user.companyId)
 
     const branch = await prisma.branch.create({
       data: {

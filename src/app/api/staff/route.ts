@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { enforceStaffLimit } from "@/lib/plan-enforcement"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -29,6 +30,9 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
+
+    await enforceStaffLimit(user.companyId)
+
     const tempPassword = Math.random().toString(36).slice(-10)
     const hashedPassword = await bcrypt.hash(tempPassword, 12)
 

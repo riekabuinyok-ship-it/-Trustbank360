@@ -58,9 +58,27 @@ const providersByCountry: Record<string, { value: string; label: string; country
 
 const allProviders = [...providersByCountry.SSP, ...providersByCountry.UGX, ...providersByCountry.KES]
 
+interface Plan {
+  id: string
+  name: string
+  description: string
+  price: number
+  currency: string
+  trialDays: number
+  maxBranches: number
+  maxStaff: number
+  maxCurrencies: number
+  features: string[]
+}
+
+const defaultPlans: Plan[] = []
+const currencySymbols: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", KES: "KSh", UGX: "USh", SSP: "£" }
+
 export default function SignupPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [plans, setPlans] = useState<Plan[]>(defaultPlans)
+  const [plansLoading, setPlansLoading] = useState(true)
   const router = useRouter()
 
   const [form, setForm] = useState({
@@ -75,11 +93,27 @@ export default function SignupPage() {
     taxId: "",
     phone: "",
     mobileProviders: [] as string[],
+    planId: "",
   })
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const res = await fetch("/api/plans")
+        const data = await res.json()
+        if (data.plans) setPlans(data.plans)
+      } catch {
+        // fallback if plans API fails — page will show empty
+      } finally {
+        setPlansLoading(false)
+      }
+    }
+    fetchPlans()
+  }, [])
 
   const needsProviders = form.businessTypes.includes("MOBILE_MONEY_AGENT") || form.businessTypes.includes("FOREX_BUREAU")
   const providersRequired = form.businessTypes.includes("MOBILE_MONEY_AGENT")
-  const totalSteps = needsProviders ? 3 : 2
+  const totalSteps = needsProviders ? 4 : 3
 
   function updateField(field: string, value: any) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -129,14 +163,22 @@ export default function SignupPage() {
         toast.error("Select your country")
         return
       }
-      if (totalSteps === 2) {
-        handleSubmit()
-      } else {
-        setStep(3)
-      }
+      setStep(3)
       return
     }
     if (step === 3) {
+      if (!form.planId) {
+        toast.error("Please select a subscription plan")
+        return
+      }
+      if (needsProviders) {
+        setStep(4)
+      } else {
+        handleSubmit()
+      }
+      return
+    }
+    if (step === 4) {
       if (providersRequired && form.mobileProviders.length === 0) {
         toast.error("Mobile Money Agents must select at least one provider")
         return
@@ -195,9 +237,10 @@ export default function SignupPage() {
               </div>
             ))}
           </div>
-          <div className="flex justify-center gap-8 sm:gap-24 mt-2 text-xs text-muted-foreground">
+          <div className="flex justify-center gap-8 sm:gap-16 mt-2 text-xs text-muted-foreground">
             <span>Account</span>
             <span>Business</span>
+            <span>Plan</span>
             {needsProviders && <span>Providers</span>}
           </div>
         </div>
@@ -211,10 +254,10 @@ export default function SignupPage() {
               </p>
             </div>
             <CardTitle>
-              {step === 1 ? "Create Your Account" : step === 2 ? "Business Information" : "Mobile Money Providers"}
+              {step === 1 ? "Create Your Account" : step === 2 ? "Business Information" : step === 3 ? "Choose a Plan" : "Mobile Money Providers"}
             </CardTitle>
             <CardDescription>
-              {step === 1 ? "Enter your personal details" : step === 2 ? "Tell us about your company" : "Select your mobile money providers"}
+              {step === 1 ? "Enter your personal details" : step === 2 ? "Tell us about your company" : step === 3 ? "Select a subscription plan for your company" : "Select your mobile money providers"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -320,13 +363,82 @@ export default function SignupPage() {
                   <div className="flex gap-4 pt-2">
                     <Button type="button" variant="outline" onClick={() => setStep(1)} className="w-full" size="lg">Back</Button>
                     <Button type="button" onClick={handleNext} className="w-full" size="lg">
-                      {totalSteps === 2 ? "Create Account" : "Continue"}
+                      Continue
                     </Button>
                   </div>
                 </>
               )}
 
               {step === 3 && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Subscription Plan *</Label>
+                    <p className="text-xs text-muted-foreground">You can upgrade or change your plan anytime from the billing settings.</p>
+                    {plansLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+                      </div>
+                    ) : plans.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No plans available. Please try again later.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                        {plans.map((plan) => {
+                          const selected = form.planId === plan.id
+                          const symbol = currencySymbols[plan.currency] || "$"
+                          return (
+                            <button
+                              key={plan.id}
+                              type="button"
+                              onClick={() => updateField("planId", plan.id)}
+                              className={`p-5 rounded-xl border-2 text-left transition-all ${
+                                selected
+                                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-md"
+                                  : "border-input hover:border-primary-300"
+                              }`}
+                            >
+                              <p className="text-lg font-bold text-surface-900 dark:text-white">{plan.name}</p>
+                              <p className="text-3xl font-extrabold text-primary-600 dark:text-primary-400 mt-2">
+                                {symbol}{plan.price}<span className="text-sm font-normal text-muted-foreground">/mo</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">{plan.trialDays}-day free trial</p>
+                              <div className="border-t border-border my-4" />
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold text-surface-700 dark:text-surface-300">Includes:</p>
+                                <div className="space-y-1.5">
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                    <Check className="h-3 w-3 text-secondary-500" /> Up to {plan.maxBranches === 999999 ? "unlimited" : plan.maxBranches} {plan.maxBranches === 1 ? "branch" : "branches"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                    <Check className="h-3 w-3 text-secondary-500" /> Up to {plan.maxStaff === 999999 ? "unlimited" : plan.maxStaff} staff
+                                  </p>
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                    <Check className="h-3 w-3 text-secondary-500" /> Up to {plan.maxCurrencies === 999999 ? "unlimited" : plan.maxCurrencies} currencies
+                                  </p>
+                                </div>
+                              </div>
+                              {selected && (
+                                <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/40 px-3 py-1 rounded-full">
+                                  <Check className="h-3 w-3" /> Selected
+                                </div>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-4 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="w-full" size="lg">Back</Button>
+                    <Button type="button" onClick={handleNext} className="w-full" size="lg" disabled={!form.planId}>
+                      {needsProviders ? "Continue" : "Create Company Account"}
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {step === 4 && (
                 <>
                   <div className="space-y-2">
                     <Label>Mobile Money Providers</Label>
@@ -362,7 +474,7 @@ export default function SignupPage() {
                     </div>
                   </div>
                   <div className="flex gap-4 pt-2">
-                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="w-full" size="lg">Back</Button>
+                    <Button type="button" variant="outline" onClick={() => setStep(3)} className="w-full" size="lg">Back</Button>
                     <Button type="button" onClick={handleNext} className="w-full" size="lg" disabled={loading}>
                       {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                       Create Company Account
