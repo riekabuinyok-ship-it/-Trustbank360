@@ -100,6 +100,7 @@ export async function POST(req: Request) {
         await prisma.subscription.upsert({
           where: { companyId },
           update: {
+            planId,
             status: "TRIALING",
             stripeSessionId: eventData.id,
             stripeSubscriptionId: eventData.subscription,
