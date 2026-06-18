@@ -6,19 +6,52 @@ const prisma = new PrismaClient();
 async function main() {
   const password = await bcrypt.hash('Admin@123', 12);
 
-  // Create mobile money providers
-  const providers = await Promise.all([
-    prisma.mobileMoneyProvider.create({ data: { name: 'MTN MoMo South Sudan', country: 'SSP', code: 'MTN_SS' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'm-Gurush', country: 'SSP', code: 'MGURUSH' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'NilePay', country: 'SSP', code: 'NILEPAY' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'DigiCash', country: 'SSP', code: 'DIGICASH' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'MTN MoMo Uganda', country: 'UGX', code: 'MTN_UG' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'Airtel Money Uganda', country: 'UGX', code: 'AIRTEL_UG' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'M-Pesa Kenya', country: 'KES', code: 'M_PESA' } }),
-    prisma.mobileMoneyProvider.create({ data: { name: 'Airtel Money Kenya', country: 'KES', code: 'AIRTEL_KE' } }),
-  ]);
+  // Create mobile money providers (skip if already exist)
+  const providerData = [
+    { name: 'MTN MoMo South Sudan', country: 'SSP', code: 'MTN_SS' },
+    { name: 'm-Gurush', country: 'SSP', code: 'MGURUSH' },
+    { name: 'NilePay', country: 'SSP', code: 'NILEPAY' },
+    { name: 'DigiCash', country: 'SSP', code: 'DIGICASH' },
+    { name: 'MTN MoMo Uganda', country: 'UGX', code: 'MTN_UG' },
+    { name: 'Airtel Money Uganda', country: 'UGX', code: 'AIRTEL_UG' },
+    { name: 'M-Pesa Kenya', country: 'KES', code: 'M_PESA' },
+    { name: 'Airtel Money Kenya', country: 'KES', code: 'AIRTEL_KE' },
+  ]
+  const providers = await Promise.all(
+    providerData.map((p) =>
+      prisma.mobileMoneyProvider.upsert({
+        where: { code: p.code },
+        update: {},
+        create: p,
+      })
+    )
+  );
 
-  // Create company
+  // Create default subscription plans (upsert by name)
+  const planData = [
+    { name: 'Small Company', description: 'For small money transfer businesses', price: 10, currency: 'USD', durationDays: 30, trialDays: 30, maxBranches: 2, maxStaff: 5, maxCurrencies: 2, features: ['Up to 2 Branches', 'Up to 5 Staff Users', 'Basic Money Transfers', 'Customer Management', 'Basic Reports', 'Email Support', 'Secure Cloud Hosting', 'Branch Wallets'], isActive: true },
+    { name: 'Medium Company', description: 'For growing remittance agencies', price: 30, currency: 'USD', durationDays: 30, trialDays: 60, maxBranches: 10, maxStaff: 25, maxCurrencies: 6, features: ['Up to 10 Branches', 'Up to 25 Staff Users', 'Unlimited Transfers', 'Branch Wallets', 'KYC & Compliance', 'Advanced Reports', 'Priority Email & Chat Support', 'Branch Performance Analytics', 'Audit Logs', 'Basic API Access', 'Custom Branding'], isActive: true },
+    { name: 'Enterprise', description: 'For large-scale financial institutions', price: 60, currency: 'USD', durationDays: 30, trialDays: 90, maxBranches: 999999, maxStaff: 999999, maxCurrencies: 999999, features: ['Unlimited Branches', 'Unlimited Staff Users', 'Unlimited Transfers', 'Branch Wallets', 'Advanced KYC/AML', 'Advanced Analytics', 'Custom Reports', '24/7 Dedicated Support', 'Dedicated Account Manager', 'Priority Processing', 'Full API Access', 'Custom Integrations', 'Custom Branding & Domain', 'Enterprise Security Features', 'Unlimited Currencies'], isActive: true },
+  ]
+  const plans = await Promise.all(
+    planData.map(async (p) => {
+      const existing = await prisma.subscriptionPlan.findFirst({ where: { name: p.name } })
+      if (existing) {
+        return prisma.subscriptionPlan.update({ where: { id: existing.id }, data: p })
+      }
+      return prisma.subscriptionPlan.create({ data: p })
+    })
+  );
+
+  // Create company (skip if demo company exists)
+  const existingCompany = await prisma.company.findFirst({ where: { name: 'TrustBank South Sudan Ltd' } })
+  if (existingCompany) {
+    console.log('Seed already run — plans updated successfully')
+    console.log('Subscription Plans:')
+    plans.forEach((p, i) => console.log(`  ${i + 1}. ${p.name} - $${p.price}/month`))
+    return
+  }
+
   const company = await prisma.company.create({
     data: {
       name: 'TrustBank South Sudan Ltd',
@@ -168,13 +201,6 @@ async function main() {
       companyId: company.id,
     },
   });
-
-  // Create default subscription plans
-  const plans = await Promise.all([
-    prisma.subscriptionPlan.create({ data: { name: 'Small Company', description: 'For small money transfer businesses', price: 10, currency: 'USD', durationDays: 30, trialDays: 30, maxBranches: 2, maxStaff: 5, maxCurrencies: 2, features: ['Up to 2 Branches', 'Up to 5 Staff Users', 'Basic Money Transfers', 'Customer Management', 'Basic Reports', 'Email Support', 'Secure Cloud Hosting', 'Branch Wallets'], isActive: true } }),
-    prisma.subscriptionPlan.create({ data: { name: 'Medium Company', description: 'For growing remittance agencies', price: 30, currency: 'USD', durationDays: 30, trialDays: 60, maxBranches: 10, maxStaff: 25, maxCurrencies: 6, features: ['Up to 10 Branches', 'Up to 25 Staff Users', 'Unlimited Transfers', 'Branch Wallets', 'KYC & Compliance', 'Advanced Reports', 'Priority Email & Chat Support', 'Branch Performance Analytics', 'Audit Logs', 'Basic API Access', 'Custom Branding'], isActive: true } }),
-    prisma.subscriptionPlan.create({ data: { name: 'Enterprise', description: 'For large-scale financial institutions', price: 60, currency: 'USD', durationDays: 30, trialDays: 90, maxBranches: 999999, maxStaff: 999999, maxCurrencies: 999999, features: ['Unlimited Branches', 'Unlimited Staff Users', 'Unlimited Transfers', 'Branch Wallets', 'Advanced KYC/AML', 'Advanced Analytics', 'Custom Reports', '24/7 Dedicated Support', 'Dedicated Account Manager', 'Priority Processing', 'Full API Access', 'Custom Integrations', 'Custom Branding & Domain', 'Enterprise Security Features', 'Unlimited Currencies'], isActive: true } }),
-  ]);
 
   // Create default platform settings
   await prisma.platformSetting.create({
