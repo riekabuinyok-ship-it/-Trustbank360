@@ -112,6 +112,7 @@ model Company {
   customDomain         String?
   isActive             Boolean   @default(true)
   onboardingComplete   Boolean   @default(false)
+  overLimit            Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

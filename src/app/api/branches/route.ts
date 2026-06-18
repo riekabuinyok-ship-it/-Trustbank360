@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
-import { enforceBranchLimit } from "@/lib/plan-enforcement"
+import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -30,14 +30,29 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const branches = await prisma.branch.findMany({ where: { companyId: user.companyId } })
 
-    await enforceBranchLimit(user.companyId)
+    const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { overLimit: true } })
+    if (company?.overLimit) {
+      return NextResponse.json({
+        success: false,
+        errorCode: "COMPANY_OVER_LIMIT",
+        message: "Your company has exceeded its plan limits. Please upgrade your plan to continue creating resources.",
+        usage: 0,
+        limit: "N/A",
+        plan: "Current",
+        upgradeRequired: true,
+        suggestedPlan: null,
+      }, { status: 403 })
+    }
+
+    await checkPlanLimit({ companyId: user.companyId, feature: "branches" })
+
+    const existingBranches = await prisma.branch.findMany({ where: { companyId: user.companyId }, select: { id: true } })
 
     const branch = await prisma.branch.create({
       data: {
         name: body.name,
-        code: generateBranchCode(body.name, branches.length),
+        code: generateBranchCode(body.name, existingBranches.length),
         country: body.country,
         state: body.state,
         city: body.city,
@@ -50,6 +65,7 @@ export async function POST(request: Request) {
 
     // Create wallets for the new branch
     const currencies = ["SSP", "USD", "KES", "UGX"]
+    await checkPlanLimit({ companyId: user.companyId, feature: "currencies" })
     await prisma.wallet.createMany({
       data: currencies.map((currency) => ({
         currency: currency as any,
@@ -73,6 +89,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(branch)
   } catch (error) {
+    if (error instanceof PlanEnforcementError) {
+      return NextResponse.json(error.toJSON(), { status: 403 })
+    }
     return NextResponse.json({ error: "Failed to create branch" }, { status: 500 })
   }
 }

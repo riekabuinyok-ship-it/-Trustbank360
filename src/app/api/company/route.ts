@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -42,6 +43,17 @@ export async function PATCH(request: Request) {
 
   const body = await request.json()
   const { name, email, phone, address, website, primaryColor, secondaryColor, logo } = body
+
+  if (primaryColor !== undefined || secondaryColor !== undefined || logo !== undefined) {
+    try {
+      await checkPlanLimit({ companyId: user.companyId, feature: "customBranding" })
+    } catch (error) {
+      if (error instanceof PlanEnforcementError) {
+        return NextResponse.json(error.toJSON(), { status: 403 })
+      }
+      throw error
+    }
+  }
 
   const updatedCompany = await prisma.company.update({
     where: { id: user.companyId },

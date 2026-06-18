@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import { enforceStaffLimit } from "@/lib/plan-enforcement"
+import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -31,7 +31,21 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    await enforceStaffLimit(user.companyId)
+    const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { overLimit: true } })
+    if (company?.overLimit) {
+      return NextResponse.json({
+        success: false,
+        errorCode: "COMPANY_OVER_LIMIT",
+        message: "Your company has exceeded its plan limits. Please upgrade your plan to continue creating resources.",
+        usage: 0,
+        limit: "N/A",
+        plan: "Current",
+        upgradeRequired: true,
+        suggestedPlan: null,
+      }, { status: 403 })
+    }
+
+    await checkPlanLimit({ companyId: user.companyId, feature: "staff" })
 
     const tempPassword = Math.random().toString(36).slice(-10)
     const hashedPassword = await bcrypt.hash(tempPassword, 12)
@@ -64,6 +78,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ...staff, tempPassword })
   } catch (error) {
+    if (error instanceof PlanEnforcementError) {
+      return NextResponse.json(error.toJSON(), { status: 403 })
+    }
     return NextResponse.json({ error: "Failed to invite staff" }, { status: 500 })
   }
 }
