@@ -43,8 +43,6 @@ const PLAN_FEATURES: Record<string, PlanFeatures> = {
   },
 }
 
-const stripe = getStripe()
-
 export function getPlanFeatures(planName: string): PlanFeatures {
   return PLAN_FEATURES[planName] || PLAN_FEATURES["Small Company"]
 }
@@ -79,7 +77,7 @@ export async function getCompanySubscription(companyId: string) {
 }
 
 async function getOrCreatePrice(plan: { id: string; name: string; price: number; currency: string }) {
-  const existingPrices = await stripe.prices.search({
+  const existingPrices = await getStripe().prices.search({
     query: `metadata["planId"]:"${plan.id}"`,
   })
 
@@ -87,7 +85,7 @@ async function getOrCreatePrice(plan: { id: string; name: string; price: number;
     return existingPrices.data[0]
   }
 
-  const existingProducts = await stripe.products.search({
+  const existingProducts = await getStripe().products.search({
     query: `metadata["planId"]:"${plan.id}"`,
   })
 
@@ -95,14 +93,14 @@ async function getOrCreatePrice(plan: { id: string; name: string; price: number;
   if (existingProducts.data.length > 0) {
     productId = existingProducts.data[0].id
   } else {
-    const product = await stripe.products.create({
+    const product = await getStripe().products.create({
       name: plan.name,
       metadata: { planId: plan.id },
     })
     productId = product.id
   }
 
-  const price = await stripe.prices.create({
+  const price = await getStripe().prices.create({
     product: productId,
     unit_amount: Math.round(plan.price * 100),
     currency: plan.currency.toLowerCase(),
@@ -120,7 +118,7 @@ export async function createStripeSubscription(companyId: string, planId: string
   const trialDays = getTrialDays(plan.name)
   const price = await getOrCreatePrice(plan)
 
-  const subscription = await stripe.subscriptions.create({
+  const subscription = await getStripe().subscriptions.create({
     customer: customerId,
     items: [{ price: price.id, quantity: 1 }],
     trial_period_days: trialDays,
@@ -133,7 +131,7 @@ export async function createStripeSubscription(companyId: string, planId: string
 }
 
 export async function createStripeCustomer(companyId: string, email: string, name: string) {
-  const customer = await stripe.customers.create({
+  const customer = await getStripe().customers.create({
     email,
     name,
     metadata: { companyId },
@@ -187,11 +185,11 @@ export async function upgradeSubscription(companyId: string, newPlanId: string) 
   if (!newPlan) throw new Error("Plan not found")
 
   if (sub.stripeSubscriptionId) {
-    const stripeSub = await stripe.subscriptions.retrieve(sub.stripeSubscriptionId)
+    const stripeSub = await getStripe().subscriptions.retrieve(sub.stripeSubscriptionId)
     const subscriptionItemId = stripeSub.items.data[0].id
     const price = await getOrCreatePrice(newPlan)
 
-    await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+    await getStripe().subscriptions.update(sub.stripeSubscriptionId, {
       items: [{ id: subscriptionItemId, price: price.id }],
       metadata: { companyId, planId: newPlanId },
     })
@@ -212,11 +210,11 @@ export async function downgradeSubscription(companyId: string, newPlanId: string
 
   if (sub.stripeSubscriptionId) {
     try {
-      const stripeSub = await stripe.subscriptions.retrieve(sub.stripeSubscriptionId)
+      const stripeSub = await getStripe().subscriptions.retrieve(sub.stripeSubscriptionId)
       const subscriptionItemId = stripeSub.items.data[0].id
       const price = await getOrCreatePrice(newPlan)
 
-      await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+      await getStripe().subscriptions.update(sub.stripeSubscriptionId, {
         items: [{ id: subscriptionItemId, price: price.id }],
         metadata: { companyId, planId: newPlanId },
       })
