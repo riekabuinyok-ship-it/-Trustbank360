@@ -256,8 +256,8 @@ export function MobileNav() {
 
       {open && (
         <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setOpen(false)}>
-          <div className="fixed left-0 top-0 bottom-0 w-72 bg-white dark:bg-surface-900 p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
+          <div className="fixed left-0 top-0 bottom-0 w-72 bg-white dark:bg-surface-900 flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
                   <Banknote className="h-5 w-5 text-white" />
@@ -268,7 +268,7 @@ export function MobileNav() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="space-y-1">
+            <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
               {navItems.map((item: any) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                 return (
@@ -296,7 +296,7 @@ export function MobileNav() {
                 )
               })}
             </nav>
-            <div className="absolute bottom-4 left-4 right-4">
+            <div className="border-t border-surface-200 dark:border-surface-700 p-4">
               <button
                 onClick={() => setShowLogoutDialog(true)}
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/20"
