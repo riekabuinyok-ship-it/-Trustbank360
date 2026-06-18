@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { X, ArrowUpCircle, CreditCard, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -21,6 +22,7 @@ interface PlanLimitModalProps {
 }
 
 export default function PlanLimitModal({ error, onClose }: PlanLimitModalProps) {
+  const router = useRouter()
   if (!error) return null
 
   const usagePercent = error.usage
@@ -88,7 +90,7 @@ export default function PlanLimitModal({ error, onClose }: PlanLimitModalProps) 
             {error.suggestedPlan && (
               <Button
                 className="w-full gap-2"
-                onClick={() => window.location.href = "/company/billing"}
+                onClick={() => router.push("/company/billing")}
               >
                 <ArrowUpCircle className="h-4 w-4" />
                 Upgrade to {error.suggestedPlan}
@@ -97,10 +99,10 @@ export default function PlanLimitModal({ error, onClose }: PlanLimitModalProps) 
             <Button
               variant="outline"
               className="w-full gap-2"
-              onClick={() => window.location.href = "/pricing"}
+              onClick={() => router.push("/company/billing")}
             >
               <CreditCard className="h-4 w-4" />
-              View Plans & Pricing
+              Open Billing
             </Button>
             <Button variant="ghost" className="w-full text-xs" onClick={onClose}>
               Dismiss
