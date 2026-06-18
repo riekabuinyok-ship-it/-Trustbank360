@@ -347,7 +347,7 @@ export function MobileBottomNav() {
     { href: "/company/transfers", label: "Transfers", icon: ArrowLeftRight },
     { href: "/company/messages", label: "Messages", icon: Bell },
     { href: "/company/settings", label: "Settings", icon: Settings },
-    { href: "/company/customers", label: "Customers", icon: Users },
+
   ]
 
   return (
