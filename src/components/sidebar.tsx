@@ -338,6 +338,7 @@ export function MobileBottomNav() {
   const { data: session } = useSession()
   const user = session?.user as any
   const unreadMessages = useUnreadMessages()
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   if (!user) return null
 
@@ -346,37 +347,62 @@ export function MobileBottomNav() {
     { href: "/company/transfers", label: "Transfers", icon: ArrowLeftRight },
     { href: "/company/messages", label: "Messages", icon: Bell },
     { href: "/company/settings", label: "Settings", icon: Settings },
-    { href: "/company/customers", label: "Profile", icon: UserIcon },
+    { href: "/company/customers", label: "Customers", icon: Users },
   ]
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 px-2 pb-safe">
-      <div className="flex items-center justify-around h-16">
-        {items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                isActive
-                  ? "text-primary-600 dark:text-primary-400"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="relative">
-                <item.icon className="h-5 w-5" />
-                {item.href === "/messages" && unreadMessages > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">
-                    {unreadMessages > 9 ? "9+" : unreadMessages}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
+    <>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 px-2 pb-safe">
+        <div className="flex items-center justify-around h-16">
+          {items.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
+                  isActive
+                    ? "text-primary-600 dark:text-primary-400"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="relative">
+                  <item.icon className="h-5 w-5" />
+                  {item.href === "/messages" && unreadMessages > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            )
+          })}
+          <button
+            onClick={() => setShowLogoutDialog(true)}
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors text-muted-foreground hover:text-danger-500"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Sign Out</span>
+          </button>
+        </div>
+      </nav>
+
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sign Out</DialogTitle>
+            <DialogDescription>Are you sure you want to sign out?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
