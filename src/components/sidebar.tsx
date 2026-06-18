@@ -238,7 +238,7 @@ export function MobileNav() {
         <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
           <Menu className="h-5 w-5" />
         </button>
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/company/dashboard" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
             <Banknote className="h-4 w-4 text-white" />
           </div>
@@ -342,11 +342,11 @@ export function MobileBottomNav() {
   if (!user) return null
 
   const items = [
-    { href: "/dashboard", label: "Home", icon: Home },
-    { href: "/transfers", label: "Transfers", icon: ArrowLeftRight },
-    { href: "/messages", label: "Messages", icon: Bell },
-    { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/customers", label: "Profile", icon: UserIcon },
+    { href: "/company/dashboard", label: "Home", icon: Home },
+    { href: "/company/transfers", label: "Transfers", icon: ArrowLeftRight },
+    { href: "/company/messages", label: "Messages", icon: Bell },
+    { href: "/company/settings", label: "Settings", icon: Settings },
+    { href: "/company/customers", label: "Profile", icon: UserIcon },
   ]
 
   return (
