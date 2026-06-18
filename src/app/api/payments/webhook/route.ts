@@ -151,7 +151,18 @@ export async function POST(req: Request) {
       } catch {
         log("ERROR", `[${requestId}] Could not parse body as JSON for debugging`)
       }
-      return NextResponse.json({ error: "Invalid signature", requestId, bodyLength: rawBody.length }, { status: 400 })
+      return NextResponse.json({
+        error: "Invalid signature",
+        requestId,
+        diagnostics: {
+          bodyLength: rawBody.length,
+          timestamp: sigTimestamp,
+          sigCount: sigValues.length,
+          expectedPrefix: expectedSig.slice(0, 16),
+          receivedPrefix: sigValues[0]?.slice(0, 16) || "(none)",
+          sigMatch,
+        },
+      }, { status: 400 })
     }
 
     // ─── 5. Idempotency check ──────────────────────────────────────────────
