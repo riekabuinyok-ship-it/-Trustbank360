@@ -4,15 +4,13 @@ import {
   getLimit,
   getFeature,
   getApiAccess,
-  getUpgradeSuggestion,
   ERROR_CODES,
-  UPGRADE_PATH,
   type FeatureName,
-  type LimitFeature,
   type BooleanFeature,
   type ApiAccessLevel,
   type PlanName,
 } from "./plan-config"
+import { formatPlanError, formatApiError, type ApiErrorResponse } from "./api-error"
 
 export interface PlanLimitCheckParams {
   companyId: string
@@ -21,47 +19,17 @@ export interface PlanLimitCheckParams {
   requiredApiLevel?: ApiAccessLevel
 }
 
-export interface PlanLimitError {
-  success: false
-  errorCode: string
-  message: string
-  usage: number
-  limit: number | string
-  plan: string
-  upgradeRequired: true
-  suggestedPlan: string | null
-}
-
 export class PlanEnforcementError extends Error {
-  public readonly errorCode: string
-  public readonly usage: number
-  public readonly limit: number | string
-  public readonly planName: string
-  public readonly upgradeRequired: true
-  public readonly suggestedPlan: string | null
+  public readonly apiError: ApiErrorResponse
 
-  constructor(error: PlanLimitError) {
+  constructor(error: ApiErrorResponse) {
     super(error.message)
     this.name = "PlanEnforcementError"
-    this.errorCode = error.errorCode
-    this.usage = error.usage
-    this.limit = error.limit
-    this.planName = error.plan
-    this.upgradeRequired = true
-    this.suggestedPlan = error.suggestedPlan
+    this.apiError = error
   }
 
-  toJSON(): PlanLimitError {
-    return {
-      success: false,
-      errorCode: this.errorCode,
-      message: this.message,
-      usage: this.usage,
-      limit: this.limit,
-      plan: this.planName,
-      upgradeRequired: true,
-      suggestedPlan: this.suggestedPlan,
-    }
+  toJSON(): ApiErrorResponse {
+    return this.apiError
   }
 }
 
@@ -72,62 +40,15 @@ async function getCompanyPlan(companyId: string): Promise<{ planName: string; pl
   })
 
   if (!sub) {
-    throw new PlanEnforcementError({
-      success: false,
-      errorCode: "NO_SUBSCRIPTION",
-      message: "Your company does not have an active subscription. Please subscribe to a plan.",
-      usage: 0,
-      limit: "N/A",
-      plan: "None",
-      upgradeRequired: true,
-      suggestedPlan: "Small Company",
-    })
+    throw new PlanEnforcementError(formatApiError("NO_SUBSCRIPTION"))
   }
 
   const planDef = getPlanByName(sub.plan.name)
   if (!planDef) {
-    throw new PlanEnforcementError({
-      success: false,
-      errorCode: "UNKNOWN_PLAN",
-      message: `Your current plan "${sub.plan.name}" is not recognized. Please contact support.`,
-      usage: 0,
-      limit: "N/A",
-      plan: sub.plan.name,
-      upgradeRequired: true,
-      suggestedPlan: "Small Company",
-    })
+    throw new PlanEnforcementError(formatApiError("UNKNOWN_PLAN", { plan: sub.plan.name }))
   }
 
   return { planName: sub.plan.name, planId: sub.planId }
-}
-
-function makeError(params: {
-  feature: FeatureName
-  planName: string
-  usage: number
-  limit: number | string
-  customMessage?: string
-}): PlanLimitError {
-  const upgrade = getUpgradeSuggestion(params.planName)
-  const nextPlan = UPGRADE_PATH[params.planName as PlanName]
-  const nextPlanName = nextPlan || "Enterprise"
-
-  const message =
-    params.customMessage ||
-    (typeof params.limit === "number"
-      ? `You have reached the ${params.feature} limit for your ${params.planName} plan (${params.usage}/${params.limit}). ${upgrade?.message || ""}`
-      : `${params.feature} is not available on your ${params.planName} plan. ${upgrade?.message || ""}`)
-
-  return {
-    success: false,
-    errorCode: ERROR_CODES[params.feature],
-    message: message.trim(),
-    usage: params.usage,
-    limit: params.limit,
-    plan: params.planName,
-    upgradeRequired: true,
-    suggestedPlan: nextPlanName,
-  }
 }
 
 export async function checkPlanLimit(params: PlanLimitCheckParams): Promise<void> {
@@ -140,7 +61,7 @@ export async function checkPlanLimit(params: PlanLimitCheckParams): Promise<void
       if (limit === Infinity) return
       const count = params.currentUsage ?? (await prisma.branch.count({ where: { companyId } }))
       if (count >= limit) {
-        throw new PlanEnforcementError(makeError({ feature, planName, usage: count, limit }))
+        throw new PlanEnforcementError(formatPlanError("BRANCH_LIMIT_REACHED", planName, count, limit))
       }
       return
     }
@@ -150,7 +71,7 @@ export async function checkPlanLimit(params: PlanLimitCheckParams): Promise<void
       if (limit === Infinity) return
       const count = params.currentUsage ?? (await prisma.user.count({ where: { companyId } }))
       if (count >= limit) {
-        throw new PlanEnforcementError(makeError({ feature, planName, usage: count, limit }))
+        throw new PlanEnforcementError(formatPlanError("STAFF_LIMIT_REACHED", planName, count, limit))
       }
       return
     }
@@ -163,20 +84,49 @@ export async function checkPlanLimit(params: PlanLimitCheckParams): Promise<void
         where: { companyId },
       })
       const count = walletCurrencies.length
-      if (count >= limit && !params.currentUsage) {
-        throw new PlanEnforcementError(makeError({ feature, planName, usage: count, limit }))
+      if (count >= limit) {
+        throw new PlanEnforcementError(formatPlanError("CURRENCY_LIMIT_REACHED", planName, count, limit))
       }
       return
     }
 
-    case "auditLogs":
-    case "customBranding":
+    case "auditLogs": {
+      const allowed = getFeature(planName, "auditLogs")
+      if (!allowed) {
+        throw new PlanEnforcementError(formatApiError("AUDIT_LOGS_NOT_AVAILABLE", {
+          plan: planName,
+          upgradeRequired: true,
+          suggestedPlan: "Medium Company",
+        }))
+      }
+      return
+    }
+
+    case "customBranding": {
+      const allowed = getFeature(planName, "customBranding")
+      if (!allowed) {
+        throw new PlanEnforcementError(formatApiError("CUSTOM_BRANDING_NOT_AVAILABLE", {
+          plan: planName,
+          upgradeRequired: true,
+          suggestedPlan: "Medium Company",
+        }))
+      }
+      return
+    }
+
     case "advancedAnalytics":
     case "customReports":
     case "dedicatedSupport": {
       const allowed = getFeature(planName, feature as BooleanFeature)
       if (!allowed) {
-        throw new PlanEnforcementError(makeError({ feature, planName, usage: 0, limit: "Not included" }))
+        const code = feature === "advancedAnalytics" ? "ANALYTICS_NOT_AVAILABLE"
+          : feature === "customReports" ? "CUSTOM_REPORTS_NOT_AVAILABLE"
+          : "DEDICATED_SUPPORT_NOT_AVAILABLE"
+        throw new PlanEnforcementError(formatApiError(code, {
+          plan: planName,
+          upgradeRequired: true,
+          suggestedPlan: feature === "dedicatedSupport" ? "Enterprise" : "Medium Company",
+        }))
       }
       return
     }
@@ -186,9 +136,11 @@ export async function checkPlanLimit(params: PlanLimitCheckParams): Promise<void
       const current = getApiAccess(planName)
       const levels: Record<ApiAccessLevel, number> = { none: 0, basic: 1, full: 2 }
       if (levels[current] < levels[required]) {
-        throw new PlanEnforcementError(
-          makeError({ feature, planName, usage: levels[current], limit: levels[required], customMessage: `API access is not available on your ${planName} plan. Upgrade to ${required === "full" ? "Enterprise" : "Medium Company or higher"} for API access.` })
-        )
+        throw new PlanEnforcementError(formatApiError("API_ACCESS_NOT_AVAILABLE", {
+          plan: planName,
+          upgradeRequired: true,
+          suggestedPlan: required === "full" ? "Enterprise" : "Medium Company",
+        }))
       }
       return
     }
@@ -212,8 +164,4 @@ export async function getCurrentUsage(companyId: string, feature: FeatureName): 
     return walletCurrencies.length
   }
   return 0
-}
-
-export async function enforcePlanOrThrow(params: PlanLimitCheckParams): Promise<void> {
-  await checkPlanLimit(params)
 }

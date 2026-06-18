@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
+import { formatApiError } from "@/lib/api-error"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -33,16 +34,7 @@ export async function POST(request: Request) {
 
     const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { overLimit: true } })
     if (company?.overLimit) {
-      return NextResponse.json({
-        success: false,
-        errorCode: "COMPANY_OVER_LIMIT",
-        message: "Your company has exceeded its plan limits. Please upgrade your plan to continue creating resources.",
-        usage: 0,
-        limit: "N/A",
-        plan: "Current",
-        upgradeRequired: true,
-        suggestedPlan: null,
-      }, { status: 403 })
+      return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
     }
 
     await checkPlanLimit({ companyId: user.companyId, feature: "branches" })
@@ -92,6 +84,6 @@ export async function POST(request: Request) {
     if (error instanceof PlanEnforcementError) {
       return NextResponse.json(error.toJSON(), { status: 403 })
     }
-    return NextResponse.json({ error: "Failed to create branch" }, { status: 500 })
+    return NextResponse.json(formatApiError("BRANCH_LIMIT_REACHED", { upgradeRequired: false, title: "Branch creation failed", message: "We couldn't create this branch. Please try again or contact support if the issue persists." }), { status: 500 })
   }
 }

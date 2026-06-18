@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { UserPlus, Loader2, ArrowLeft } from "lucide-react"
 import toast from "react-hot-toast"
+import PlanLimitModal from "@/components/ui/plan-limit-modal"
 
 const roles = [
   { value: "COMPANY_ADMIN", label: "Company Admin" },
@@ -21,6 +22,7 @@ const roles = [
 export default function NewStaffPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [planError, setPlanError] = useState<any>(null)
   const [branches, setBranches] = useState<any[]>([])
   const [form, setForm] = useState({
     name: "",
@@ -50,7 +52,11 @@ export default function NewStaffPage() {
       })
       if (!res.ok) {
         const data = await res.json()
-        toast.error(data.error || "Failed to invite staff")
+        if (data.success === false && data.errorCode) {
+          setPlanError(data)
+          return
+        }
+        toast.error(data.error || data.message || "Staff invitation failed")
         return
       }
       const data = await res.json()
@@ -141,6 +147,7 @@ export default function NewStaffPage() {
           </Button>
         </div>
       </form>
+      <PlanLimitModal error={planError} onClose={() => setPlanError(null)} />
     </div>
   )
 }

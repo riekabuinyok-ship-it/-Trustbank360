@@ -1,0 +1,118 @@
+export interface ApiErrorResponse {
+  success: false
+  errorCode: string
+  title: string
+  message: string
+  usage?: { used: number; limit: number }
+  plan?: string
+  upgradeRequired: boolean
+  suggestedPlan?: string | null
+}
+
+export interface ApiSuccessResponse<T = any> {
+  success: true
+  data: T
+}
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse
+
+export const ERROR_TITLES: Record<string, string> = {
+  BRANCH_LIMIT_REACHED: "Branch limit reached",
+  STAFF_LIMIT_REACHED: "Staff limit reached",
+  CURRENCY_LIMIT_REACHED: "Currency limit reached",
+  FEATURE_NOT_AVAILABLE: "Feature not available",
+  AUDIT_LOGS_NOT_AVAILABLE: "Audit logs not available",
+  API_ACCESS_NOT_AVAILABLE: "API access not available",
+  CUSTOM_BRANDING_NOT_AVAILABLE: "Custom branding not available",
+  ANALYTICS_NOT_AVAILABLE: "Analytics not available",
+  CUSTOM_REPORTS_NOT_AVAILABLE: "Custom reports not available",
+  DEDICATED_SUPPORT_NOT_AVAILABLE: "Dedicated support not available",
+  COMPANY_OVER_LIMIT: "Plan limits exceeded",
+  NO_SUBSCRIPTION: "No active subscription",
+  UNKNOWN_PLAN: "Unknown plan",
+}
+
+export const ERROR_MESSAGES: Record<string, (...args: any[]) => string> = {
+  BRANCH_LIMIT_REACHED: (plan) =>
+    `You've reached the maximum number of branches for your ${plan || "current"} plan. Upgrade to add more branches.`,
+  STAFF_LIMIT_REACHED: (plan) =>
+    `You've reached the maximum number of staff users allowed on your ${plan || "current"} plan. Upgrade to invite more team members.`,
+  CURRENCY_LIMIT_REACHED: (plan) =>
+    `You cannot add more currencies under your ${plan || "current"} plan. Upgrade to support additional currencies.`,
+  FEATURE_NOT_AVAILABLE: (plan, _used, _limit, feature) =>
+    `"${feature}" is not available on your ${plan || "current"} plan. Upgrade to access this feature.`,
+  AUDIT_LOGS_NOT_AVAILABLE: () =>
+    "Audit logs are available on Medium and Enterprise plans. Upgrade to view audit history.",
+  API_ACCESS_NOT_AVAILABLE: () =>
+    "API access is not included in your current plan. Upgrade to Medium or Enterprise for API access.",
+  CUSTOM_BRANDING_NOT_AVAILABLE: () =>
+    "Custom branding is not available on your current plan. Upgrade to customize your company appearance.",
+  COMPANY_OVER_LIMIT: () =>
+    "Your company has exceeded its plan limits. Upgrade to continue creating resources.",
+  NO_SUBSCRIPTION: () =>
+    "Your company does not have an active subscription. Please subscribe to a plan to get started.",
+  UNKNOWN_PLAN: (plan) =>
+    `Your current plan "${plan || "Unknown"}" is not recognized. Please contact support.`,
+}
+
+export function formatApiError(
+  errorCode: string,
+  overrides?: {
+    title?: string
+    message?: string
+    usage?: { used: number; limit: number }
+    plan?: string
+    upgradeRequired?: boolean
+    suggestedPlan?: string | null
+  }
+): ApiErrorResponse {
+  const title = overrides?.title || ERROR_TITLES[errorCode] || "Error"
+  const msgFn = ERROR_MESSAGES[errorCode]
+  const message = overrides?.message || (msgFn ? msgFn(overrides?.plan, overrides?.usage?.used, overrides?.usage?.limit) : "An unexpected error occurred. Please try again.")
+
+  return {
+    success: false,
+    errorCode,
+    title,
+    message,
+    usage: overrides?.usage,
+    plan: overrides?.plan,
+    upgradeRequired: overrides?.upgradeRequired ?? true,
+    suggestedPlan: overrides?.suggestedPlan ?? null,
+  }
+}
+
+export function formatPlanError(
+  errorCode: string,
+  planName: string,
+  used: number,
+  limit: number | string,
+  feature?: string
+): ApiErrorResponse {
+  const title = ERROR_TITLES[errorCode] || "Plan limit reached"
+  const msgFn = ERROR_MESSAGES[errorCode]
+
+  let message: string
+  if (msgFn) {
+    message = msgFn(planName, used, typeof limit === "number" ? limit : undefined, feature)
+  } else {
+    const limitStr = typeof limit === "number" ? `${used}/${limit}` : limit
+    message = `You've reached the limit for your ${planName} plan (${limitStr}). Upgrade to continue.`
+  }
+
+  return {
+    success: false,
+    errorCode,
+    title,
+    message,
+    usage: typeof limit === "number" ? { used, limit } : undefined,
+    plan: planName,
+    upgradeRequired: true,
+    suggestedPlan: planName === "Small Company" ? "Medium Company" : planName === "Medium Company" ? "Enterprise" : null,
+  }
+}
+
+export function generateUpgradeMessage(suggestedPlan: string | null): string {
+  if (!suggestedPlan) return ""
+  return `Upgrade to ${suggestedPlan} to unlock this feature.`
+}

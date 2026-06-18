@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Building2, Loader2, ArrowLeft } from "lucide-react"
 import toast from "react-hot-toast"
+import PlanLimitModal from "@/components/ui/plan-limit-modal"
 
 const countries = ["South Sudan", "Kenya", "Uganda", "United Kingdom", "United States", "Nigeria"]
 
 export default function NewBranchPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [planError, setPlanError] = useState<any>(null)
   const [form, setForm] = useState({
     name: "",
     country: "",
@@ -40,7 +42,11 @@ export default function NewBranchPage() {
       })
       if (!res.ok) {
         const data = await res.json()
-        toast.error(data.error || "Failed to create branch")
+        if (data.success === false && data.errorCode) {
+          setPlanError(data)
+          return
+        }
+        toast.error(data.error || data.message || "Branch creation failed")
         return
       }
       toast.success("Branch created successfully!")
@@ -123,6 +129,7 @@ export default function NewBranchPage() {
           </Button>
         </div>
       </form>
+      <PlanLimitModal error={planError} onClose={() => setPlanError(null)} />
     </div>
   )
 }
