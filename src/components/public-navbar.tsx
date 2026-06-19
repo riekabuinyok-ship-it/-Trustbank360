@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK", label: "Watch Tutorial", external: true },
 ]
 
 export function PublicNavbar() {
@@ -22,17 +23,24 @@ export function PublicNavbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-md">
-              <Banknote className="h-5 w-5 text-white" />
+              <span className="text-white font-bold text-sm">TB</span>
             </div>
-            <span className="text-lg font-bold text-surface-900 dark:text-white">TrustBank<span className="text-primary-500">360</span></span>
+            <span className="text-lg font-bold text-surface-900 dark:text-white">TB<span className="text-primary-500">360</span></span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              (link as any).external ? (
+                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors flex items-center gap-1">
+                  {link.label}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href} className="text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  {link.label}
+                </Link>
+              )
+            )}
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
@@ -53,11 +61,17 @@ export function PublicNavbar() {
       {open && (
         <div className="lg:hidden border-t border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-950">
           <div className="px-4 py-4 space-y-2">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              (link as any).external ? (
+                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+                  {link.label} ↗
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+                  {link.label}
+                </Link>
+              )
+            )}
             <div className="pt-3 border-t border-surface-200 dark:border-surface-800 space-y-2">
               <Link href="/login" onClick={() => setOpen(false)}>
                 <Button variant="outline" className="w-full">Sign In</Button>
