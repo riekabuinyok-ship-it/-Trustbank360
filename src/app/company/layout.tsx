@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import { Sidebar, MobileNav, MobileBottomNav } from "@/components/sidebar"
 import { Breadcrumb } from "@/components/breadcrumb"
+import { NetworkStatusIndicator } from "@/components/network-status"
+import { useBackgroundSync } from "@/lib/sync/use-background-sync"
+import { initConnectionMonitoring } from "@/store/network-store"
 
 function Heartbeat() {
   useEffect(() => {
@@ -82,6 +85,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     checkCompanyStatus()
   }, [status])
 
+  // Initialize offline-first features
+  useBackgroundSync()
+
+  useEffect(() => {
+    initConnectionMonitoring()
+  }, [])
+
   if (status === "loading" || (!checkedCompanyStatus && status === "authenticated")) {
     return <LoadingSpinner />
   }
@@ -120,6 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </main>
       <MobileBottomNav />
+      <NetworkStatusIndicator />
     </div>
   )
 }

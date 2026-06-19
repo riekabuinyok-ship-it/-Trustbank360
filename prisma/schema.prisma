@@ -642,6 +642,50 @@ model ViolationLog {
   @@map("violation_logs")
 }
 
+model SyncQueueItem {
+  id         String   @id
+  companyId  String
+  userId     String
+  tableName  String
+  recordId   String?
+  action     String
+  payload    Json
+  status     String   @default("PENDING")
+  retryCount Int      @default(0)
+  lastError  String?
+  createdAt  DateTime @default(now())
+  syncedAt   DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sync_queue_items")
+}
+
+model SyncConflict {
+  id            String   @id
+  companyId     String
+  tableName     String
+  recordId      String?
+  localPayload  Json
+  serverPayload Json
+  conflictType  String
+  status        String   @default("PENDING_REVIEW")
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  createdById   String
+  createdAt     DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status])
+  @@index([status])
+  @@index([conflictType])
+  @@map("sync_conflicts")
+}
+
 model PlatformSetting {
   id              String  @id @default("platform")
   platformName    String  @default("Trustbank360")

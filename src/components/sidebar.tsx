@@ -27,6 +27,7 @@ import {
   Home,
   Bell,
   User as UserIcon,
+  RefreshCw,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -72,6 +73,7 @@ const iconMap: Record<string, any> = {
   Smartphone,
   Plus,
   ScrollText,
+  RefreshCw,
 }
 
 export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {

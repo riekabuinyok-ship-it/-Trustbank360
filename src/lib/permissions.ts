@@ -113,6 +113,7 @@ export function canViewCompliance(role: UserRole): boolean {
 export function getNavItems(role: UserRole): { href: string; label: string; icon: string }[] {
   const items: { href: string; label: string; icon: string }[] = [
     { href: "/company/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+    { href: "/company/sync-center", label: "Sync Center", icon: "RefreshCw" },
   ]
 
   // Help & Tutorials - all users
