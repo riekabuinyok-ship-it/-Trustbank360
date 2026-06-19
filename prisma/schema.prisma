@@ -131,6 +131,8 @@ model Company {
   subscription       Subscription?
   payments           Payment[]
   violationLogs      ViolationLog[]
+  syncQueueItems     SyncQueueItem[]
+  syncConflicts      SyncConflict[]
 
   @@map("companies")
 }
