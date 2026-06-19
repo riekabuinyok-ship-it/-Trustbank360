@@ -42,7 +42,7 @@ export default function ForceChangePasswordPage() {
         return
       }
       toast.success("Password changed successfully!")
-      router.push("/dashboard")
+      router.push("/company/dashboard")
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred. Please try again.")

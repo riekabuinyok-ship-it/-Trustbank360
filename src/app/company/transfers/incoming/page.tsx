@@ -123,7 +123,7 @@ export default function IncomingTransfersPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => {
-        const isOperational = user?.role === "BRANCH_MANAGER" || user?.role === "TELLER"
+        const isOperational = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager" || user?.role === "TELLER" || user?.role === "teller"
         const isReceiver = row.original.branchLink?.receiverBranchId === user?.branchId
         if (row.original.status === "PENDING" && isOperational && isReceiver) {
           return (

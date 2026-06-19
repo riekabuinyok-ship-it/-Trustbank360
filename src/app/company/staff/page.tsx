@@ -148,7 +148,7 @@ export default function StaffPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Staff Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove <strong>{deleteName}</strong> from your organization? This action cannot be undone. All associated audit logs will be permanently deleted.
+              Are you sure you want to remove <strong>{deleteName}</strong> from your organization? This action cannot be undone. Their audit trail will be preserved for compliance purposes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

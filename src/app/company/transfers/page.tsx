@@ -97,7 +97,7 @@ export default function TransfersPage() {
     t.receiver?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const isSupervisory = user?.role === "COMPANY_OWNER" || user?.role === "COMPANY_ADMIN"
+  const isSupervisory = user?.role === "COMPANY_OWNER" || user?.role === "company_owner" || user?.role === "COMPANY_ADMIN" || user?.role === "company_admin"
   const isSenderBranch = (t: any) => t.branchLink?.senderBranchId === user?.branchId
   const isReceiverBranch = (t: any) => t.branchLink?.receiverBranchId === user?.branchId
 
@@ -233,10 +233,10 @@ export default function TransfersPage() {
     },
   ]
 
-  const isOperational = user?.role === "BRANCH_MANAGER" || user?.role === "TELLER"
+  const isOperational = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager" || user?.role === "TELLER" || user?.role === "teller"
   const t = selected
   const canCancel = t && isSenderBranch(t) && isOperational && t.status === "PENDING"
-  const canReverse = t && isSenderBranch(t) && isOperational && t.status === "PENDING"
+  const canReverse = t && isSenderBranch(t) && isOperational && t.status === "COMPLETED"
   const canProcessPayout = t && isReceiverBranch(t) && isOperational && t.status === "PENDING"
 
   return (

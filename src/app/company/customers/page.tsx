@@ -24,7 +24,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetch(`/api/customers${search ? `?q=${search}` : ""}`)
-      .then((r) => r.json()).then(setCustomers).finally(() => setLoading(false))
+      .then((r) => r.json()).then(setCustomers).catch(() => setCustomers([])).finally(() => setLoading(false))
   }, [search])
 
   async function createCustomer() {

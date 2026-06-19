@@ -29,6 +29,7 @@ export default function NewTransferPage() {
     senderNationality: "",
     senderIdType: "",
     senderIdNumber: "",
+    senderMobile: "",
     receiverName: "",
     receiverPhone: "",
     receiverMobile: "",
@@ -43,8 +44,8 @@ export default function NewTransferPage() {
   })
 
   useEffect(() => {
-    fetch("/api/branches").then((r) => r.json()).then(setBranches)
-    fetch("/api/providers").then((r) => r.json()).then(setProviders)
+    fetch("/api/branches").then((r) => r.json()).then(setBranches).catch(() => setBranches([]))
+    fetch("/api/providers").then((r) => r.json()).then(setProviders).catch(() => setProviders([]))
   }, [])
 
   function updateField(field: string, value: string) {
@@ -137,7 +138,7 @@ export default function NewTransferPage() {
               {(form.transactionType === "MOBILE_TO_CASH" || form.transactionType === "MOBILE_TO_MOBILE") && (
                 <div className="space-y-2">
                   <Label>Sender Mobile Wallet Number</Label>
-                  <Input placeholder="*123*456#" value={form.receiverMobile} onChange={(e) => updateField("receiverMobile", e.target.value)} />
+                  <Input placeholder="*123*456#" value={form.senderMobile} onChange={(e) => updateField("senderMobile", e.target.value)} />
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3">

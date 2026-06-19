@@ -15,7 +15,7 @@ export default function CompliancePage() {
   const [customers, setCustomers] = useState<any[]>([])
 
   useEffect(() => {
-    fetch("/api/customers").then((r) => r.json()).then(setCustomers)
+    fetch("/api/customers").then((r) => r.json()).then(setCustomers).catch(() => setCustomers([]))
   }, [])
 
   async function handleVerification(id: string, status: string) {

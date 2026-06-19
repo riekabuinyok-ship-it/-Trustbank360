@@ -35,8 +35,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Only the sender branch can reverse this transaction" }, { status: 403 })
     }
 
-    if (transfer.status !== "PENDING") {
-      return NextResponse.json({ error: "Can only reverse PENDING transactions" }, { status: 400 })
+    if (transfer.status !== "COMPLETED") {
+      return NextResponse.json({ error: "Can only reverse COMPLETED transactions" }, { status: 400 })
     }
 
     const result = await prisma.$transaction(async (tx) => {

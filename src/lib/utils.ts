@@ -27,11 +27,20 @@ export function generateBranchCode(name: string, index: number): string {
 }
 
 export function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 2,
-  }).format(amount)
+  const safeCurrency = CURRENCY_MAP[currency] || currency
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: safeCurrency,
+      minimumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${currency} ${amount.toFixed(2)}`
+  }
+}
+
+const CURRENCY_MAP: Record<string, string> = {
+  SSP: "USD",
 }
 
 export function calculateCommission(amount: number, rate: number, type: "INCLUDED" | "SEPARATE"): { commission: number; senderAmount: number; receiverAmount: number } {

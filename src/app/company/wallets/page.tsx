@@ -12,7 +12,7 @@ export default function WalletsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/wallets").then((r) => r.json()).then(setWallets).finally(() => setLoading(false))
+    fetch("/api/wallets").then((r) => r.json()).then(setWallets).catch(() => setWallets([])).finally(() => setLoading(false))
   }, [])
 
   const grouped = wallets.reduce((acc: any, w: any) => {

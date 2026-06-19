@@ -122,10 +122,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ error: "Staff member not found in your organization." }, { status: 404 })
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.auditLog.deleteMany({ where: { userId: id, companyId: user.companyId } })
-      await tx.user.delete({ where: { id } })
-    })
+    await prisma.user.delete({ where: { id } })
 
     await prisma.auditLog.create({
       data: {

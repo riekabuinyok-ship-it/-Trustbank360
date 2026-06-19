@@ -28,7 +28,7 @@ export default function NewDepositPage() {
   })
 
   useEffect(() => {
-    fetch("/api/providers").then((r) => r.json()).then(setProviders)
+    fetch("/api/providers").then((r) => r.json()).then(setProviders).catch(() => setProviders([]))
   }, [])
 
   function updateField(field: string, value: string) {

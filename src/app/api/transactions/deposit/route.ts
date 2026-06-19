@@ -47,29 +47,41 @@ export async function POST(request: Request) {
 
     const transactionNumber = generateTransactionNumber()
 
-    const transfer = await prisma.transfer.create({
-      data: {
-        transactionNumber,
-        transactionType: "DEPOSIT",
-        amount,
-        currency,
-        exchangeRate: 1,
-        commission: 0,
-        commissionType: "INCLUDED",
-        totalAmount: amount,
-        senderAmount: amount,
-        receiverAmount: amount,
-        senderId: customer.id,
-        receiverId: customer.id,
-        companyId: user.companyId,
-        issuedById: user.id,
-        paidById: user.id,
-        paidAt: new Date(),
-        mobileProviderId: mobileProviderId || null,
-        receiverMobile: walletNumber || null,
-        notes,
-        status: "COMPLETED",
-      },
+    const transfer = await prisma.$transaction(async (tx) => {
+      const t = await tx.transfer.create({
+        data: {
+          transactionNumber,
+          transactionType: "DEPOSIT",
+          amount,
+          currency,
+          exchangeRate: 1,
+          commission: 0,
+          commissionType: "INCLUDED",
+          totalAmount: amount,
+          senderAmount: amount,
+          receiverAmount: amount,
+          senderId: customer.id,
+          receiverId: customer.id,
+          companyId: user.companyId,
+          issuedById: user.id,
+          paidById: user.id,
+          paidAt: new Date(),
+          mobileProviderId: mobileProviderId || null,
+          receiverMobile: walletNumber || null,
+          notes,
+          status: "COMPLETED",
+        },
+      })
+
+      await tx.branchTransaction.create({
+        data: {
+          transferId: t.id,
+          senderBranchId: branchId || user.branchId,
+          receiverBranchId: branchId || user.branchId,
+        },
+      })
+
+      return t
     })
 
     await prisma.auditLog.create({

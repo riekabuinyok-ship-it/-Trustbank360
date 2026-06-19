@@ -79,10 +79,10 @@ export default function DashboardPage() {
     storeDismissed(STORAGE_KEY_WARNINGS, next)
   }
 
-  const isOperational = role === "BRANCH_MANAGER" || role === "TELLER"
+  const isOperational = role === "BRANCH_MANAGER" || role === "branch_manager" || role === "TELLER" || role === "teller"
   const isSupervisory = role === "COMPANY_OWNER" || role === "company_owner" || role === "COMPANY_ADMIN" || role === "company_admin"
-  const isTeller = role === "TELLER"
-  const isBranchManager = role === "BRANCH_MANAGER"
+  const isTeller = role === "TELLER" || role === "teller"
+  const isBranchManager = role === "BRANCH_MANAGER" || role === "branch_manager"
 
   const mf = data?.moneyFlow || {}
   const cf = data?.commissionFlow || {}
