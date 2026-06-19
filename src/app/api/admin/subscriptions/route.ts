@@ -94,7 +94,7 @@ export async function GET() {
       startDate: s.startDate,
       trialEndsAt: s.trialEndsAt,
       daysRemaining: s.trialEndsAt
-        ? Math.ceil((new Date(s.trialEndsAt).getTime() - nowUtc.getTime()) / 86400000)
+        ? Math.floor((new Date(s.trialEndsAt).getTime() - nowUtc.getTime()) / 86400000)
         : 0,
       status: s.status,
     })),

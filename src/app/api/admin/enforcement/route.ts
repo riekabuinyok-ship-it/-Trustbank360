@@ -119,3 +119,58 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ violation })
 }
+
+export async function DELETE(request: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const user = session.user as any
+
+  if (user.role !== "platform_owner") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { violationId } = body
+
+  if (!violationId) {
+    return NextResponse.json({ error: "violationId is required" }, { status: 400 })
+  }
+
+  const violation = await prisma.violationLog.findUnique({
+    where: { id: violationId },
+    include: { company: { select: { name: true } } },
+  })
+  if (!violation) {
+    return NextResponse.json({ error: "Violation not found" }, { status: 404 })
+  }
+
+  await prisma.violationLog.delete({ where: { id: violationId } })
+
+  await createAuditLog({
+    userId: user.id,
+    action: "ENFORCEMENT_RESOLVED",
+    resource: "COMPANY",
+    details: `Resolved ${violation.action} for company "${violation.company.name}" — ${violation.reason}`,
+    companyId: violation.companyId,
+  })
+
+  const companyUsers = await prisma.user.findMany({
+    where: { companyId: violation.companyId, status: "ACTIVE" },
+    select: { id: true },
+  })
+
+  if (companyUsers.length > 0) {
+    await prisma.notification.createMany({
+      data: companyUsers.map((u) => ({
+        userId: u.id,
+        companyId: violation.companyId,
+        title: "Warning Resolved",
+        message: `The warning has been resolved: ${violation.reason}`,
+        type: "ENFORCEMENT",
+        link: "/company/dashboard",
+      })),
+    })
+  }
+
+  return NextResponse.json({ success: true })
+}

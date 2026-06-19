@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   XCircle,
   FileWarning,
+  Trash2,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -61,6 +62,7 @@ export default function AdminEnforcementPage() {
   const [dialog, setDialog] = useState<ActionDialogState>({ open: false, companyId: "", companyName: "", action: "warn" })
   const [reason, setReason] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [resolveDialog, setResolveDialog] = useState<{ open: boolean; violation: Violation | null }>({ open: false, violation: null })
 
   useEffect(() => {
     fetchData()
@@ -86,6 +88,30 @@ export default function AdminEnforcementPage() {
   function openActionDialog(company: CompanyStatus, action: "suspend" | "reactivate" | "warn") {
     setDialog({ open: true, companyId: company.id, companyName: company.name, action })
     setReason("")
+  }
+
+  async function handleResolve() {
+    if (!resolveDialog.violation) return
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/admin/enforcement", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ violationId: resolveDialog.violation.id }),
+      })
+      if (res.ok) {
+        toast.success("Warning resolved successfully")
+        setResolveDialog({ open: false, violation: null })
+        fetchData()
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to resolve warning")
+      }
+    } catch {
+      toast.error("Failed to resolve warning")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function confirmAction() {
@@ -150,6 +176,24 @@ export default function AdminEnforcementPage() {
       accessorKey: "createdAt",
       header: "Date",
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        if (row.original.action !== "warn") return null
+        return (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+            onClick={() => setResolveDialog({ open: true, violation: row.original })}
+          >
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            Resolve
+          </Button>
+        )
+      },
     },
   ]
 
@@ -249,6 +293,40 @@ export default function AdminEnforcementPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={resolveDialog.open} onOpenChange={(open) => setResolveDialog({ ...resolveDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Resolve Warning
+            </DialogTitle>
+            <DialogDescription>
+              This will remove the warning for <strong>{resolveDialog.violation?.company?.name}</strong> and notify their users.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 rounded-lg bg-surface-50 dark:bg-surface-800 space-y-2">
+            <p className="text-sm font-medium">Original Warning</p>
+            <p className="text-sm text-muted-foreground">{resolveDialog.violation?.reason}</p>
+            <p className="text-xs text-muted-foreground">
+              Issued {resolveDialog.violation?.createdAt ? new Date(resolveDialog.violation.createdAt).toLocaleDateString() : ""}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolveDialog({ open: false, violation: null })}>
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleResolve}
+              disabled={submitting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {submitting ? "Processing..." : "Resolve Warning"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialog.open} onOpenChange={(open) => setDialog({ ...dialog, open })}>
         <DialogContent>
