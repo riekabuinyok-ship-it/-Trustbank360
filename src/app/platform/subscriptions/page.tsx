@@ -74,6 +74,9 @@ export default function AdminSubscriptionsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([])
   const [revenue, setRevenue] = useState<RevenueData>({ total: 0, mrr: 0, thisMonth: 0 })
   const [currencyManagement, setCurrencyManagement] = useState<CurrencyManagement>({ activeCurrencies: [], stats: { total: 0, byCompany: {} } })
+  const [trialSubscriptions, setTrialSubscriptions] = useState<any[]>([])
+  const [trialCount, setTrialCount] = useState(0)
+  const [potentialMrr, setPotentialMrr] = useState(0)
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -99,6 +102,9 @@ export default function AdminSubscriptionsPage() {
         setPlans(data.plans)
         setPayments(data.payments)
         setRevenue(data.revenue)
+        setTrialSubscriptions(data.trialSubscriptions || [])
+        setTrialCount(data.trialCount || 0)
+        setPotentialMrr(data.potentialMrr || 0)
         if (data.currencyManagement) setCurrencyManagement(data.currencyManagement)
       } else {
         toast.error("Unable to load subscription data. Please try again.")
@@ -429,7 +435,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Revenue Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -470,8 +476,30 @@ export default function AdminSubscriptionsPage() {
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Active Subscriptions</p>
+            <p className="text-xs text-muted-foreground">Active Subs</p>
             <p className="text-xl font-bold mt-1">{activeSubscriptions}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/20 flex items-center justify-center">
+                <CreditCard className="h-4 w-4 text-violet-600" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">On Trial</p>
+            <p className="text-xl font-bold mt-1">{trialCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-indigo-600" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Potential MRR</p>
+            <p className="text-xl font-bold mt-1">{formatCurrency(potentialMrr, "USD")}</p>
           </CardContent>
         </Card>
       </div>
@@ -573,6 +601,77 @@ export default function AdminSubscriptionsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Trial Subscriptions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-violet-500" />
+            Companies on Trial
+            {trialCount > 0 && (
+              <Badge variant="secondary" className="ml-1">{trialCount}</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {trialSubscriptions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center mb-3">
+                <Inbox className="h-6 w-6 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">No companies on trial</p>
+              <p className="text-xs text-muted-foreground">New companies will appear here when they start their trial period.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="pb-3 font-medium text-muted-foreground">Company</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Plan</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Started</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Trial Ends</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Days Left</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trialSubscriptions.map((s: any) => {
+                    const daysLeft = s.daysRemaining
+                    const isExpired = daysLeft <= 0
+                    const isUrgent = daysLeft > 0 && daysLeft <= 7
+                    const startDate = s.startDate ? new Date(s.startDate).toLocaleDateString() : "—"
+                    const endDate = s.trialEndsAt ? new Date(s.trialEndsAt).toLocaleDateString() : "—"
+                    return (
+                      <tr key={s.id} className="border-b last:border-0 hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                        <td className="py-3 pr-4">
+                          <p className="font-medium">{s.company?.name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{s.company?.email || ""}</p>
+                        </td>
+                        <td className="py-3 pr-4">{s.plan?.name || "—"}</td>
+                        <td className="py-3 pr-4">{startDate}</td>
+                        <td className="py-3 pr-4">{endDate}</td>
+                        <td className="py-3 pr-4">
+                          <Badge variant={
+                            isExpired ? "destructive" : isUrgent ? "warning" : "success"
+                          }>
+                            {isExpired ? "Expired" : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
+                          </Badge>
+                        </td>
+                        <td className="py-3">
+                          <Badge variant="secondary" className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                            TRIALING
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

@@ -23,6 +23,7 @@ interface AnalyticsData {
   totalCompanies: number
   activeCompanies: number
   suspendedCompanies: number
+  trialCompanies: number
   deletedCompanies: number
   newThisMonth: number
   totalRevenue: number
@@ -143,7 +144,7 @@ export default function AdminAnalyticsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -166,6 +167,19 @@ export default function AdminAnalyticsPage() {
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground truncate">Active</p>
                 <p className="text-xl font-bold mt-0.5">{data.activeCompanies.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-violet-600 bg-violet-100 dark:bg-violet-900/20">
+                <Crown className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">On Trial</p>
+                <p className="text-xl font-bold mt-0.5">{data.trialCompanies.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>

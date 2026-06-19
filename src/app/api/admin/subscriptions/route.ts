@@ -54,6 +54,23 @@ export async function GET() {
     return sum + monthlyRate
   }, 0)
 
+  const trialSubscriptions = await prisma.subscription.findMany({
+    where: { status: "TRIALING" },
+    include: {
+      company: { select: { id: true, name: true, email: true } },
+      plan: { select: { id: true, name: true, price: true, durationDays: true, trialDays: true } },
+    },
+    orderBy: { trialEndsAt: "asc" },
+  })
+
+  const trialCount = trialSubscriptions.length
+  const potentialMrr = trialSubscriptions.reduce((sum, sub) => {
+    const monthlyRate = sub.plan.durationDays > 0 ? (sub.plan.price / sub.plan.durationDays) * 30 : 0
+    return sum + monthlyRate
+  }, 0)
+
+  const nowUtc = new Date()
+
   return NextResponse.json({
     plans,
     payments: payments.map((p) => ({
@@ -68,6 +85,19 @@ export async function GET() {
       subscription: { plan: { name: p.subscription.plan.name } },
     })),
     revenue: { total, mrr, thisMonth },
+    trialCount,
+    potentialMrr,
+    trialSubscriptions: trialSubscriptions.map((s) => ({
+      id: s.id,
+      company: s.company,
+      plan: s.plan,
+      startDate: s.startDate,
+      trialEndsAt: s.trialEndsAt,
+      daysRemaining: s.trialEndsAt
+        ? Math.ceil((new Date(s.trialEndsAt).getTime() - nowUtc.getTime()) / 86400000)
+        : 0,
+      status: s.status,
+    })),
     currencyManagement: await (async () => {
       const exchangeRates = await prisma.exchangeRate.findMany({
         where: { isActive: true },
