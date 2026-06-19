@@ -1,0 +1,43 @@
+export const IMAGES = {
+  hero: {
+    main: "/images/hero-main.jpg",
+    global: "/images/hero-global.jpg",
+  },
+  features: {
+    hero: "/images/features-hero.jpg",
+    transfers: "/images/feature-transfers.jpg",
+    mobile: "/images/feature-mobile.jpg",
+    forex: "/images/feature-forex.jpg",
+    security: "/images/feature-security.jpg",
+    analytics: "/images/features-analytics.jpg",
+    compliance: "/images/features-compliance.jpg",
+    reports: "/images/features-reports.jpg",
+  },
+  pages: {
+    loginBg: "/images/login-bg.jpg",
+    signupBg: "/images/signup-bg.jpg",
+    pricingHero: "/images/pricing-hero.jpg",
+    aboutHero: "/images/about-hero.jpg",
+    aboutAfrica: "/images/about-africa.jpg",
+    aboutMission: "/images/about-mission.jpg",
+    aboutTeam: "/images/about-team.jpg",
+    contactHero: "/images/contact-hero.jpg",
+    ctaOffice: "/images/cta-office.jpg",
+  },
+  testimonials: {
+    one: "/images/testimonial-1.jpg",
+    two: "/images/testimonial-2.jpg",
+    three: "/images/testimonial-3.jpg",
+  },
+  logo: "/images/logo.svg",
+  empty: {
+    transactions: "/images/empty-transactions.svg",
+    customers: "/images/empty-customers.svg",
+    wallets: "/images/empty-wallets.svg",
+    reports: "/images/empty-reports.svg",
+    branches: "/images/empty-branches.svg",
+    staff: "/images/empty-staff.svg",
+    compliance: "/images/empty-compliance.svg",
+    analytics: "/images/empty-analytics.svg",
+  },
+}
