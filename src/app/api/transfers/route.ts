@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { generateTransactionNumber, generateSecretCode } from "@/lib/utils"
+import { generateTransactionNumber, generateSecretCode, MOBILE_MONEY_TYPES } from "@/lib/utils"
 import { getCommissionSetting, calculateCommission } from "@/lib/commission"
 import { formatApiError } from "@/lib/api-error"
 
@@ -122,9 +122,10 @@ export async function POST(request: Request) {
     }
 
     const transactionNumber = generateTransactionNumber()
-    const secretCode = generateSecretCode(company.name)
+    const isMobileMoney = transactionType && MOBILE_MONEY_TYPES.includes(transactionType)
+    const secretCode = isMobileMoney ? null : generateSecretCode(company.name)
 
-    const commissionSetting = await getCommissionSetting(user.companyId)
+    const commissionSetting = await getCommissionSetting(user.companyId, currency)
     const { commission, senderAmount, receiverAmount } = calculateCommission(
       amount,
       commissionSetting.mode as any,

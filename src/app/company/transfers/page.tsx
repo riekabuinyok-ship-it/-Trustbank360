@@ -199,7 +199,7 @@ export default function TransfersPage() {
       accessorKey: "secretCode",
       header: "Code",
       cell: ({ row }) => (
-        <span className="font-mono text-xs font-bold text-primary-600">{row.original.secretCode}</span>
+        <span className="font-mono text-xs font-bold text-primary-600">{row.original.secretCode || "—"}</span>
       ),
     },
     { accessorKey: "sender.fullName", header: "Sender" },
@@ -297,7 +297,7 @@ export default function TransfersPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Secret Code</p>
-                  <p className="text-sm font-mono font-bold text-primary-600">{selected.secretCode}</p>
+                  <p className="text-sm font-mono font-bold text-primary-600">{selected.secretCode || "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Status</p>

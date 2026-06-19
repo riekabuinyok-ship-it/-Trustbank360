@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { BackButton } from "@/components/back-button"
-import { Building2, Mail, Phone, Globe, MapPin, Hash, Users, Store, ScrollText } from "lucide-react"
+import {
+  Building2, Mail, Phone, Globe, MapPin, Hash, Users, Store, ScrollText,
+  Wallet, CreditCard, ArrowLeftRight, Crown,
+} from "lucide-react"
 
 function getStatusBadge(isActive: boolean, onboardingComplete: boolean) {
   if (isActive && onboardingComplete) return { label: "Active", variant: "success" as const }
@@ -13,13 +15,25 @@ function getStatusBadge(isActive: boolean, onboardingComplete: boolean) {
   return { label: "Suspended", variant: "warning" as const }
 }
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null | undefined }) {
   return (
     <div className="flex items-start gap-3 py-2">
       <div className="text-muted-foreground mt-0.5">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
         <p className="text-sm font-medium truncate">{value || "—"}</p>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-lg border bg-card">
+      <div className="text-muted-foreground">{icon}</div>
+      <div>
+        <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-lg font-bold">{value}</p>
       </div>
     </div>
   )
@@ -47,7 +61,7 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
   if (!company) {
     return (
       <div className="space-y-4">
-        <BackButton href="/admin/companies" label="Back to Companies" />
+        <BackButton href="/platform/companies" label="Back to Companies" />
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             Company not found
@@ -59,10 +73,18 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
 
   const owner = company.users?.[0]
   const { label: statusLabel, variant: statusVariant } = getStatusBadge(company.isActive, company.onboardingComplete)
+  const sub = company.subscription
+  const fin = company.financials
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val)
+
+  const subBadgeVariant = sub
+    ? (sub.status === "ACTIVE" || sub.status === "TRIALING" ? "success" as const : "secondary" as const)
+    : "secondary" as const
 
   return (
     <div className="space-y-6">
-      <BackButton href="/admin/companies" label="Back to Companies" />
+      <BackButton href="/platform/companies" label="Back to Companies" />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -75,6 +97,14 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
           </div>
         </div>
         <Badge variant={statusVariant} className="text-sm px-3 py-1">{statusLabel}</Badge>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard icon={<Users className="h-5 w-5" />} label="Staff" value={String(company._count?.users ?? 0)} />
+        <StatCard icon={<Store className="h-5 w-5" />} label="Branches" value={String(company._count?.branches ?? 0)} />
+        <StatCard icon={<ArrowLeftRight className="h-5 w-5" />} label="Transfers" value={String(fin?.totalTransfers ?? 0)} />
+        <StatCard icon={<Wallet className="h-5 w-5" />} label="Wallets" value={String(company.wallets?.length ?? 0)} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -92,6 +122,8 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
             <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={company.email} />
             <InfoRow icon={<Globe className="h-4 w-4" />} label="Website" value={company.website} />
             <InfoRow icon={<Store className="h-4 w-4" />} label="Country" value={company.country} />
+            <InfoRow icon={<Hash className="h-4 w-4" />} label="Business Types" value={company.businessTypes?.join(", ")} />
+            <InfoRow icon={<Hash className="h-4 w-4" />} label="Main Currency" value={company.mainCurrency} />
           </CardContent>
         </Card>
 
@@ -118,19 +150,105 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Store className="h-4 w-4" />
-              Overview
+              <Crown className="h-4 w-4" />
+              Subscription
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <InfoRow icon={<Users className="h-4 w-4" />} label="Staff Count" value={String(company._count?.users ?? 0)} />
-            <InfoRow icon={<Store className="h-4 w-4" />} label="Branch Count" value={String(company._count?.branches ?? 0)} />
-            <InfoRow icon={<Building2 className="h-4 w-4" />} label="Business Types" value={company.businessTypes?.join(", ") || "—"} />
-            <InfoRow icon={<Hash className="h-4 w-4" />} label="Main Currency" value={company.mainCurrency} />
+            {sub ? (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={subBadgeVariant}>{sub.status}</Badge>
+                </div>
+                <InfoRow icon={<CreditCard className="h-4 w-4" />} label="Plan" value={sub.plan?.name} />
+                <InfoRow icon={<Hash className="h-4 w-4" />} label="Price" value={sub.plan?.price ? formatCurrency(sub.plan.price) : "—"} />
+                <InfoRow icon={<Hash className="h-4 w-4" />} label="Start Date" value={sub.startDate ? new Date(sub.startDate).toLocaleDateString() : "—"} />
+                <InfoRow icon={<Hash className="h-4 w-4" />} label="Trial Ends" value={sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString() : "—"} />
+                <InfoRow icon={<Hash className="h-4 w-4" />} label="Payment Method" value={sub.paymentMethod || "—"} />
+                {sub.stripeSubscriptionId && (
+                  <InfoRow icon={<Hash className="h-4 w-4" />} label="Stripe ID" value={sub.stripeSubscriptionId} />
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4">No subscription</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Financial overview */}
+      {fin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Financial Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="p-4 rounded-lg border bg-card">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Transfer Volume</p>
+                <p className="text-2xl font-bold">{formatCurrency(fin.totalTransferVolume)}</p>
+              </div>
+              <div className="p-4 rounded-lg border bg-card">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Commission</p>
+                <p className="text-2xl font-bold">{formatCurrency(fin.totalCommission)}</p>
+              </div>
+              <div className="p-4 rounded-lg border bg-card">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Transfers</p>
+                <p className="text-2xl font-bold">{fin.totalTransfers}</p>
+              </div>
+            </div>
+            {company.wallets && company.wallets.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2">Wallet Balances</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {company.wallets.map((w: any, i: number) => (
+                    <div key={i} className="p-3 rounded-lg border text-center">
+                      <p className="text-xs text-muted-foreground uppercase">{w.currency}</p>
+                      <p className="text-sm font-bold">{formatCurrency(w.balance)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payments history */}
+      {company.payments && company.payments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Payment History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {company.payments.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {formatCurrency(p.amount)} {p.currency}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.subscription?.plan?.name || "N/A"} — {p.status}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(p.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Audit logs */}
       {company.auditLogs && company.auditLogs.length > 0 && (
         <Card>
           <CardHeader>

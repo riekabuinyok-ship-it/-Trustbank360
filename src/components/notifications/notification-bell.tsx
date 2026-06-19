@@ -213,7 +213,7 @@ export function NotificationBell() {
 
             <div className="px-4 py-2 border-t border-surface-200 dark:border-surface-700 shrink-0">
               <Link
-                href="/notifications"
+                href="/company/notifications"
                 onClick={() => setOpen(false)}
                 className="block text-center text-xs text-primary hover:underline py-1"
               >

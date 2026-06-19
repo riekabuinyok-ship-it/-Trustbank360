@@ -61,7 +61,7 @@ export default function AdminCompaniesPage() {
       cell: ({ row }) => (
         <button
           className="font-medium text-primary hover:underline text-left"
-          onClick={() => router.push(`/admin/company/${row.original.id}`)}
+          onClick={() => router.push(`/platform/company/${row.original.id}`)}
         >
           <span className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -94,8 +94,24 @@ export default function AdminCompaniesPage() {
       },
     },
     {
+      id: "subscription",
+      header: "Plan",
+      cell: ({ row }) => {
+        const sub = row.original.subscription
+        return sub ? (
+          <Badge variant="outline">{sub.planName}</Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )
+      },
+    },
+    {
       accessorKey: "userCount",
       header: "Users",
+    },
+    {
+      accessorKey: "branchCount",
+      header: "Branches",
     },
     {
       accessorKey: "createdAt",

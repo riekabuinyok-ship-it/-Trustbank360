@@ -14,11 +14,20 @@ export async function GET() {
 
   const companies = await prisma.company.findMany({
     include: {
-      _count: { select: { users: true } },
+      _count: { select: { users: true, branches: true } },
       users: {
         where: { role: { in: ["COMPANY_OWNER", "company_owner"] } },
         select: { name: true, email: true },
         take: 1,
+      },
+      subscription: {
+        select: {
+          status: true,
+          plan: { select: { name: true, price: true } },
+        },
+      },
+      wallets: {
+        select: { balance: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -32,7 +41,16 @@ export async function GET() {
     isActive: c.isActive,
     onboardingComplete: c.onboardingComplete,
     userCount: c._count.users,
+    branchCount: c._count.branches,
+    walletBalance: c.wallets.reduce((s, w) => s + w.balance, 0),
     owner: c.users[0] || null,
+    subscription: c.subscription
+      ? {
+          status: c.subscription.status,
+          planName: c.subscription.plan.name,
+          planPrice: c.subscription.plan.price,
+        }
+      : null,
     createdAt: c.createdAt,
   }))
 

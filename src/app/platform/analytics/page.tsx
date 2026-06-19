@@ -2,50 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, TrendingUp, Users, Globe, Activity, PieChart } from "lucide-react"
+import { BarChart3, TrendingUp, Users, Activity, DollarSign, Crown } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-const COUNTRIES = [
-  { name: "United States", count: 42 },
-  { name: "United Kingdom", count: 28 },
-  { name: "Canada", count: 19 },
-  { name: "Germany", count: 15 },
-  { name: "Australia", count: 12 },
-  { name: "France", count: 10 },
-  { name: "Japan", count: 8 },
-  { name: "Brazil", count: 7 },
-  { name: "India", count: 6 },
-  { name: "Others", count: 23 },
-]
-
-const TOTAL_COUNTRIES = COUNTRIES.reduce((s, c) => s + c.count, 0)
-
-function generateMonthlyData(totalValue: number): number[] {
-  const base = Math.max(1, Math.floor(totalValue / 12))
-  const values: number[] = []
-  let sum = 0
-  for (let i = 0; i < 11; i++) {
-    const v = Math.max(1, Math.floor(base * (0.5 + Math.random())))
-    values.push(v)
-    sum += v
-  }
-  values.push(Math.max(1, totalValue - sum))
-  return values
-}
-
-function generateRevenueData(totalRevenue: number): number[] {
-  const base = Math.max(1, Math.floor(totalRevenue / 12))
-  const values: number[] = []
-  let sum = 0
-  for (let i = 0; i < 11; i++) {
-    const v = Math.max(1, Math.floor(base * (0.4 + Math.random() * 1.2)))
-    values.push(v)
-    sum += v
-  }
-  values.push(Math.max(1, totalRevenue - sum))
-  return values
+interface MonthlyDataPoint {
+  month: string
+  revenue: number
+  companies: number
 }
 
 interface ActivityItem {
@@ -63,7 +26,12 @@ interface AnalyticsData {
   deletedCompanies: number
   newThisMonth: number
   totalRevenue: number
+  subscriptionRevenue: number
+  commissionRevenue: number
   mrr: number
+  totalUsers: number
+  activeUsers: number
+  monthlyRevenue: MonthlyDataPoint[]
   recentActivity: ActivityItem[]
   systemHealth: string
 }
@@ -74,27 +42,27 @@ function BarChart({
   color = "bg-primary-500",
   format,
 }: {
-  data: number[]
+  data: { value: number; label: string }[]
   label: string
   color?: string
   format?: (v: number) => string
 }) {
-  const max = Math.max(...data, 1)
+  const max = Math.max(...data.map((d) => d.value), 1)
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground text-center">{label}</p>
       <div className="flex items-end justify-between gap-1.5 h-48">
-        {data.map((value, i) => (
+        {data.map((point, i) => (
           <div key={i} className="flex flex-col items-center gap-1 flex-1 min-w-0">
             <span className="text-[10px] font-medium text-muted-foreground">
-              {format ? format(value) : value}
+              {format ? format(point.value) : point.value}
             </span>
             <div
               className={`w-full rounded-t ${color}`}
-              style={{ height: `${(value / max) * 100}%`, minHeight: 4 }}
+              style={{ height: `${(point.value / max) * 100}%`, minHeight: 4 }}
             />
             <span className="text-[10px] text-muted-foreground truncate w-full text-center">
-              {MONTHS[i]}
+              {point.label}
             </span>
           </div>
         ))}
@@ -131,11 +99,6 @@ function EmptyAnalytics() {
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [monthlyCompanies, setMonthlyCompanies] = useState<number[]>([])
-  const [monthlyRevenue, setMonthlyRevenue] = useState<number[]>([])
-  const [activeUsers, setActiveUsers] = useState(0)
-  const [inactiveUsers, setInactiveUsers] = useState(0)
-  const [totalUsers, setTotalUsers] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -144,15 +107,6 @@ export default function AdminAnalyticsPage() {
         if (!res.ok) throw new Error("Failed to fetch")
         const json: AnalyticsData = await res.json()
         setData(json)
-
-        setMonthlyCompanies(generateMonthlyData(json.newThisMonth || json.totalCompanies))
-        setMonthlyRevenue(generateRevenueData(json.totalRevenue))
-
-        const activeU = Math.floor((json.activeCompanies || 1) * (4 + Math.random() * 6))
-        const inactiveU = Math.floor((json.suspendedCompanies || 1) * (1 + Math.random() * 3))
-        setActiveUsers(activeU)
-        setInactiveUsers(inactiveU)
-        setTotalUsers(activeU + inactiveU)
       } catch {
         console.error("Failed to load admin analytics")
       } finally {
@@ -168,43 +122,17 @@ export default function AdminAnalyticsPage() {
   const churnRate = data.totalCompanies > 0
     ? ((data.suspendedCompanies / data.totalCompanies) * 100).toFixed(1)
     : "0.0"
-  const avgRevenue = data.totalCompanies > 0
-    ? Math.round(data.totalRevenue / data.totalCompanies)
-    : 0
 
-  const kpiCards = [
-    {
-      title: "Total Companies",
-      value: data.totalCompanies.toLocaleString(),
-      icon: BarChart3,
-      color: "text-blue-600 bg-blue-100 dark:bg-blue-900/20",
-    },
-    {
-      title: "Active Companies",
-      value: data.activeCompanies.toLocaleString(),
-      icon: TrendingUp,
-      color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20",
-    },
-    {
-      title: "Churn Rate",
-      value: `${churnRate}%`,
-      icon: Users,
-      color: "text-rose-600 bg-rose-100 dark:bg-rose-900/20",
-    },
-    {
-      title: "Avg Revenue / Company",
-      value: formatCurrency(avgRevenue, "USD"),
-      icon: Activity,
-      color: "text-primary-600 bg-primary-100 dark:bg-primary-900/20",
-    },
-  ]
+  const activePct = data.totalUsers > 0 ? Math.round((data.activeUsers / data.totalUsers) * 100) : 0
+  const inactivePct = data.totalUsers > 0 ? Math.round(((data.totalUsers - data.activeUsers) / data.totalUsers) * 100) : 0
 
-  const hasData = data.totalCompanies > 0 || data.activeCompanies > 0 || data.totalRevenue > 0
+  const revenueData = data.monthlyRevenue?.length
+    ? data.monthlyRevenue.map((m) => ({ value: m.revenue, label: m.month.slice(0, 3) }))
+    : []
 
-  if (!hasData) return <EmptyAnalytics />
-
-  const activePct = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
-  const inactivePct = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0
+  const companiesData = data.monthlyRevenue?.length
+    ? data.monthlyRevenue.map((m) => ({ value: m.companies, label: m.month.slice(0, 3) }))
+    : []
 
   return (
     <div className="space-y-6">
@@ -216,24 +144,86 @@ export default function AdminAnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpiCards.map((kpi) => {
-          const Icon = kpi.icon
-          return (
-            <Card key={kpi.title}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground truncate">{kpi.title}</p>
-                    <p className="text-xl font-bold mt-0.5">{kpi.value}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-blue-600 bg-blue-100 dark:bg-blue-900/20">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">Total Companies</p>
+                <p className="text-xl font-bold mt-0.5">{data.totalCompanies.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">Active</p>
+                <p className="text-xl font-bold mt-0.5">{data.activeCompanies.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-rose-600 bg-rose-100 dark:bg-rose-900/20">
+                <DollarSign className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">MRR</p>
+                <p className="text-xl font-bold mt-0.5">{formatCurrency(data.mrr, "USD")}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-primary-600 bg-primary-100 dark:bg-primary-900/20">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">Churn Rate</p>
+                <p className="text-xl font-bold mt-0.5">{churnRate}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue breakdown */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Revenue</p>
+            <p className="text-2xl font-bold mt-1">{formatCurrency(data.totalRevenue, "USD")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Subscription Revenue</p>
+            <p className="text-2xl font-bold mt-1 text-blue-600">{formatCurrency(data.subscriptionRevenue, "USD")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Commission Revenue</p>
+            <p className="text-2xl font-bold mt-1 text-emerald-600">{formatCurrency(data.commissionRevenue, "USD")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">New This Month</p>
+            <p className="text-2xl font-bold mt-1">{data.newThisMonth}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -246,7 +236,7 @@ export default function AdminAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <BarChart
-              data={monthlyCompanies}
+              data={companiesData}
               label="New Companies per Month"
               color="bg-gradient-to-t from-primary-600 to-primary-400"
             />
@@ -262,7 +252,7 @@ export default function AdminAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <BarChart
-              data={monthlyRevenue}
+              data={revenueData}
               label="Monthly Revenue"
               color="bg-gradient-to-t from-emerald-600 to-emerald-400"
               format={(v) => formatCurrency(v, "USD")}
@@ -272,62 +262,22 @@ export default function AdminAnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Users overview */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Globe className="h-5 w-5 text-primary" />
-              Geographic Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {COUNTRIES.map((country) => {
-                const pct = (country.count / TOTAL_COUNTRIES) * 100
-                return (
-                  <div key={country.name} className="flex items-center gap-3">
-                    <span className="text-sm font-medium w-28 truncate flex-shrink-0">
-                      {country.name}
-                    </span>
-                    <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-primary-500 transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-muted-foreground w-12 text-right flex-shrink-0">
-                      {country.count}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-primary" />
-              Active vs Inactive Users
+              <Users className="h-5 w-5 text-primary" />
+              Platform Users
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-4">
               <div className="relative w-40 h-40 mb-6">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
                   <circle
-                    cx="18" cy="18" r="15.9"
-                    fill="none"
-                    stroke="hsl(var(--muted))"
-                    strokeWidth="3"
-                  />
-                  <circle
-                    cx="18" cy="18" r="15.9"
-                    fill="none"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="3"
-                    strokeDasharray={`${activePct} ${100 - activePct}`}
-                    strokeLinecap="round"
+                    cx="18" cy="18" r="15.9" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"
+                    strokeDasharray={`${activePct} ${100 - activePct}`} strokeLinecap="round"
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center flex-col">
@@ -342,7 +292,7 @@ export default function AdminAnalyticsPage() {
                     <div className="w-3 h-3 rounded-full bg-primary-500" />
                     <span className="text-sm font-medium">Active</span>
                   </div>
-                  <p className="text-lg font-bold">{activeUsers.toLocaleString()}</p>
+                  <p className="text-lg font-bold">{data.activeUsers.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">{activePct}% of total</p>
                 </div>
                 <div>
@@ -350,14 +300,66 @@ export default function AdminAnalyticsPage() {
                     <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
                     <span className="text-sm font-medium">Inactive</span>
                   </div>
-                  <p className="text-lg font-bold">{inactiveUsers.toLocaleString()}</p>
+                  <p className="text-lg font-bold">{(data.totalUsers - data.activeUsers).toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">{inactivePct}% of total</p>
+                </div>
+              </div>
+
+              <div className="mt-6 w-full pt-4 border-t">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Users</span>
+                  <span className="font-bold">{data.totalUsers.toLocaleString()}</span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Crown className="h-5 w-5 text-primary" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.recentActivity.length > 0 ? (
+              <div className="space-y-0 divide-y">
+                {data.recentActivity.slice(0, 8).map((activity) => (
+                  <div key={activity.id} className="py-3 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{activity.action}</p>
+                      <p className="text-xs text-muted-foreground truncate">{activity.targetCompany}</p>
+                      <p className="text-xs text-muted-foreground">by {activity.actor}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(activity.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                No recent activity
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* System Health */}
+      <Card>
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full ${data.systemHealth === "healthy" ? "bg-emerald-500" : "bg-amber-500"}`} />
+          <span className="text-sm">
+            System Status: <strong>{data.systemHealth === "healthy" ? "All Systems Operational" : "Degraded Performance"}</strong>
+          </span>
+          <span className="text-xs text-muted-foreground ml-auto">
+            {data.totalCompanies} companies · {data.totalUsers} users · Updated real-time
+          </span>
+        </CardContent>
+      </Card>
     </div>
   )
 }

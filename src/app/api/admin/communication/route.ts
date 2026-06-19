@@ -89,6 +89,24 @@ export async function POST(request: Request) {
 
     const usersWithCompany = matchingUsers.filter((u): u is typeof u & { companyId: string } => u.companyId !== null)
     if (usersWithCompany.length > 0) {
+      // Create announcements per unique company and capture IDs
+      const uniqueCompanyIds = [...new Set(usersWithCompany.map((u) => u.companyId))]
+      const announcementMap = new Map<string, string>()
+
+      for (const cid of uniqueCompanyIds) {
+        const announcement = await prisma.announcement.create({
+          data: {
+            title: title.trim(),
+            content: content.trim(),
+            priority: type === "ALERT" ? "HIGH" : "NORMAL",
+            companyId: cid,
+            createdById: (session.user as any).id,
+          },
+        })
+        announcementMap.set(cid, announcement.id)
+      }
+
+      // Create notifications with per-announcement links
       await prisma.notification.createMany({
         data: usersWithCompany.map((u) => ({
           title: title.trim(),
@@ -96,19 +114,7 @@ export async function POST(request: Request) {
           type,
           userId: u.id,
           companyId: u.companyId,
-          link: "/messages",
-        })),
-      })
-
-      const uniqueCompanyIds = [...new Set(usersWithCompany.map((u) => u.companyId))]
-      await prisma.announcement.createMany({
-        data: uniqueCompanyIds.map((cid) => ({
-          title: title.trim(),
-          content: content.trim(),
-          type,
-          priority: type === "ALERT" ? "HIGH" : "NORMAL",
-          companyId: cid,
-          createdById: (session.user as any).id,
+          link: `/company/announcements/${announcementMap.get(u.companyId)}`,
         })),
       })
     }
@@ -116,6 +122,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, sentCount: matchingUsers.length })
   } catch (error) {
     console.error("Error sending broadcast:", error)
-    return NextResponse.json({ error: "Failed to send message" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Failed to send message"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -22,11 +22,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const company = await prisma.company.findUnique({
     where: { id },
     include: {
-      _count: { select: { users: true, branches: true } },
+      _count: { select: { users: true, branches: true, transfers: true } },
       users: {
         where: { role: { in: ["COMPANY_OWNER", "company_owner"] } },
         select: { id: true, name: true, email: true, role: true },
         take: 1,
+      },
+      subscription: {
+        select: {
+          id: true,
+          status: true,
+          paymentMethod: true,
+          startDate: true,
+          endDate: true,
+          trialEndsAt: true,
+          stripeSubscriptionId: true,
+          plan: { select: { name: true, price: true, currency: true, durationDays: true } },
+        },
+      },
+      wallets: {
+        select: { currency: true, balance: true, branchId: true },
       },
       auditLogs: {
         orderBy: { createdAt: "desc" },
@@ -40,7 +55,35 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Company not found" }, { status: 404 })
   }
 
-  return NextResponse.json(company)
+  const transferAgg = await prisma.transfer.aggregate({
+    where: { companyId: id, status: "COMPLETED" },
+    _sum: { amount: true, commission: true },
+    _count: true,
+  })
+
+  const payments = await prisma.payment.findMany({
+    where: { companyId: id },
+    include: { subscription: { select: { plan: { select: { name: true } } } } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  })
+
+  const totalTransferVolume = transferAgg._sum.amount || 0
+  const totalCommission = transferAgg._sum.commission || 0
+  const totalTransfers = transferAgg._count
+
+  return NextResponse.json({
+    ...company,
+    _count: company._count,
+    subscription: company.subscription,
+    wallets: company.wallets,
+    financials: {
+      totalTransferVolume,
+      totalCommission,
+      totalTransfers,
+    },
+    payments,
+  })
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {

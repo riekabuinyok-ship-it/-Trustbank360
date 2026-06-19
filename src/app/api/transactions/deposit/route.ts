@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { generateTransactionNumber, generateSecretCode } from "@/lib/utils"
+import { generateTransactionNumber } from "@/lib/utils"
 import { formatApiError } from "@/lib/api-error"
 
 export async function POST(request: Request) {
@@ -46,12 +46,10 @@ export async function POST(request: Request) {
     }
 
     const transactionNumber = generateTransactionNumber()
-    const secretCode = generateSecretCode(company.name)
 
     const transfer = await prisma.transfer.create({
       data: {
         transactionNumber,
-        secretCode,
         transactionType: "DEPOSIT",
         amount,
         currency,

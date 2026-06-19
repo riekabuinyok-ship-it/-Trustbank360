@@ -83,6 +83,8 @@ export const transactionTypes = [
   { value: "DEPOSIT", label: "Deposit" },
 ]
 
+export const MOBILE_MONEY_TYPES = ["CASH_TO_MOBILE", "MOBILE_TO_CASH", "MOBILE_TO_MOBILE", "DEPOSIT"]
+
 export function filterTransactionTypes(businessTypes: string[]): { value: string; label: string }[] {
   const isMoneyTransfer = businessTypes.includes("MONEY_TRANSFER_COMPANY")
   const isMobileAgent = businessTypes.includes("MOBILE_MONEY_AGENT")

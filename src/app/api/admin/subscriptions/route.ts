@@ -68,10 +68,34 @@ export async function GET() {
       subscription: { plan: { name: p.subscription.plan.name } },
     })),
     revenue: { total, mrr, thisMonth },
-    currencyManagement: {
-      activeCurrencies: [],
-      stats: { total: 0, byCompany: {} },
-    },
+    currencyManagement: await (async () => {
+      const exchangeRates = await prisma.exchangeRate.findMany({
+        where: { isActive: true },
+        include: { company: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      })
+      const byCompany: Record<string, string[]> = {}
+      for (const r of exchangeRates) {
+        if (!byCompany[r.companyId]) byCompany[r.companyId] = []
+        byCompany[r.companyId].push(`${r.fromCurrency}/${r.toCurrency}`)
+      }
+      return {
+        activeCurrencies: exchangeRates.map((r) => ({
+          id: r.id,
+          pair: `${r.fromCurrency}/${r.toCurrency}`,
+          buyRate: r.buyRate,
+          sellRate: r.sellRate,
+          companyId: r.companyId,
+          companyName: r.company?.name || "Unknown",
+          isActive: r.isActive,
+        })),
+        stats: {
+          total: exchangeRates.length,
+          byCompany,
+        },
+      }
+    })(),
   })
 }
 

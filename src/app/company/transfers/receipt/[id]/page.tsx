@@ -58,7 +58,7 @@ export default function ReceiptPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Secret Code</span>
-                <span className="font-mono font-bold text-primary-600">{t.secretCode}</span>
+                <span className="font-mono font-bold text-primary-600">{t.secretCode || "—"}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Type</span>

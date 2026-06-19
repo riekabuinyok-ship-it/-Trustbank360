@@ -1,15 +1,30 @@
 import { prisma } from "@/lib/prisma"
 
-export async function getCommissionSetting(companyId: string) {
-  let setting = await prisma.commissionSetting.findUnique({
-    where: { companyId },
-  })
+export async function getCommissionSetting(companyId: string, currency?: string) {
+  const where: any = { companyId }
+  if (currency) where.currency = currency
+
+  let setting = await prisma.commissionSetting.findFirst({ where })
+  if (!setting && currency) {
+    // Fall back to company's main currency setting
+    setting = await prisma.commissionSetting.findFirst({
+      where: { companyId },
+      orderBy: { createdAt: "desc" },
+    })
+  }
   if (!setting) {
     setting = await prisma.commissionSetting.create({
-      data: { companyId, mode: "PERCENTAGE", value: 2 },
+      data: { companyId, currency: (currency as any) || "SSP", mode: "PERCENTAGE", value: 2 },
     })
   }
   return setting
+}
+
+export async function getCommissionSettings(companyId: string) {
+  return prisma.commissionSetting.findMany({
+    where: { companyId },
+    orderBy: { currency: "asc" },
+  })
 }
 
 export function calculateCommission(

@@ -91,7 +91,7 @@ export default function IncomingTransfersPage() {
     {
       accessorKey: "secretCode",
       header: "Secret Code",
-      cell: ({ row }) => <span className="font-mono text-xs font-bold text-primary-600">{row.original.secretCode}</span>,
+      cell: ({ row }) => <span className="font-mono text-xs font-bold text-primary-600">{row.original.secretCode || "—"}</span>,
     },
     {
       id: "senderBranch",

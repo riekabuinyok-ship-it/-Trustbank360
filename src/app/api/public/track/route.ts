@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const transfer = await prisma.transfer.findUnique({
+    const transfer = await prisma.transfer.findFirst({
       where: { secretCode: code },
       include: {
         branchLink: {

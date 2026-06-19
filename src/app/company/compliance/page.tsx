@@ -1,19 +1,40 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ShieldCheck, AlertTriangle, UserCheck, FileSearch } from "lucide-react"
+import { ShieldCheck, AlertTriangle, UserCheck, FileSearch, CheckCircle2, XCircle, ExternalLink } from "lucide-react"
 import { riskLevelColors, verificationStatusColors } from "@/lib/permissions"
+import toast from "react-hot-toast"
 
 export default function CompliancePage() {
+  const router = useRouter()
   const [customers, setCustomers] = useState<any[]>([])
 
   useEffect(() => {
     fetch("/api/customers").then((r) => r.json()).then(setCustomers)
   }, [])
+
+  async function handleVerification(id: string, status: string) {
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verificationStatus: status }),
+      })
+      if (res.ok) {
+        setCustomers((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, verificationStatus: status } : c))
+        )
+        toast.success(`Customer ${status.toLowerCase()}`)
+      }
+    } catch {
+      toast.error("Failed to update")
+    }
+  }
 
   const highRisk = customers.filter((c) => c.riskLevel === "HIGH" || c.riskLevel === "CRITICAL")
   const unverified = customers.filter((c) => c.verificationStatus === "UNVERIFIED" || c.verificationStatus === "PENDING")
@@ -89,7 +110,12 @@ export default function CompliancePage() {
                         <p className="text-sm font-medium">{c.fullName}</p>
                         <p className="text-xs text-muted-foreground">{c.phone}</p>
                       </div>
-                      <Badge className={riskLevelColors[c.riskLevel]}>{c.riskLevel}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={riskLevelColors[c.riskLevel]}>{c.riskLevel}</Badge>
+                        <Button size="sm" variant="ghost" onClick={() => router.push(`/company/customers/${c.id}`)}>
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -110,11 +136,22 @@ export default function CompliancePage() {
                 <div className="space-y-3">
                   {unverified.map((c) => (
                     <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-medium">{c.fullName}</p>
-                        <p className="text-xs text-muted-foreground">{c.phone} - {c.idType}</p>
+                        <p className="text-xs text-muted-foreground">{c.phone} - {c.idType || "No ID"}</p>
                       </div>
-                      <Badge className={verificationStatusColors[c.verificationStatus]}>{c.verificationStatus}</Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge className={verificationStatusColors[c.verificationStatus]}>{c.verificationStatus}</Badge>
+                        <Button size="sm" variant="ghost" className="text-emerald-600" onClick={() => handleVerification(c.id, "VERIFIED")}>
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleVerification(c.id, "REJECTED")}>
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => router.push(`/company/customers/${c.id}`)}>
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

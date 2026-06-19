@@ -127,7 +127,7 @@ model Company {
   messages           Message[]
   announcements      Announcement[]
   auditLogs          AuditLog[]
-  commissionSetting  CommissionSetting?
+  commissionSettings CommissionSetting[]
   subscription       Subscription?
   payments           Payment[]
   violationLogs      ViolationLog[]
@@ -137,7 +137,8 @@ model Company {
 
 model CommissionSetting {
   id        String         @id @default(cuid())
-  companyId String         @unique
+  companyId String
+  currency  Currency
   mode      CommissionMode @default(PERCENTAGE)
   value     Float          @default(2)
   minFee    Float?
@@ -146,6 +147,7 @@ model CommissionSetting {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  @@unique([companyId, currency])
   @@map("commission_settings")
 }
 
@@ -371,7 +373,7 @@ model Customer {
 model Transfer {
   id                String         @id @default(cuid())
   transactionNumber String         @unique
-  secretCode        String         @unique
+  secretCode        String?
   transactionType   TransactionType
   amount            Float
   currency          Currency

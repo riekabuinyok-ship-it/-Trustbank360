@@ -39,6 +39,21 @@ interface PaymentRecord {
   subscription: { plan: { name: string } }
 }
 
+interface CurrencyEntry {
+  id: string
+  pair: string
+  buyRate: number
+  sellRate: number
+  companyId: string
+  companyName: string
+  isActive: boolean
+}
+
+interface CurrencyManagement {
+  activeCurrencies: CurrencyEntry[]
+  stats: { total: number; byCompany: Record<string, string[]> }
+}
+
 interface RevenueData {
   total: number
   mrr: number
@@ -58,6 +73,7 @@ export default function AdminSubscriptionsPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [payments, setPayments] = useState<PaymentRecord[]>([])
   const [revenue, setRevenue] = useState<RevenueData>({ total: 0, mrr: 0, thisMonth: 0 })
+  const [currencyManagement, setCurrencyManagement] = useState<CurrencyManagement>({ activeCurrencies: [], stats: { total: 0, byCompany: {} } })
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -83,6 +99,7 @@ export default function AdminSubscriptionsPage() {
         setPlans(data.plans)
         setPayments(data.payments)
         setRevenue(data.revenue)
+        if (data.currencyManagement) setCurrencyManagement(data.currencyManagement)
       } else {
         toast.error("Failed to load subscription data")
       }
@@ -292,6 +309,12 @@ export default function AdminSubscriptionsPage() {
   const [sellRate, setSellRate] = useState("")
   const [companyId, setCompanyId] = useState("")
   const [currencyManagementMode, setCurrencyManagementMode] = useState("view")
+  const [editingRate, setEditingRate] = useState<CurrencyEntry | null>(null)
+  const [deletingRate, setDeletingRate] = useState<CurrencyEntry | null>(null)
+  const [rateEditOpen, setRateEditOpen] = useState(false)
+  const [rateDeleteOpen, setRateDeleteOpen] = useState(false)
+  const [editBuyRate, setEditBuyRate] = useState("")
+  const [editSellRate, setEditSellRate] = useState("")
 
   async function handleCurrencyAction(action: string, data: any) {
     try {
@@ -312,11 +335,70 @@ export default function AdminSubscriptionsPage() {
     }
   }
 
+  async function handleUpdateRate() {
+    if (!editingRate || !editBuyRate || !editSellRate) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/exchange-rates/${editingRate.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyRate: parseFloat(editBuyRate), sellRate: parseFloat(editSellRate) }),
+      })
+      if (res.ok) {
+        toast.success("Exchange rate updated")
+        setRateEditOpen(false)
+        fetchData()
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to update rate")
+      }
+    } catch {
+      toast.error("Failed to update rate")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDeleteRate() {
+    if (!deletingRate) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/exchange-rates/${deletingRate.id}`, {
+        method: "DELETE",
+      })
+      if (res.ok) {
+        toast.success("Exchange rate deleted")
+        setRateDeleteOpen(false)
+        setDeletingRate(null)
+        fetchData()
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to delete rate")
+      }
+    } catch {
+      toast.error("Failed to delete rate")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function openAddCurrencyDialog() {
     setSelectedCurrency({ from: "USD", to: "SSP" })
     setBuyRate("1")
     setSellRate("1.2")
     setCurrencyManagementMode("add")
+  }
+
+  function openEditRate(rate: CurrencyEntry) {
+    setEditingRate(rate)
+    setEditBuyRate(String(rate.buyRate))
+    setEditSellRate(String(rate.sellRate))
+    setRateEditOpen(true)
+  }
+
+  function openDeleteRate(rate: CurrencyEntry) {
+    setDeletingRate(rate)
+    setRateDeleteOpen(true)
   }
 
   function openExchangeRateDialog(companyId: string) {
@@ -619,10 +701,33 @@ export default function AdminSubscriptionsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium">Active Currencies</h3>
-                  <p className="text-xs text-muted-foreground">Total active currency pairs: {revenue.thisMonth}</p>
+                  <p className="text-xs text-muted-foreground">Total active currency pairs: {currencyManagement.stats.total}</p>
                 </div>
-                <Badge variant="outline">USD, SSP, KES, UGX, EUR, GBP, AED</Badge>
               </div>
+              {currencyManagement.activeCurrencies.length > 0 ? (
+                <div className="space-y-2 mt-2">
+                  {currencyManagement.activeCurrencies.slice(0, 24).map((c) => (
+                    <div key={c.id} className="flex items-center justify-between p-3 rounded-md border text-sm">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-medium shrink-0">{c.pair}</span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {c.companyName} · B:{c.buyRate} S:{c.sellRate}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEditRate(c)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => openDeleteRate(c)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground py-2">No exchange rates configured yet.</p>
+              )}
               <div className="flex items-center gap-2">
                 <Input
                   placeholder="Company ID"
@@ -757,6 +862,66 @@ export default function AdminSubscriptionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Exchange Rate Dialog */}
+      <Dialog open={rateEditOpen} onOpenChange={setRateEditOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Exchange Rate</DialogTitle>
+            <DialogDescription>
+              Update buy/sell rates for {editingRate?.pair} — {editingRate?.companyName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editBuyRate">Buy Rate</Label>
+              <Input
+                id="editBuyRate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editBuyRate}
+                onChange={(e) => setEditBuyRate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editSellRate">Sell Rate</Label>
+              <Input
+                id="editSellRate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editSellRate}
+                onChange={(e) => setEditSellRate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRateEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateRate} disabled={saving || !editBuyRate || !editSellRate}>
+              {saving ? "Updating..." : "Update Rate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Exchange Rate Dialog */}
+      <Dialog open={rateDeleteOpen} onOpenChange={setRateDeleteOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Exchange Rate</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the rate for <strong>{deletingRate?.pair}</strong> ({deletingRate?.companyName})? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setRateDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteRate} disabled={saving}>
+              {saving ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
