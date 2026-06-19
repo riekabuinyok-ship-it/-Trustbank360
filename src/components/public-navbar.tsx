@@ -7,6 +7,7 @@ import { Banknote, Menu, X, ChevronDown } from "lucide-react"
 
 const navLinks = [
   { href: "/", label: "Home" },
+  { href: "/exchange-rates", label: "Exchange Rates" },
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },

@@ -18,6 +18,7 @@ const socialLinks = [
 ] as const
 
 const quickLinks = [
+  { href: "/exchange-rates", label: "Exchange Rates" },
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
   { href: "/track", label: "Track Transfer" },

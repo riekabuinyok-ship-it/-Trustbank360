@@ -5,6 +5,8 @@ export interface RateRecord {
   companyId: string
   companyName: string
   companyCountry: string
+  companyPhone: string | null
+  companyAddress: string | null
   fromCurrency: string
   toCurrency: string
   buyRate: number
@@ -42,7 +44,7 @@ export async function fetchAllPublicRates(): Promise<RateRecord[]> {
   const rates = await prisma.exchangeRate.findMany({
     where: { isActive: true, isPublic: true },
     include: {
-      company: { select: { id: true, name: true, country: true } },
+      company: { select: { id: true, name: true, country: true, phone: true, address: true } },
     },
     orderBy: { updatedAt: "desc" },
   })
@@ -52,6 +54,8 @@ export async function fetchAllPublicRates(): Promise<RateRecord[]> {
     companyId: r.company.id,
     companyName: r.company.name,
     companyCountry: r.company.country,
+    companyPhone: r.company.phone,
+    companyAddress: r.company.address,
     fromCurrency: r.fromCurrency,
     toCurrency: r.toCurrency,
     buyRate: r.buyRate,
