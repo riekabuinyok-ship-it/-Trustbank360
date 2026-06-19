@@ -3,6 +3,7 @@ import Link from "next/link"
 import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
 import { ForexBoard } from "@/components/forex-board"
+import { HomeStats } from "@/components/home-stats"
 
 export default function LandingPage() {
   return (
@@ -45,23 +46,7 @@ export default function LandingPage() {
       <ForexBoard />
 
       {/* Stats */}
-      <section className="py-16 bg-surface-50 dark:bg-surface-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: "50+", label: "Countries Covered" },
-              { value: "500+", label: "Active Companies" },
-              { value: "1M+", label: "Transactions Processed" },
-              { value: "99.9%", label: "Uptime" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-3xl sm:text-4xl font-bold text-primary">{stat.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomeStats />
 
       {/* Features */}
       <section className="py-20">
