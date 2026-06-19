@@ -56,7 +56,7 @@ export default function NewWithdrawalPage() {
       toast.success(`Withdrawal completed! Transaction: ${data.transactionNumber}`)
       router.push("/company/transfers")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

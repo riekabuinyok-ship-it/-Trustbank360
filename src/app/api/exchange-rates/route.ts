@@ -83,6 +83,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(rate)
   } catch (error) {
-    return NextResponse.json({ error: "Failed to create rate" }, { status: 500 })
+    return NextResponse.json({ error: "Unable to create exchange rate. Please try again." }, { status: 500 })
   }
 }

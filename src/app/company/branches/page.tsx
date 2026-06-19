@@ -11,6 +11,16 @@ import { Building2, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2 } fro
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function BranchesPage() {
   const { data: session } = useSession()
@@ -19,6 +29,7 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     fetch("/api/branches").then((r) => r.json()).then(setBranches).finally(() => setLoading(false))
@@ -34,34 +45,35 @@ export default function BranchesPage() {
       })
       if (res.ok) {
         setBranches(branches.map((b) => (b.id === branchId ? { ...b, isActive: !currentStatus } : b)))
-        toast.success(`Branch ${currentStatus ? "suspended" : "activated"}`)
+        toast.success(`Branch ${currentStatus ? "suspended" : "activated"} successfully`)
       } else {
         const data = await res.json()
-        toast.error(data.error || "Failed to update branch")
+        toast.error(data.error || "Unable to update branch status")
       }
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setActionLoading(null)
     }
   }
 
-  async function deleteBranch(branchId: string, name: string) {
-    if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return
-    setActionLoading(branchId)
+  async function deleteBranch() {
+    if (!deleteTarget) return
+    setActionLoading(deleteTarget.id)
     try {
-      const res = await fetch(`/api/branches/${branchId}`, { method: "DELETE" })
+      const res = await fetch(`/api/branches/${deleteTarget.id}`, { method: "DELETE" })
       if (res.ok) {
-        setBranches(branches.filter((b) => b.id !== branchId))
-        toast.success("Branch deleted")
+        setBranches(branches.filter((b) => b.id !== deleteTarget.id))
+        toast.success("Branch deleted successfully")
       } else {
         const data = await res.json()
-        toast.error(data.error || "Failed to delete branch")
+        toast.error(data.error || "Unable to delete branch")
       }
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setActionLoading(null)
+      setDeleteTarget(null)
     }
   }
 
@@ -84,8 +96,8 @@ export default function BranchesPage() {
       id: "actions",
       cell: ({ row }) => {
         const b = row.original
-        const isOwner = user?.role === "COMPANY_OWNER"
-        const isAdmin = user?.role === "COMPANY_ADMIN" || isOwner
+        const isOwner = user?.role === "COMPANY_OWNER" || user?.role === "company_owner"
+        const isAdmin = user?.role === "COMPANY_ADMIN" || user?.role === "company_admin" || isOwner
         return (
           <div className="flex items-center gap-1">
             {isAdmin && (
@@ -99,7 +111,7 @@ export default function BranchesPage() {
               </Button>
             )}
             {isOwner && (
-              <Button size="sm" variant="ghost" className="text-danger-500 hover:text-danger-600" onClick={() => deleteBranch(b.id, b.name)} disabled={actionLoading === b.id} title="Delete">
+              <Button size="sm" variant="ghost" className="text-danger-500 hover:text-danger-600" onClick={() => setDeleteTarget({ id: b.id, name: b.name })} disabled={actionLoading === b.id} title="Delete">
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -132,6 +144,25 @@ export default function BranchesPage() {
           <DataTable columns={columns} data={branches} />
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Branch</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action is permanent and cannot be undone. All wallets associated with this branch will also be removed.
+              <br /><br />
+              This operation can only proceed if no staff members or active transaction records are linked to this branch.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteBranch} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Branch
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -24,7 +24,7 @@ const CURRENCIES = ["SSP", "USD", "KES", "UGX", "EUR", "GBP", "AED"]
 export default function CommissionsPage() {
   const { data: session } = useSession()
   const user = session?.user as any
-  const isAdmin = user?.role === "COMPANY_OWNER" || user?.role === "COMPANY_ADMIN"
+  const isAdmin = user?.role === "COMPANY_OWNER" || user?.role === "company_owner" || user?.role === "COMPANY_ADMIN" || user?.role === "company_admin"
 
   const [settings, setSettings] = useState<CommissionSetting[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,7 +52,7 @@ export default function CommissionsPage() {
         }
       }
     } catch {
-      toast.error("Failed to load commission settings")
+      toast.error("Unable to load commission settings. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -96,7 +96,7 @@ export default function CommissionsPage() {
       })
       toast.success(`Commission saved for ${selectedCurrency}`)
     } catch {
-      toast.error("Failed to save commission settings")
+      toast.error("Unable to save commission settings. Please try again.")
     } finally {
       setSaving(false)
     }

@@ -41,7 +41,7 @@ export default function CustomersPage() {
         fetch(`/api/customers`).then((r) => r.json()).then(setCustomers)
       }
     } catch {
-      toast.error("Failed to create customer")
+      toast.error("Unable to create customer. Please try again.")
     }
   }
 

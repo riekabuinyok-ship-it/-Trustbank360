@@ -72,7 +72,7 @@ export default function OnboardingPage() {
       await update()
       router.push("/company/dashboard")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

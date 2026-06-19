@@ -205,7 +205,7 @@ export default function SignupPage() {
       toast.success("Company created successfully!")
       router.push("/login?success=created")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred during signup. Please try again.")
     } finally {
       setLoading(false)
     }

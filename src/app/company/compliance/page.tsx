@@ -32,7 +32,7 @@ export default function CompliancePage() {
         toast.success(`Customer ${status.toLowerCase()}`)
       }
     } catch {
-      toast.error("Failed to update")
+      toast.error("Unable to update verification status. Please try again.")
     }
   }
 

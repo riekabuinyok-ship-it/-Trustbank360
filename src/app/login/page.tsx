@@ -47,7 +47,7 @@ function LoginForm() {
       router.push(role === "platform_owner" ? "/platform" : "/company/dashboard")
       router.refresh()
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred during login. Please try again.")
     } finally {
       setLoading(false)
     }

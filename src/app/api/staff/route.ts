@@ -13,7 +13,10 @@ export async function GET() {
   const user = session.user as any
 
   const staff = await prisma.user.findMany({
-    where: { companyId: user.companyId },
+    where: {
+      companyId: user.companyId,
+      role: { notIn: ["platform_owner", "PLATFORM_ADMIN", "SUPER_ADMIN"] },
+    },
     include: { branch: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
   })
@@ -26,12 +29,26 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const user = session.user as any
 
-  if (user.role !== "COMPANY_OWNER" && user.role !== "company_owner" && user.role !== "COMPANY_ADMIN" && user.role !== "company_admin") {
-    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+  const isSupervisor = user.role === "COMPANY_OWNER" || user.role === "company_owner" ||
+    user.role === "COMPANY_ADMIN" || user.role === "company_admin"
+  const isBranchManager = user.role === "BRANCH_MANAGER" || user.role === "branch_manager"
+
+  if (!isSupervisor && !isBranchManager) {
+    return NextResponse.json({ error: "You do not have sufficient permissions to perform this action." }, { status: 403 })
   }
 
   try {
     const body = await request.json()
+
+    // Branch Manager can only create staff in their own branch
+    if (isBranchManager) {
+      if (!user.branchId) {
+        return NextResponse.json({ error: "You are not assigned to a branch. Contact your company owner." }, { status: 403 })
+      }
+      if (body.branchId !== user.branchId) {
+        return NextResponse.json({ error: "Branch Managers can only invite staff to their own branch." }, { status: 403 })
+      }
+    }
 
     const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { overLimit: true } })
     if (company?.overLimit) {
@@ -91,6 +108,9 @@ export async function POST(request: Request) {
     if (error instanceof PlanEnforcementError) {
       return NextResponse.json(error.toJSON(), { status: 403 })
     }
-    return NextResponse.json(formatApiError("STAFF_LIMIT_REACHED", { upgradeRequired: false, title: "Staff invitation failed", message: "We couldn't invite this team member. Please try again or contact support if the issue persists." }), { status: 500 })
+    return NextResponse.json({
+      error: "Staff invitation failed",
+      message: "An unexpected error occurred. Please try again later or contact support if the issue persists.",
+    }, { status: 500 })
   }
 }

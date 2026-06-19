@@ -59,7 +59,7 @@ export default function SubscriptionsPage() {
         setSubscription(data.subscription || null)
         setBankInfo(data.bankInfo || null)
       })
-      .catch(() => toast.error("Failed to load subscription data"))
+      .catch(() => toast.error("Unable to load subscription data. Please try again."))
       .finally(() => setLoading(false))
   }, [])
 
@@ -131,7 +131,7 @@ export default function SubscriptionsPage() {
         }
       }
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setProcessingPlan(null)
       setSelectedPlan(null)

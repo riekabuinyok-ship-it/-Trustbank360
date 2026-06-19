@@ -32,8 +32,8 @@ const currencies = [
 export default function ExchangeRatesPage() {
   const { data: session } = useSession()
   const role = (session?.user as any)?.role
-  const isAdmin = role === "COMPANY_OWNER" || role === "COMPANY_ADMIN"
-  const isOwner = role === "COMPANY_OWNER"
+  const isAdmin = role === "COMPANY_OWNER" || role === "company_owner" || role === "COMPANY_ADMIN" || role === "company_admin"
+  const isOwner = role === "COMPANY_OWNER" || role === "company_owner"
 
   const [rates, setRates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,13 +62,16 @@ export default function ExchangeRatesPage() {
         body: JSON.stringify({ ...form, buyRate: parseFloat(form.buyRate), sellRate: parseFloat(form.sellRate) }),
       })
       if (res.ok) {
-        toast.success("Rate created")
+        toast.success("Exchange rate created successfully")
         setDialogOpen(false)
         setForm({ fromCurrency: "USD", toCurrency: "SSP", buyRate: "", sellRate: "" })
         fetchRates()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || "Unable to create exchange rate")
       }
     } catch {
-      toast.error("Failed to create rate")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -87,16 +90,16 @@ export default function ExchangeRatesPage() {
         }),
       })
       if (res.ok) {
-        toast.success("Rate updated")
+        toast.success("Exchange rate updated successfully")
         setEditDialogOpen(false)
         setSelectedRate(null)
         fetchRates()
       } else {
         const data = await res.json()
-        toast.error(data.error || "Failed to update rate")
+        toast.error(data.error || "Unable to update exchange rate")
       }
     } catch {
-      toast.error("Failed to update rate")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -107,16 +110,16 @@ export default function ExchangeRatesPage() {
     try {
       const res = await fetch(`/api/exchange-rates/${selectedRate.id}`, { method: "DELETE" })
       if (res.ok) {
-        toast.success("Rate deleted")
+        toast.success("Exchange rate deleted successfully")
         setDeleteDialogOpen(false)
         setSelectedRate(null)
         fetchRates()
       } else {
         const data = await res.json()
-        toast.error(data.error || "Failed to delete rate")
+        toast.error(data.error || "Unable to delete exchange rate")
       }
     } catch {
-      toast.error("Failed to delete rate")
+      toast.error("An unexpected error occurred. Please try again.")
     }
   }
 
@@ -128,14 +131,14 @@ export default function ExchangeRatesPage() {
         body: JSON.stringify({ isActive: !rate.isActive }),
       })
       if (res.ok) {
-        toast.success(rate.isActive ? "Rate deactivated" : "Rate activated")
+        toast.success(rate.isActive ? "Exchange rate deactivated" : "Exchange rate activated")
         fetchRates()
       } else {
         const data = await res.json()
-        toast.error(data.error || "Failed to update rate")
+        toast.error(data.error || "Unable to update exchange rate status")
       }
     } catch {
-      toast.error("Failed to update rate")
+      toast.error("An unexpected error occurred. Please try again.")
     }
   }
 

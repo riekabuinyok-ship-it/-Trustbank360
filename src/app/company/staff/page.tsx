@@ -1,21 +1,40 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ColumnDef } from "@tanstack/react-table"
-import { Users, Plus, UserPlus, Pencil } from "lucide-react"
+import { Users, Plus, UserPlus, Pencil, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { roleLabels, roleColors } from "@/lib/permissions"
 import toast from "react-hot-toast"
 import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function StaffPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+  const user = session?.user as any
   const [staff, setStaff] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleteName, setDeleteName] = useState<string>("")
+
+  const isSupervisor = user?.role === "COMPANY_OWNER" || user?.role === "company_owner" ||
+    user?.role === "COMPANY_ADMIN" || user?.role === "company_admin"
 
   useEffect(() => {
     fetch("/api/staff").then((r) => r.json()).then(setStaff).finally(() => setLoading(false))
@@ -31,10 +50,32 @@ export default function StaffPage() {
       })
       if (res.ok) {
         setStaff(staff.map((s) => (s.id === userId ? { ...s, status: newStatus } : s)))
-        toast.success(`Staff ${newStatus === "ACTIVE" ? "activated" : "suspended"}`)
+        toast.success(`Staff ${newStatus === "ACTIVE" ? "activated" : "suspended"} successfully`)
+      } else {
+        const data = await res.json()
+        toast.error(data.error || `Unable to ${newStatus === "ACTIVE" ? "activate" : "suspend"} staff member`)
       }
     } catch {
-      toast.error("Failed to update status")
+      toast.error("An unexpected error occurred. Please try again.")
+    }
+  }
+
+  async function handleDelete(userId: string) {
+    try {
+      const res = await fetch(`/api/staff/${userId}`, {
+        method: "DELETE",
+      })
+      if (res.ok) {
+        setStaff(staff.filter((s) => s.id !== userId))
+        toast.success("Staff member removed successfully")
+      } else {
+        const data = await res.json()
+        toast.error(data.error || "Unable to remove staff member")
+      }
+    } catch {
+      toast.error("An unexpected error occurred. Please try again.")
+    } finally {
+      setDeleteId(null)
     }
   }
 
@@ -68,6 +109,11 @@ export default function StaffPage() {
           <Button size="sm" variant="outline" onClick={() => toggleStatus(row.original.id, row.original.status)}>
             {row.original.status === "ACTIVE" ? "Suspend" : "Activate"}
           </Button>
+          {isSupervisor && (
+            <Button size="sm" variant="destructive" onClick={() => { setDeleteId(row.original.id); setDeleteName(row.original.name) }} title="Delete">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -96,6 +142,23 @@ export default function StaffPage() {
           <DataTable columns={columns} data={staff} />
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{deleteName}</strong> from your organization? This action cannot be undone. All associated audit logs will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDelete(deleteId!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -38,6 +38,13 @@ export default function EditStaffPage() {
     password: "",
   })
 
+  const isBranchManager = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager"
+
+  // Filter to own branch for Branch Manager
+  const filteredBranches = isBranchManager
+    ? branches.filter((b) => b.id === user?.branchId)
+    : branches
+
   useEffect(() => {
     async function load() {
       const [staffRes, branchesRes] = await Promise.all([
@@ -57,7 +64,14 @@ export default function EditStaffPage() {
           password: "",
         })
       }
-      if (branchesRes.ok) setBranches(await branchesRes.json())
+      if (branchesRes.ok) {
+        const data = await branchesRes.json()
+        setBranches(data)
+        // Auto-select branch for Branch Manager
+        if (isBranchManager && user?.branchId) {
+          setForm((prev) => ({ ...prev, branchId: user.branchId }))
+        }
+      }
       setLoading(false)
     }
     load()
@@ -90,7 +104,7 @@ export default function EditStaffPage() {
       toast.success("Staff updated successfully!")
       router.push("/company/staff")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -161,10 +175,10 @@ export default function EditStaffPage() {
               </div>
               <div className="space-y-2">
                 <Label>Branch</Label>
-                <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+                <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })} disabled={isBranchManager}>
                   <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {filteredBranches.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>

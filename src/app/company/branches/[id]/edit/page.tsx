@@ -64,7 +64,7 @@ export default function EditBranchPage() {
         })
         setStaff(allStaff.filter((s: any) => s.branchId === id))
       } catch {
-        toast.error("Failed to load branch data")
+        toast.error("Unable to load branch data. Please try again.")
         router.push("/company/branches")
       } finally {
         setLoading(false)
@@ -102,7 +102,7 @@ export default function EditBranchPage() {
       toast.success("Branch updated successfully!")
       router.push("/company/branches")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -121,7 +121,7 @@ export default function EditBranchPage() {
       toast.success("Branch deleted successfully!")
       router.push("/company/branches")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setDeleting(false)
     }

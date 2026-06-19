@@ -60,8 +60,27 @@ export default function DashboardPage() {
     loadAlerts()
   }, [])
 
+  useEffect(() => {
+    setDismissedAnnouncements(getStoredDismissed(STORAGE_KEY_ANNOUNCEMENTS))
+    setDismissedWarnings(getStoredDismissed(STORAGE_KEY_WARNINGS))
+  }, [])
+
+  function dismissAnnouncement(id: string) {
+    const next = new Set(dismissedAnnouncements)
+    next.add(id)
+    setDismissedAnnouncements(next)
+    storeDismissed(STORAGE_KEY_ANNOUNCEMENTS, next)
+  }
+
+  function dismissWarning(id: string) {
+    const next = new Set(dismissedWarnings)
+    next.add(id)
+    setDismissedWarnings(next)
+    storeDismissed(STORAGE_KEY_WARNINGS, next)
+  }
+
   const isOperational = role === "BRANCH_MANAGER" || role === "TELLER"
-  const isSupervisory = role === "COMPANY_OWNER" || role === "COMPANY_ADMIN"
+  const isSupervisory = role === "COMPANY_OWNER" || role === "company_owner" || role === "COMPANY_ADMIN" || role === "company_admin"
   const isTeller = role === "TELLER"
   const isBranchManager = role === "BRANCH_MANAGER"
 
@@ -86,31 +105,28 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* ALERTS SECTION */}
-      {alerts && !isActive && (
-        <div className="bg-red-600 text-white px-6 py-3 rounded-lg mb-6 flex items-center gap-3">
-          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
-          <p className="text-sm font-medium">Your company has been suspended. Contact platform admin for assistance.</p>
-        </div>
-      )}
 
+      {/* 1. ACTIVE WARNINGS */}
       {alerts && warnings?.length > 0 && (
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2">
           <h3 className="text-sm font-semibold text-amber-600 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             Active Warnings ({warnings.length})
           </h3>
           <div className="grid gap-2">
-            {warnings.map((w: any) => (
+            {warnings.filter((w: any) => !dismissedWarnings.has(w.id)).map((w: any) => (
               <Card key={w.id} className="border-amber-300 bg-amber-50 dark:bg-amber-950/10">
                 <CardContent className="p-3 flex items-start gap-3">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{w.reason}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(w.createdAt).toLocaleDateString()} &middot; {w.createdBy?.name || "Admin"}
                     </p>
                   </div>
+                  <button onClick={() => dismissWarning(w.id)} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                    <X className="h-4 w-4" />
+                  </button>
                 </CardContent>
               </Card>
             ))}
@@ -118,33 +134,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {alerts && announcements?.length > 0 && (
-        <div className="space-y-3 mb-6">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Megaphone className="h-4 w-4 text-primary" />
-            Announcements
-          </h3>
-          <div className="grid gap-3">
-            {announcements.map((a: any) => (
-              <Card key={a.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{a.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{a.content}</p>
-                    </div>
-                    <Badge variant="outline" className="shrink-0 text-[10px]">
-                      {new Date(a.createdAt).toLocaleDateString()}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Main content below alerts */}
+      {/* HEADER + GREETING */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
@@ -219,7 +209,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* CURRENCY TABS */}
+      {/* 2 & 3. DASHBOARD STATISTICS + WALLET BALANCES (Currency Tabs) */}
       {companyCurrencies.length > 0 && (
         <Tabs value={activeCurrency} onValueChange={setActiveCurrency}>
           <TabsList className="w-full justify-start overflow-x-auto">
@@ -263,7 +253,7 @@ export default function DashboardPage() {
         </Tabs>
       )}
 
-      {/* MONEY FLOW SECTION */}
+      {/* 4. MONEY FLOW */}
       <div>
         <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
           <DollarSign className="h-5 w-5 text-primary" />
@@ -309,7 +299,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* COMMISSION FLOW SECTION */}
+      {/* 5. COMMISSION FLOW */}
       <div>
         <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
           <Percent className="h-5 w-5 text-emerald-500" />
@@ -344,9 +334,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Chart + Branch Performance Grid */}
+      {/* 6. CHARTS + BRANCH PERFORMANCE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Volume Chart */}
         {!isTeller && (
           <Card className="lg:col-span-2">
             <CardHeader>
@@ -378,7 +367,6 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* Branch Performance / Insights */}
         {isSupervisory && (
           <Card>
             <CardHeader>
@@ -418,7 +406,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Recent Transactions */}
+      {/* 7. RECENT TRANSACTIONS */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Recent Transactions</CardTitle>
@@ -446,10 +434,50 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground text-center py-4">No recent transactions</p>
           )}
           <div className="text-center pt-4 border-t mt-2">
-            <Link href="/transfers" className="text-sm text-primary hover:underline">View all transactions</Link>
+            <Link href="/company/transfers" className="text-sm text-primary hover:underline">View all transactions</Link>
           </div>
         </CardContent>
       </Card>
+
+      {/* 8. ANNOUNCEMENTS (moved to bottom) */}
+      {alerts && announcements?.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Megaphone className="h-4 w-4 text-primary" />
+            Announcements
+          </h3>
+          <div className="grid gap-3">
+            {announcements.filter((a: any) => !dismissedAnnouncements.has(a.id)).map((a: any) => (
+              <Card key={a.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{a.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{a.content}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge variant="outline" className="text-[10px]">
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </Badge>
+                      <button onClick={() => dismissAnnouncement(a.id)} className="text-muted-foreground hover:text-foreground">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 9. ALERTS (suspension - at the bottom) */}
+      {alerts && !isActive && (
+        <div className="bg-red-600 text-white px-6 py-3 rounded-lg flex items-center gap-3">
+          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
+          <p className="text-sm font-medium">Your company has been suspended. Contact platform admin for assistance.</p>
+        </div>
+      )}
     </div>
   )
 }

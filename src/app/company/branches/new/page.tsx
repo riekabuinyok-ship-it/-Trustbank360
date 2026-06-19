@@ -52,7 +52,7 @@ export default function NewBranchPage() {
       toast.success("Branch created successfully!")
       router.push("/company/branches")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

@@ -47,7 +47,7 @@ export default function AdminSettingsPage() {
     fetch("/api/admin/settings")
       .then((r) => r.json())
       .then((data) => setSettings({ ...defaults, ...data }))
-      .catch(() => toast.error("Failed to load settings"))
+      .catch(() => toast.error("Unable to load settings. Please try again."))
       .finally(() => setLoading(false))
   }, [])
 

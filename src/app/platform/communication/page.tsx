@@ -51,9 +51,9 @@ export default function AdminCommunicationPage() {
     try {
       const res = await fetch("/api/admin/communication")
       if (res.ok) setMessages(await res.json())
-      else toast.error("Failed to load messages")
+      else toast.error("Unable to load messages. Please try again.")
     } catch {
-      toast.error("Failed to load messages")
+      toast.error("Unable to load messages. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -87,7 +87,7 @@ export default function AdminCommunicationPage() {
         toast.error(data.error || "Failed to send message")
       }
     } catch {
-      toast.error("Failed to send message")
+      toast.error("Unable to send message. Please check your input and try again.")
     } finally {
       setSending(false)
     }

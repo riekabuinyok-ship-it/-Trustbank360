@@ -55,7 +55,7 @@ export default function SettingsPage() {
           if (data.secondaryColor) setSecondaryColor(data.secondaryColor)
           if (data.logo) setLogo(data.logo)
         })
-        .catch(() => toast.error("Failed to load company data"))
+        .catch(() => toast.error("Unable to load company data. Please try again."))
         .finally(() => setLoading(false))
     } else {
       setLoading(false)

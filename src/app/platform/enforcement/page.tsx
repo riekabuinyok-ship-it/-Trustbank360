@@ -74,10 +74,10 @@ export default function AdminEnforcementPage() {
         setViolations(data.violations)
         setCompanyStatuses(data.companyStatuses)
       } else {
-        toast.error("Failed to load enforcement data")
+        toast.error("Unable to load enforcement data. Please try again.")
       }
     } catch {
-      toast.error("Failed to load enforcement data")
+      toast.error("Unable to load enforcement data. Please try again.")
     } finally {
       setLoading(false)
     }

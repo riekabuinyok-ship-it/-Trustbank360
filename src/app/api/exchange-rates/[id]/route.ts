@@ -55,7 +55,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(rate)
   } catch {
-    return NextResponse.json({ error: "Failed to update rate" }, { status: 500 })
+    return NextResponse.json({ error: "Unable to update exchange rate. Please try again." }, { status: 500 })
   }
 }
 
@@ -89,6 +89,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ ok: true })
   } catch {
-    return NextResponse.json({ error: "Failed to delete rate" }, { status: 500 })
+    return NextResponse.json({ error: "Unable to delete exchange rate. Please try again." }, { status: 500 })
   }
 }

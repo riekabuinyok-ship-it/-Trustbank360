@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,8 @@ const roles = [
 
 export default function NewStaffPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+  const user = session?.user as any
   const [loading, setLoading] = useState(false)
   const [planError, setPlanError] = useState<any>(null)
   const [branches, setBranches] = useState<any[]>([])
@@ -33,9 +36,22 @@ export default function NewStaffPage() {
     role: "TELLER",
   })
 
+  const isBranchManager = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager"
+
   useEffect(() => {
-    fetch("/api/branches").then((r) => r.json()).then(setBranches)
+    fetch("/api/branches").then((r) => r.json()).then((data) => {
+      setBranches(data)
+      // Auto-select branch for Branch Manager
+      if (isBranchManager && user?.branchId) {
+        setForm((prev) => ({ ...prev, branchId: user.branchId }))
+      }
+    })
   }, [])
+
+  // Filter to own branch for Branch Manager
+  const filteredBranches = isBranchManager
+    ? branches.filter((b) => b.id === user?.branchId)
+    : branches
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -63,7 +79,7 @@ export default function NewStaffPage() {
       toast.success(`Staff invited! Temporary password: ${data.tempPassword}`)
       router.push("/company/staff")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -115,10 +131,10 @@ export default function NewStaffPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Branch *</Label>
-                <Select value={form.branchId} onValueChange={(v) => updateField("branchId", v)}>
+                <Select value={form.branchId} onValueChange={(v) => updateField("branchId", v)} disabled={isBranchManager}>
                   <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {filteredBranches.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>

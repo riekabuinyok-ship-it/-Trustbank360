@@ -47,7 +47,7 @@ export default function CustomerDetailPage() {
         toast.error(err.error || "Failed to update")
       }
     } catch {
-      toast.error("Failed to update customer")
+      toast.error("Unable to update customer record. Please try again.")
     }
   }
 
@@ -67,7 +67,7 @@ export default function CustomerDetailPage() {
         toast.error(err.error || "Failed to update")
       }
     } catch {
-      toast.error("Failed to update customer")
+      toast.error("Unable to update customer record. Please try again.")
     }
   }
 

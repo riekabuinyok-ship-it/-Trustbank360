@@ -101,10 +101,10 @@ export default function AdminSubscriptionsPage() {
         setRevenue(data.revenue)
         if (data.currencyManagement) setCurrencyManagement(data.currencyManagement)
       } else {
-        toast.error("Failed to load subscription data")
+        toast.error("Unable to load subscription data. Please try again.")
       }
     } catch {
-      toast.error("Failed to load subscription data")
+      toast.error("Unable to load subscription data. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -164,7 +164,7 @@ export default function AdminSubscriptionsPage() {
         toast.error(err.error || "Failed to save plan")
       }
     } catch {
-      toast.error("Failed to save plan")
+      toast.error("Unable to save plan. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -189,7 +189,7 @@ export default function AdminSubscriptionsPage() {
         toast.error(err.error || "Failed to delete plan")
       }
     } catch {
-      toast.error("Failed to delete plan")
+      toast.error("Unable to delete plan. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -353,7 +353,7 @@ export default function AdminSubscriptionsPage() {
         toast.error(err.error || "Failed to update rate")
       }
     } catch {
-      toast.error("Failed to update rate")
+      toast.error("Unable to update exchange rate. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -376,7 +376,7 @@ export default function AdminSubscriptionsPage() {
         toast.error(err.error || "Failed to delete rate")
       }
     } catch {
-      toast.error("Failed to delete rate")
+      toast.error("Unable to delete exchange rate. Please try again.")
     } finally {
       setSaving(false)
     }

@@ -51,10 +51,10 @@ export default function HelpPage() {
         setSent(true)
         setForm({ subject: "", type: "bug", message: "" })
       } else {
-        toast.error("Failed to send. Please try again.")
+        toast.error("Unable to send your message. Please check your connection and try again.")
       }
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setSending(false)
     }

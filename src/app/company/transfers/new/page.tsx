@@ -72,7 +72,7 @@ export default function NewTransferPage() {
       toast.success(`Transaction created! Secret Code: ${data.secretCode}`)
       router.push("/company/transfers")
     } catch {
-      toast.error("An error occurred")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

@@ -25,12 +25,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const user = session.user as any
   const { id } = await params
 
-  if (user.role !== "COMPANY_OWNER" && user.role !== "company_owner" && user.role !== "COMPANY_ADMIN" && user.role !== "company_admin") {
-    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+  const isSupervisor = user.role === "COMPANY_OWNER" || user.role === "company_owner" ||
+    user.role === "COMPANY_ADMIN" || user.role === "company_admin"
+  const isBranchManager = user.role === "BRANCH_MANAGER" || user.role === "branch_manager"
+
+  if (!isSupervisor && !isBranchManager) {
+    return NextResponse.json({ error: "You do not have sufficient permissions to perform this action." }, { status: 403 })
   }
 
   try {
     const body = await request.json()
+
+    // Verify staff belongs to same company
+    const target = await prisma.user.findFirst({
+      where: { id, companyId: user.companyId },
+      select: { id: true, branchId: true, role: true },
+    })
+    if (!target) {
+      return NextResponse.json({ error: "Staff member not found in your organization." }, { status: 404 })
+    }
+
+    // Branch Manager can only edit staff in their own branch
+    if (isBranchManager) {
+      if (!user.branchId) {
+        return NextResponse.json({ error: "You are not assigned to a branch. Contact your company owner." }, { status: 403 })
+      }
+      if (target.branchId !== user.branchId) {
+        return NextResponse.json({ error: "You can only manage staff within your own branch." }, { status: 403 })
+      }
+    }
 
     const updateData: any = {}
     const auditDetails: string[] = []
@@ -48,7 +71,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
+      return NextResponse.json({ error: "No fields were provided to update." }, { status: 400 })
     }
 
     await prisma.user.update({
@@ -69,7 +92,57 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    if (error?.code === "P2002") return NextResponse.json({ error: "Email already in use" }, { status: 409 })
-    return NextResponse.json({ error: "Failed to update staff" }, { status: 500 })
+    if (error?.code === "P2002") return NextResponse.json({ error: "This email address is already in use by another staff member." }, { status: 409 })
+    return NextResponse.json({
+      error: "Staff update failed",
+      message: "An unexpected error occurred while updating the staff member. Please try again.",
+    }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const user = session.user as any
+  const { id } = await params
+
+  const isSupervisor = user.role === "COMPANY_OWNER" || user.role === "company_owner" ||
+    user.role === "COMPANY_ADMIN" || user.role === "company_admin"
+
+  if (!isSupervisor) {
+    return NextResponse.json({ error: "Only Company Owners and Administrators can delete staff members." }, { status: 403 })
+  }
+
+  try {
+    const target = await prisma.user.findFirst({
+      where: { id, companyId: user.companyId },
+      select: { id: true },
+    })
+    if (!target) {
+      return NextResponse.json({ error: "Staff member not found in your organization." }, { status: 404 })
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.auditLog.deleteMany({ where: { userId: id, companyId: user.companyId } })
+      await tx.user.delete({ where: { id } })
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "DELETE_STAFF",
+        resource: "USER",
+        details: `Staff member removed`,
+        branchId: user.branchId,
+        companyId: user.companyId,
+      },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({
+      error: "Staff deletion failed",
+      message: "An unexpected error occurred. The staff member may have active records in the system.",
+    }, { status: 500 })
   }
 }

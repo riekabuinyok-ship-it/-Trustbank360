@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     where: { id, companyId: user.companyId },
     include: { _count: { select: { users: true, wallets: true } } },
   })
-  if (!branch) return NextResponse.json({ error: "Branch not found" }, { status: 404 })
+  if (!branch) return NextResponse.json({ error: "Branch not found in your organization." }, { status: 404 })
 
   return NextResponse.json(branch)
 }
@@ -25,13 +25,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params
 
   if (user.role !== "COMPANY_OWNER" && user.role !== "company_owner" && user.role !== "COMPANY_ADMIN" && user.role !== "company_admin") {
-    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    return NextResponse.json({ error: "You do not have sufficient permissions to perform this action." }, { status: 403 })
   }
 
   const existing = await prisma.branch.findFirst({
     where: { id, companyId: user.companyId },
   })
-  if (!existing) return NextResponse.json({ error: "Branch not found" }, { status: 404 })
+  if (!existing) return NextResponse.json({ error: "Branch not found in your organization." }, { status: 404 })
 
   try {
     const body = await request.json()
@@ -63,7 +63,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(branch)
   } catch {
-    return NextResponse.json({ error: "Failed to update branch" }, { status: 500 })
+    return NextResponse.json({
+      error: "Branch update failed",
+      message: "An unexpected error occurred while updating the branch. Please try again.",
+    }, { status: 500 })
   }
 }
 
@@ -74,16 +77,32 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { id } = await params
 
   if (user.role !== "COMPANY_OWNER" && user.role !== "company_owner") {
-    return NextResponse.json({ error: "Only the company owner can delete branches" }, { status: 403 })
+    return NextResponse.json({ error: "Only the Company Owner can delete branches." }, { status: 403 })
   }
 
   const branch = await prisma.branch.findFirst({
     where: { id, companyId: user.companyId },
     include: { _count: { select: { users: true } } },
   })
-  if (!branch) return NextResponse.json({ error: "Branch not found" }, { status: 404 })
+  if (!branch) return NextResponse.json({ error: "Branch not found in your organization." }, { status: 404 })
   if (branch._count.users > 0) {
-    return NextResponse.json({ error: "Cannot delete a branch that has staff assigned" }, { status: 400 })
+    return NextResponse.json({
+      error: "This branch cannot be deleted because active staff members are still associated with it. Please reassign or remove all staff before deleting this branch.",
+    }, { status: 400 })
+  }
+
+  const branchTxCount = await prisma.branchTransaction.count({
+    where: {
+      OR: [
+        { senderBranchId: id },
+        { receiverBranchId: id },
+      ],
+    },
+  })
+  if (branchTxCount > 0) {
+    return NextResponse.json({
+      error: "This branch cannot be deleted because transaction records are linked to it. Please archive or transfer all transactions before proceeding.",
+    }, { status: 400 })
   }
 
   try {
@@ -102,6 +121,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ ok: true })
   } catch {
-    return NextResponse.json({ error: "Failed to delete branch" }, { status: 500 })
+    return NextResponse.json({
+      error: "Branch deletion failed",
+      message: "An unexpected error occurred while deleting the branch. Please try again or contact support.",
+    }, { status: 500 })
   }
 }

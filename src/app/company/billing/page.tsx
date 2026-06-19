@@ -115,7 +115,7 @@ export default function BillingPage() {
         setSubscription(data.subscription || null)
         setPayments(data.payments || [])
       })
-      .catch(() => toast.error("Failed to load billing data"))
+      .catch(() => toast.error("Unable to load billing data. Please try again."))
       .finally(() => setLoading(false))
   }, [])
 
