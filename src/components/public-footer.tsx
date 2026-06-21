@@ -70,9 +70,7 @@ export function PublicFooter() {
           <div className="sm:col-span-2 lg:col-span-4 space-y-6">
             {/* Logo + Tagline */}
             <Link href="/" className="inline-flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary-500/20 group-hover:shadow-primary-500/40 transition-shadow">
-                <Banknote className="h-5.5 w-5.5 text-white" />
-              </div>
+              <img src="/images/logo.svg" alt="TB360" className="w-10 h-10" />
               <div>
                 <span className="text-lg font-bold text-white tracking-tight">TrustBank360</span>
                 <p className="text-[11px] text-primary-400 font-medium -mt-0.5">Enterprise Fintech</p>

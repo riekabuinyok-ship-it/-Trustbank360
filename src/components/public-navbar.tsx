@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Banknote, Menu, X, ChevronDown } from "lucide-react"
+import { Menu, X } from "lucide-react"
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -23,10 +23,8 @@ export function PublicNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-sm">TB</span>
-            </div>
-            <span className="text-lg font-bold text-surface-900 dark:text-white">TB<span className="text-primary-500">360</span></span>
+            <img src="/images/logo.svg" alt="TB360" className="h-9 w-9" />
+            <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:inline">TB<span className="text-primary-500">360</span></span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">

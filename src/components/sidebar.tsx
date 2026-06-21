@@ -105,10 +105,8 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-3 px-4 h-16 border-b border-surface-200 dark:border-surface-700">
-            <Link href="/company/dashboard" className={cn("flex items-center gap-3 flex-1 min-w-0", isCollapsed && "justify-center")}>
-              <div className="flex-shrink-0 w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                <Banknote className="h-5 w-5 text-white" />
-              </div>
+          <Link href="/company/dashboard" className={cn("flex items-center gap-3 flex-1 min-w-0", isCollapsed && "justify-center")}>
+              <img src="/images/logo.svg" alt="TB360" className="flex-shrink-0 w-8 h-8" />
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <h1 className="text-sm font-bold text-surface-900 dark:text-white truncate">
@@ -241,9 +239,7 @@ export function MobileNav() {
           <Menu className="h-5 w-5" />
         </button>
         <Link href="/company/dashboard" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
-            <Banknote className="h-4 w-4 text-white" />
-          </div>
+          <img src="/images/logo.svg" alt="TB360" className="w-7 h-7" />
           <span className="text-sm font-bold">TrustBank360</span>
         </Link>
       </div>
@@ -261,9 +257,7 @@ export function MobileNav() {
           <div className="fixed left-0 top-0 bottom-0 w-72 bg-white dark:bg-surface-900 flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                  <Banknote className="h-5 w-5 text-white" />
-                </div>
+                <img src="/images/logo.svg" alt="TB360" className="w-8 h-8" />
                 <span className="font-bold">TrustBank360</span>
               </div>
               <button onClick={() => setOpen(false)} className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
