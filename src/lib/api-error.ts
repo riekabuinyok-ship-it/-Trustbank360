@@ -3,6 +3,7 @@ export interface ApiErrorResponse {
   errorCode: string
   title: string
   message: string
+  error: string
   usage?: { used: number; limit: number }
   plan?: string
   upgradeRequired: boolean
@@ -75,6 +76,7 @@ export function formatApiError(
     errorCode,
     title,
     message,
+    error: message,
     usage: overrides?.usage,
     plan: overrides?.plan,
     upgradeRequired: overrides?.upgradeRequired ?? true,
@@ -105,6 +107,7 @@ export function formatPlanError(
     errorCode,
     title,
     message,
+    error: message,
     usage: typeof limit === "number" ? { used, limit } : undefined,
     plan: planName,
     upgradeRequired: true,
