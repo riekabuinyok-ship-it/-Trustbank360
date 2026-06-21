@@ -65,29 +65,29 @@ export default function CustomersPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-muted-foreground">Customer database</p>
+          <p className="text-muted-foreground text-sm">Customer database</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="gap-2">
+        <Button onClick={() => setDialogOpen(true)} className="gap-2 w-full sm:w-auto" size="sm">
           <Plus className="h-4 w-4" />
           Add Customer
         </Button>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-lg">All Customers</CardTitle>
-            <div className="relative">
+            <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by name, phone, ID..." className="pl-9 w-80" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input placeholder="Search by name, phone, ID..." className="pl-9 w-full" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <DataTable columns={columns} data={customers} />
         </CardContent>
       </Card>

@@ -284,7 +284,7 @@ export default function NewTransferPage() {
           </p>
         </div>
 
-        <div className="flex gap-4 mt-6">
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <Button type="button" variant="outline" onClick={() => router.back()} className="w-full" size="lg">Cancel</Button>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

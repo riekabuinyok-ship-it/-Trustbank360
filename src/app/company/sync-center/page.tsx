@@ -108,21 +108,21 @@ export default function SyncCenterPage() {
   const totalItems = pendingItems.length + failedItems.length + syncedItems.length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
             <RefreshCw className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold">Sync Center</h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground break-anywhere">
               Manage offline data synchronization and resolve conflicts
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm">
             {isOnline ? (
               <span className="flex items-center gap-1 text-emerald-600">
                 <Wifi className="h-4 w-4" /> Online
@@ -136,7 +136,8 @@ export default function SyncCenterPage() {
           <Button
             onClick={handleSyncNow}
             disabled={!isOnline || isSyncing}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto"
+            size="sm"
           >
             {isSyncing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -149,7 +150,7 @@ export default function SyncCenterPage() {
       </div>
 
       {syncResult && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <Card className="border-emerald-200 dark:border-emerald-900">
             <CardContent className="p-4 flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -180,7 +181,7 @@ export default function SyncCenterPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{pendingItems.length}</p>
@@ -402,7 +403,7 @@ export default function SyncCenterPage() {
                         </div>
                         <Badge variant="warning" className="text-[10px]">{conflict.conflictType}</Badge>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         <div className="p-2 rounded bg-red-50 dark:bg-red-950/10 border border-red-200 dark:border-red-900">
                           <p className="font-semibold text-red-700 dark:text-red-400 mb-1">Local</p>
                           <pre className="truncate">{JSON.stringify(conflict.localPayload).slice(0, 100)}</pre>

@@ -68,13 +68,13 @@ export default function AdminPage() {
   const activity = data?.recentActivity ?? []
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       <div>
         <h1 className="text-2xl font-bold">Admin Overview</h1>
         <p className="text-sm text-muted-foreground mt-1">Platform-wide metrics and activity</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (

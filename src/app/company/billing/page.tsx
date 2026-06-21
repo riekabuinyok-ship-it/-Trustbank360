@@ -143,14 +143,14 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 w-full max-w-full overflow-hidden">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
           <CreditCard className="h-6 w-6 text-primary-600" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Billing & Plan</h1>
-          <p className="text-muted-foreground">Manage your subscription, upgrade or downgrade your plan</p>
+          <p className="text-muted-foreground text-sm">Manage your subscription, upgrade or downgrade your plan</p>
         </div>
       </div>
 
@@ -167,9 +167,9 @@ export default function BillingPage() {
 
       {/* Current Plan Summary — shown for both ACTIVE and TRIALING */}
       {hasPlan && currentPlan && subscription && (
-        <Card className="border-primary-200 dark:border-primary-800">
+        <Card className="border-primary-200 dark:border-primary-800 w-full max-w-full overflow-hidden">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <CardTitle className="text-lg">Current Plan</CardTitle>
                 <CardDescription>
@@ -178,7 +178,7 @@ export default function BillingPage() {
                     : "Your active subscription details"}
                 </CardDescription>
               </div>
-              <Badge variant={statusVariants[subscription.status] || "outline"}>
+              <Badge variant={statusVariants[subscription.status] || "outline"} className="self-start sm:self-auto">
                 {statusLabels[subscription.status] || subscription.status}
               </Badge>
             </div>

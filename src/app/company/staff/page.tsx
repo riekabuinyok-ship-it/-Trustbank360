@@ -120,25 +120,25 @@ export default function StaffPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Staff</h1>
-          <p className="text-muted-foreground">Manage your team</p>
+          <p className="text-muted-foreground text-sm">Manage your team</p>
         </div>
-        <Link href="/company/staff/new">
-          <Button className="gap-2">
+        <Link href="/company/staff/new" className="w-full sm:w-auto">
+          <Button className="gap-2 w-full sm:w-auto" size="sm">
             <UserPlus className="h-4 w-4" />
             Invite Staff
           </Button>
         </Link>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">All Staff</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <DataTable columns={columns} data={staff} />
         </CardContent>
       </Card>

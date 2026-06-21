@@ -240,25 +240,25 @@ export default function TransfersPage() {
   const canProcessPayout = t && isReceiverBranch(t) && isOperational && t.status === "PENDING"
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Transactions</h1>
-          <p className="text-muted-foreground">Money transfers & mobile money transactions</p>
+          <p className="text-muted-foreground text-sm">Money transfers & mobile money transactions</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isOperational && (
             <>
               <Link href="/company/transfers/incoming">
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2" size="sm">
                   <ArrowLeftRight className="h-4 w-4" />
-                  Incoming
+                  <span className="hidden sm:inline">Incoming</span>
                 </Button>
               </Link>
               <Link href="/company/transfers/new">
-                <Button className="gap-2">
+                <Button className="gap-2" size="sm">
                   <Plus className="h-4 w-4" />
-                  New Transaction
+                  <span>New Transaction</span>
                 </Button>
               </Link>
             </>
@@ -266,55 +266,55 @@ export default function TransfersPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-lg">All Transactions</CardTitle>
-            <div className="relative">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by code or name..." className="pl-9 w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <Input placeholder="Search by code or name..." className="pl-9 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <DataTable columns={columns} data={filtered} />
         </CardContent>
       </Card>
 
       {/* Transaction Details Dialog */}
       <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setShowCancelDialog(false); setShowReverseDialog(false); setShowPayoutDialog(false); setPayoutError(""); setPayoutSecretCode("") }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-6">
               {/* Header Info */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 rounded-lg bg-surface-50 dark:bg-surface-800/50">
-                <div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-surface-50 dark:bg-surface-800/50">
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Transaction Number</p>
-                  <p className="text-sm font-mono font-semibold">{selected.transactionNumber}</p>
+                  <p className="text-sm font-mono font-semibold break-all">{selected.transactionNumber}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Secret Code</p>
-                  <p className="text-sm font-mono font-bold text-primary-600">{selected.secretCode || "—"}</p>
+                  <p className="text-sm font-mono font-bold text-primary-600 break-all">{selected.secretCode || "—"}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Status</p>
                   <Badge className={statusColors[selected.status]}>{selected.status === "PENDING" ? "Pending" : selected.status.replace(/_/g, " ")}</Badge>
                   <div className="mt-1">
                     <SlaTimer createdAt={selected.createdAt} completedAt={selected.paidAt || selected.cancelledAt || selected.reversedAt} />
                   </div>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Type</p>
-                  <p className="text-sm font-medium">{getTransactionTypeLabel(selected.transactionType)}</p>
+                  <p className="text-sm font-medium break-anywhere">{getTransactionTypeLabel(selected.transactionType)}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Amount</p>
                   <p className="text-sm font-semibold">{formatCurrency(selected.amount, selected.currency)}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Commission</p>
                   <p className="text-sm">{formatCurrency(selected.commission, selected.currency)}</p>
                 </div>

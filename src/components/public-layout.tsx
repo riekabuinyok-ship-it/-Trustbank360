@@ -1,5 +1,6 @@
 import { PublicNavbar } from "@/components/public-navbar"
 import { PublicFooter } from "@/components/public-footer"
+import { NetworkStatusIndicator } from "@/components/network-status"
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <PublicNavbar />
       <main>{children}</main>
       <PublicFooter />
+      <NetworkStatusIndicator />
     </div>
   )
 }

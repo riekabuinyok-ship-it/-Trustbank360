@@ -51,13 +51,13 @@ export function NetworkStatusIndicator() {
       {status === "offline" && (
         <>
           <WifiOff className="h-4 w-4" />
-          <span>Offline — working from cache</span>
+          <span>You are offline — cached content shown</span>
         </>
       )}
       {status === "syncing" && (
         <>
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Syncing...</span>
+          <span>Synchronizing your data...</span>
         </>
       )}
     </div>
