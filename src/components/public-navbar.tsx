@@ -23,8 +23,8 @@ export function PublicNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src="/images/logo.svg" alt="TB360" className="h-9 w-9" />
-            <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:inline">TB<span className="text-primary-500">360</span></span>
+            <img src="/images/logo.svg" alt="TRUSTBANK360" className="h-9 w-9" />
+            <span className="text-lg font-bold text-surface-900 dark:text-white hidden sm:inline">TRUSTBANK<span className="text-primary-500">360</span></span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">

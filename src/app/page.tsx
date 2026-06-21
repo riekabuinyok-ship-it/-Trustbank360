@@ -24,7 +24,7 @@ export default function LandingPage() {
               Powering Money Transfer Across Africa and Beyond
             </h1>
             <p className="mt-6 text-lg text-white/80 max-w-xl">
-              TB360 is a complete enterprise platform for money transfer businesses, forex bureaus, and mobile money agents. Manage branches, staff, transactions, and compliance from a single dashboard.
+              TRUSTBANK360 is a complete enterprise platform for money transfer businesses, forex bureaus, and mobile money agents. Manage branches, staff, transactions, and compliance from a single dashboard.
             </p>
             <div className="flex flex-wrap gap-4 mt-8">
               <Link href="/signup" className="inline-flex items-center px-6 py-3 rounded-xl bg-secondary text-white font-semibold hover:bg-secondary-600 transition-colors shadow-lg shadow-secondary/25">
@@ -53,7 +53,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold">Everything You Need to Run Your Business</h2>
-            <p className="text-muted-foreground mt-4">From branch management to compliance, TB360 provides all the tools you need.</p>
+            <p className="text-muted-foreground mt-4">From branch management to compliance, TRUSTBANK360 provides all the tools you need.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -85,7 +85,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary text-sm font-medium mb-4">Security & Compliance</div>
               <h2 className="text-3xl sm:text-4xl font-bold">Enterprise-Grade Security</h2>
-              <p className="text-muted-foreground mt-4 leading-relaxed">Role-based access control, comprehensive audit logs, KYC/AML compliance tools, and encrypted data storage. TB360 meets the highest security standards for financial institutions.</p>
+              <p className="text-muted-foreground mt-4 leading-relaxed">Role-based access control, comprehensive audit logs, KYC/AML compliance tools, and encrypted data storage. TRUSTBANK360 meets the highest security standards for financial institutions.</p>
               <div className="mt-6 space-y-4">
                 {["6 user roles with granular permissions", "Complete audit trail for every transaction", "KYC/AML verification workflows", "Data encryption at rest and in transit"].map((item) => (
                   <div key={item} className="flex items-center gap-3">
@@ -108,7 +108,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-sm font-medium mb-4">Global Reach</div>
               <h2 className="text-3xl sm:text-4xl font-bold">Connected Across the Globe</h2>
-              <p className="text-muted-foreground mt-4 leading-relaxed">Multi-currency support, multi-country operations, and real-time exchange rates. TB360 connects you to markets across Africa, Europe, and the Americas.</p>
+              <p className="text-muted-foreground mt-4 leading-relaxed">Multi-currency support, multi-country operations, and real-time exchange rates. TRUSTBANK360 connects you to markets across Africa, Europe, and the Americas.</p>
               <div className="mt-6 space-y-4">
                 {["Support for 7 major currencies", "Operations in 50+ countries", "Real-time exchange rate management", "Multi-language support coming soon"].map((item) => (
                   <div key={item} className="flex items-center gap-3">
@@ -132,11 +132,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold">Trusted by Financial Leaders</h2>
-            <p className="text-muted-foreground mt-4">Companies across Africa rely on TB360 for their money transfer operations.</p>
+            <p className="text-muted-foreground mt-4">Companies across Africa rely on TRUSTBANK360 for their money transfer operations.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { img: IMAGES.testimonials.one, name: "John Deng", role: "CEO, Nile Transfers", text: "TB360 transformed our operations. We've reduced transaction processing time by 60%." },
+              { img: IMAGES.testimonials.one, name: "John Deng", role: "CEO, Nile Transfers", text: "TRUSTBANK360 transformed our operations. We've reduced transaction processing time by 60%." },
               { img: IMAGES.testimonials.two, name: "Sarah Akol", role: "Operations Director, EastPay", text: "The compliance and audit features give us confidence to scale across multiple countries." },
               { img: IMAGES.testimonials.three, name: "James Ochieng", role: "Founder, KenyaRemit", text: "Branch management and multi-currency support were exactly what we needed." },
             ].map((t) => (
@@ -165,7 +165,7 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">Ready to Transform Your Business?</h2>
-          <p className="text-white/80 mt-4 text-lg">Join hundreds of companies already using TB360. Start your free trial today.</p>
+          <p className="text-white/80 mt-4 text-lg">Join hundreds of companies already using TRUSTBANK360. Start your free trial today.</p>
           <div className="flex flex-wrap justify-center gap-4 mt-8">
             <Link href="/signup" className="inline-flex items-center px-8 py-3.5 rounded-xl bg-secondary text-white font-semibold hover:bg-secondary-600 transition-colors shadow-lg shadow-secondary/25 text-lg">Start Free Trial</Link>
             <Link href="/contact" className="inline-flex items-center px-8 py-3.5 rounded-xl bg-white/15 text-white font-semibold hover:bg-white/25 transition-colors border border-white/30 backdrop-blur-sm text-lg">Contact Sales</Link>

@@ -7,12 +7,12 @@ export default function PublicTutorialsPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold">Watch Tutorial</h1>
-            <p className="text-muted-foreground mt-2">Learn how to use TB360 with this step-by-step training video.</p>
+            <p className="text-muted-foreground mt-2">Learn how to use TRUSTBANK360 with this step-by-step training video.</p>
           </div>
           <div className="aspect-video rounded-xl overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-lg">
             <iframe
               src="https://www.youtube.com/embed/zrFno1ygJm8"
-              title="TB360 Training Tutorial"
+              title="TRUSTBANK360 Training Tutorial"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="w-full h-full"
