@@ -16,6 +16,7 @@ export async function GET() {
     where: {
       companyId: user.companyId,
       role: { notIn: ["platform_owner", "PLATFORM_ADMIN", "SUPER_ADMIN"] },
+      status: { notIn: ["INACTIVE"] },
     },
     include: { branch: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
