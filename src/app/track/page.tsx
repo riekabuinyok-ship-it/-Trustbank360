@@ -27,8 +27,8 @@ const timeline = [
 ]
 
 export default function TrackTransferPage() {
-  const [transferCode, setTransferCode] = useState("")
-  const [phone, setPhone] = useState("")
+  const [secretCode, setSecretCode] = useState("")
+  const [senderName, setSenderName] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState("")
@@ -40,9 +40,10 @@ export default function TrackTransferPage() {
     setResult(null)
 
     try {
-      const res = await fetch(`/api/public/track?code=${transferCode}&phone=${phone}`)
+      const res = await fetch(`/api/public/track?code=${secretCode}&name=${encodeURIComponent(senderName)}`)
       if (!res.ok) {
-        setError("Transfer not found. Please check your code and phone number.")
+        const data = await res.json()
+        setError(data.error || "Transfer not found. Please check your code and name.")
         return
       }
       const data = await res.json()
@@ -62,31 +63,30 @@ export default function TrackTransferPage() {
             <img src="/images/logo-white.svg" alt="TRUSTBANK360" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl font-bold">Track Your Transfer</h1>
-          <p className="text-muted-foreground mt-2">Enter your transfer code and phone number to check the status</p>
+          <p className="text-muted-foreground mt-2">Enter the sender's first name and secret code to check your transfer status.</p>
         </div>
 
         <Card className="glass-card mb-6">
           <CardContent className="pt-6">
             <form onSubmit={handleSearch} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Transfer Code</Label>
+                <Label htmlFor="code">Secret Code</Label>
                 <Input
                   id="code"
-                  placeholder="e.g. TBK-A1B2-C3D4"
-                  value={transferCode}
-                  onChange={(e) => setTransferCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. TRU12345"
+                  value={secretCode}
+                  onChange={(e) => setSecretCode(e.target.value.toUpperCase())}
                   required
-                  className="text-lg font-mono"
+                  className="text-lg font-mono tracking-widest"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="name">Sender's First Name</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+211 123 456 789"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  id="name"
+                  placeholder="e.g. John"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
                   required
                 />
               </div>

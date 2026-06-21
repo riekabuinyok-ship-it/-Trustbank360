@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
-  const phone = searchParams.get("phone")
+  const name = searchParams.get("name")
 
-  if (!code || !phone) {
+  if (!code || !name) {
     return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
   }
 
@@ -24,11 +24,11 @@ export async function GET(request: Request) {
     })
 
     if (!transfer) {
-      return NextResponse.json({ error: "Transfer not found" }, { status: 404 })
+      return NextResponse.json({ error: "Transfer not found. Please check your secret code." }, { status: 404 })
     }
 
-    if (transfer.sender.phone !== phone) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    if (!transfer.sender.fullName?.toLowerCase().startsWith(name.toLowerCase())) {
+      return NextResponse.json({ error: "Invalid credentials. Please check your name and secret code." }, { status: 401 })
     }
 
     return NextResponse.json({
