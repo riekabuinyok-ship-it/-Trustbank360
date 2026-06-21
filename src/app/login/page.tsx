@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
+import { TryDemoButton } from "@/components/try-demo-button"
 
 function LoginForm() {
   const [email, setEmail] = useState("")
@@ -131,6 +132,13 @@ function LoginForm() {
             </p>
           </CardFooter>
         </Card>
+
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="text-center mb-4">
+            <p className="text-xs text-muted-foreground">Or try our demo account</p>
+          </div>
+          <TryDemoButton showRoles />
+        </div>
       </div>
     </div>
   )
