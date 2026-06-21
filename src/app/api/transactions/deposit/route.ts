@@ -34,17 +34,6 @@ export async function POST(request: Request) {
       return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
     }
 
-    const walletExists = await prisma.wallet.findFirst({
-      where: { companyId: user.companyId, currency: currency as any },
-    })
-    if (!walletExists) {
-      return NextResponse.json(formatApiError("CURRENCY_LIMIT_REACHED", {
-        title: "Currency not available",
-        message: "Deposits in this currency are not allowed under your current plan.",
-        upgradeRequired: true,
-      }), { status: 403 })
-    }
-
     const transactionNumber = generateTransactionNumber()
 
     const transfer = await prisma.$transaction(async (tx) => {

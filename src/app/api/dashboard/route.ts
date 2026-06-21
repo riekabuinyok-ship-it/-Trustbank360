@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
+import { getPlanByName, getAllowedCurrencies } from "@/lib/plan-config"
 
 async function getBasicDashboard(user: any, whereBase: any, isOperational: boolean) {
   const [transferCount, customerCount, walletGroup, recentTransfers] = await Promise.all([
@@ -81,6 +82,21 @@ export async function GET() {
       ? [company.mainCurrency, ...company.additionalCurrencies]
       : ["SSP"]
 
+    // Filter currencies by plan
+    let planCurrencies = companyCurrencies
+    try {
+      const sub = await prisma.subscription.findUnique({
+        where: { companyId: user.companyId },
+        select: { plan: { select: { name: true } } },
+      })
+      if (sub) {
+        const allowed = getAllowedCurrencies(sub.plan.name)
+        planCurrencies = companyCurrencies.filter((c) => allowed.includes(c))
+      }
+    } catch {
+      // fall back to company currencies
+    }
+
     const aggregate = async (where: any) => {
       const [totals, commissions] = await Promise.all([
         prisma.transfer.aggregate({
@@ -137,7 +153,7 @@ export async function GET() {
     }
 
     const byCurrency: Record<string, any> = {}
-    for (const currency of companyCurrencies) {
+    for (const currency of planCurrencies) {
       const found = currencyGroup.find((c) => c.currency === currency)
       byCurrency[currency] = {
         count: found?._count || 0,
@@ -258,7 +274,7 @@ export async function GET() {
         cancelled: countsMap["CANCELLED"] || 0,
       },
       byCurrency,
-      companyCurrencies,
+      companyCurrencies: planCurrencies,
       branchBalances,
       topBranches,
       dailyVolume,

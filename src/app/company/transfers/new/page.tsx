@@ -20,6 +20,7 @@ export default function NewTransferPage() {
   const [loading, setLoading] = useState(false)
   const [branches, setBranches] = useState<any[]>([])
   const [providers, setProviders] = useState<any[]>([])
+  const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED"])
 
   const availableTypes = filterTransactionTypes(user?.businessTypes || [])
 
@@ -46,6 +47,9 @@ export default function NewTransferPage() {
   useEffect(() => {
     fetch("/api/branches").then((r) => r.json()).then(setBranches).catch(() => setBranches([]))
     fetch("/api/providers").then((r) => r.json()).then(setProviders).catch(() => setProviders([]))
+    fetch("/api/company/plan").then((r) => r.json()).then((d) => {
+      if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
+    }).catch(() => {})
   }, [])
 
   function updateField(field: string, value: string) {
@@ -218,13 +222,17 @@ export default function NewTransferPage() {
                 <Select value={form.currency} onValueChange={(v) => updateField("currency", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SSP">🇸🇸 SSP</SelectItem>
-                    <SelectItem value="KES">🇰🇪 KES</SelectItem>
-                    <SelectItem value="UGX">🇺🇬 UGX</SelectItem>
-                    <SelectItem value="USD">🇺🇸 USD</SelectItem>
-                    <SelectItem value="EUR">🇪🇺 EUR</SelectItem>
-                    <SelectItem value="GBP">🇬🇧 GBP</SelectItem>
-                    <SelectItem value="AED">🇦🇪 AED</SelectItem>
+                    {[
+                      { value: "SSP", label: "🇸🇸 SSP" },
+                      { value: "KES", label: "🇰🇪 KES" },
+                      { value: "UGX", label: "🇺🇬 UGX" },
+                      { value: "USD", label: "🇺🇸 USD" },
+                      { value: "EUR", label: "🇪🇺 EUR" },
+                      { value: "GBP", label: "🇬🇧 GBP" },
+                      { value: "AED", label: "🇦🇪 AED" },
+                    ].filter((c) => allowedCurrencies.includes(c.value)).map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

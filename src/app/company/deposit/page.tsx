@@ -16,6 +16,7 @@ export default function NewDepositPage() {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [providers, setProviders] = useState<any[]>([])
+  const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD"])
 
   const [form, setForm] = useState({
     customerName: "",
@@ -29,6 +30,9 @@ export default function NewDepositPage() {
 
   useEffect(() => {
     fetch("/api/providers").then((r) => r.json()).then(setProviders).catch(() => setProviders([]))
+    fetch("/api/company/plan").then((r) => r.json()).then((d) => {
+      if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
+    }).catch(() => {})
   }, [])
 
   function updateField(field: string, value: string) {
@@ -136,10 +140,14 @@ export default function NewDepositPage() {
                 <Select value={form.currency} onValueChange={(v) => updateField("currency", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SSP">SSP</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="KES">KES</SelectItem>
-                    <SelectItem value="UGX">UGX</SelectItem>
+                    {[
+                      { value: "SSP", label: "SSP" },
+                      { value: "KES", label: "KES" },
+                      { value: "UGX", label: "UGX" },
+                      { value: "USD", label: "USD" },
+                    ].filter((c) => allowedCurrencies.includes(c.value)).map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

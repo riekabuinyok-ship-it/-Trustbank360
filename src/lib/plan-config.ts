@@ -34,6 +34,7 @@ export interface PlanDefinition {
   features: PlanFeatures
   trialDays: number
   displayName: string
+  allowedCurrencies: string[]
 }
 
 export const PLANS: Record<PlanName, PlanDefinition> = {
@@ -50,12 +51,13 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
       customReports: false,
       dedicatedSupport: false,
     },
+    allowedCurrencies: ["SSP", "KES"],
   },
   "Medium Company": {
     name: "Medium Company",
     displayName: "Medium Company",
     trialDays: 60,
-    limits: { branches: 10, staff: 25, currencies: 6 },
+    limits: { branches: 10, staff: 25, currencies: 3 },
     features: {
       auditLogs: true,
       apiAccess: "basic",
@@ -64,6 +66,7 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
       customReports: true,
       dedicatedSupport: false,
     },
+    allowedCurrencies: ["SSP", "KES", "UGX"],
   },
   Enterprise: {
     name: "Enterprise",
@@ -78,7 +81,13 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
       customReports: true,
       dedicatedSupport: true,
     },
+    allowedCurrencies: ["SSP", "KES", "UGX", "EUR", "GBP", "AED", "USD"],
   },
+}
+
+export function getAllowedCurrencies(planName: string): string[] {
+  const plan = getPlanByName(planName)
+  return plan?.allowedCurrencies || ["SSP", "KES"]
 }
 
 export type LimitFeature = "branches" | "staff" | "currencies"

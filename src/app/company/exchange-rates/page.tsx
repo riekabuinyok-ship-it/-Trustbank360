@@ -37,6 +37,7 @@ export default function ExchangeRatesPage() {
 
   const [rates, setRates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED"])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -51,6 +52,9 @@ export default function ExchangeRatesPage() {
 
   useEffect(() => {
     fetch("/api/exchange-rates").then(async (r) => { if (r.ok) setRates(await r.json()) }).finally(() => setLoading(false))
+    fetch("/api/company/plan").then((r) => r.json()).then((d) => {
+      if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
+    }).catch(() => {})
   }, [])
 
   async function handleSubmit() {
@@ -228,7 +232,7 @@ export default function ExchangeRatesPage() {
                 <Select value={form.fromCurrency} onValueChange={(v) => setForm({ ...form, fromCurrency: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {currencies.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {currencies.filter((c) => allowedCurrencies.includes(c.value)).map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -237,7 +241,7 @@ export default function ExchangeRatesPage() {
                 <Select value={form.toCurrency} onValueChange={(v) => setForm({ ...form, toCurrency: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {currencies.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {currencies.filter((c) => allowedCurrencies.includes(c.value)).map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

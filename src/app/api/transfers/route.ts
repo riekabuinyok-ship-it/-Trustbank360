@@ -118,17 +118,6 @@ export async function POST(request: Request) {
       return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
     }
 
-    const walletExists = await prisma.wallet.findFirst({
-      where: { companyId: user.companyId, currency: currency as any },
-    })
-    if (!walletExists) {
-      return NextResponse.json(formatApiError("CURRENCY_LIMIT_REACHED", {
-        title: "Currency not available",
-        message: "Transfers in this currency are not allowed under your current plan.",
-        upgradeRequired: true,
-      }), { status: 403 })
-    }
-
     const transactionNumber = generateTransactionNumber()
     const isMobileMoney = transactionType && MOBILE_MONEY_TYPES.includes(transactionType)
     const secretCode = isMobileMoney ? null : generateSecretCode(company.name)
