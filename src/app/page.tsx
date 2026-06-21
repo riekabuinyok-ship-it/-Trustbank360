@@ -35,12 +35,6 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Left Column — Text */}
             <div className="text-left">
-              {/* Trust badge above headline */}
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-200 font-medium mb-4 backdrop-blur-sm">
-                <span className="text-xs">🔒</span>
-                TrustBank360 Never Holds Your Money — We digitize records and transaction tracking. All funds remain with your organization and existing banking systems.
-              </div>
-
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs mb-4 border border-white/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
@@ -57,19 +51,19 @@ export default function LandingPage() {
                 Replace paper books and manual ledgers with a secure digital platform designed for money transfer operators, forex bureaus, SACCOs, microfinance institutions, and financial service providers across East Africa.
               </p>
 
-              {/* CTAs — single row */}
+              {/* CTAs — single horizontal row */}
               <div className="flex flex-wrap items-center gap-2 mt-5">
-                <Link href="/signup" className="inline-flex items-center px-4 py-2 rounded-lg bg-secondary text-white font-semibold text-sm hover:bg-secondary-600 transition-colors shadow-md shadow-secondary/25">
+                <Link href="/signup" className="inline-flex items-center px-4 py-2 rounded-lg bg-secondary text-white font-semibold text-sm hover:bg-secondary-600 transition-colors shadow-md shadow-secondary/25 whitespace-nowrap">
                   Start Free Trial
                 </Link>
-                <Link href="/features" className="inline-flex items-center px-4 py-2 rounded-lg bg-white/15 text-white font-semibold text-sm hover:bg-white/25 transition-colors border border-white/30 backdrop-blur-sm">
+                <Link href="/features" className="inline-flex items-center px-4 py-2 rounded-lg bg-white/15 text-white font-semibold text-sm hover:bg-white/25 transition-colors border border-white/30 backdrop-blur-sm whitespace-nowrap">
                   View Features
                 </Link>
-                <a href="https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-lg bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20 backdrop-blur-sm gap-1.5">
+                <a href="https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-lg bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20 backdrop-blur-sm gap-1.5 whitespace-nowrap">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
                   Watch Tutorial
                 </a>
-                <TryDemoButton />
+                <span className="[&_button]:!px-4 [&_button]:!py-2 [&_button]:!rounded-lg [&_button]:!text-sm"><TryDemoButton /></span>
               </div>
             </div>
 
