@@ -6,8 +6,13 @@ import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
 import { getPlanByName, getAllowedCurrencies } from "@/lib/plan-config"
 
 async function getBasicDashboard(user: any, whereBase: any, isOperational: boolean) {
-  const [transferCount, customerCount, walletGroup, recentTransfers] = await Promise.all([
+  const [transferCount, statusCounts, customerCount, walletGroup, recentTransfers] = await Promise.all([
     prisma.transfer.count({ where: whereBase }),
+    prisma.transfer.groupBy({
+      by: ["status"],
+      where: whereBase,
+      _count: true,
+    }),
     prisma.customer.count({ where: { companyId: user.companyId } }),
     prisma.wallet.groupBy({
       by: ["currency"],
@@ -19,22 +24,85 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
       select: {
         id: true, transactionNumber: true, amount: true, currency: true,
         status: true, createdAt: true,
+        commission: true,
         issuedBy: { select: { name: true } },
+        sender: { select: { fullName: true } },
+        receiver: { select: { fullName: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 5,
+      take: 10,
     }),
   ])
 
   const totalBalance = walletGroup.reduce((s, w) => s + (w._sum.balance || 0), 0)
 
+  const countsMap: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
+  let totalAll = 0
+  for (const s of statusCounts) {
+    countsMap[s.status] = s._count
+    totalAll += s._count
+  }
+
+  // Simple money flow — all statuses
+  const allTransfers = await prisma.transfer.findMany({
+    where: whereBase,
+    select: { amount: true, commission: true, createdAt: true },
+  })
+
+  const now = new Date()
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfWeek = new Date(startOfDay)
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  const sumByRange = (from: Date) => {
+    const filtered = allTransfers.filter((t) => t.createdAt >= from)
+    return {
+      amount: filtered.reduce((s, t) => s + t.amount, 0),
+      commission: filtered.reduce((s, t) => s + t.commission, 0),
+    }
+  }
+
+  const today = sumByRange(startOfDay)
+  const week = sumByRange(startOfWeek)
+  const month = sumByRange(startOfMonth)
+  const allTime = {
+    amount: allTransfers.reduce((s, t) => s + t.amount, 0),
+    commission: allTransfers.reduce((s, t) => s + t.commission, 0),
+  }
+
   return NextResponse.json({
     basic: true,
     totalBalance,
-    transferCount,
+    transferCount: totalAll,
     customerCount,
     walletBalances: walletGroup.map(w => ({ currency: w.currency, balance: w._sum.balance || 0 })),
-    recentTransfers,
+    recentTransactions: recentTransfers,
+    counts: countsMap,
+    moneyFlow: {
+      today: today.amount,
+      week: week.amount,
+      month: month.amount,
+      all: allTime.amount,
+    },
+    commissionFlow: {
+      today: today.commission,
+      week: week.commission,
+      month: month.commission,
+      all: allTime.commission,
+    },
+    byCurrency: { SSP: { count: totalAll, volume: allTime.amount, commission: allTime.commission, balance: totalBalance } },
+    companyCurrencies: ["SSP"],
+    topBranches: [],
+    dailyVolume: [],
+    insights: {
+      topBranch: null,
+      topTeller: null,
+      avgTransactionSize: totalAll > 0 ? allTime.amount / totalAll : 0,
+      branchRanking: [],
+      tellerRanking: [],
+      activeBranches: 0,
+    },
   })
 }
 
@@ -100,12 +168,12 @@ export async function GET() {
     const aggregate = async (where: any) => {
       const [totals, commissions] = await Promise.all([
         prisma.transfer.aggregate({
-          where: { ...where, status: "COMPLETED" },
+          where,
           _sum: { amount: true },
           _count: true,
         }),
         prisma.transfer.aggregate({
-          where: { ...where, status: "COMPLETED" },
+          where,
           _sum: { commission: true },
         }),
       ])
@@ -137,7 +205,7 @@ export async function GET() {
 
     const currencyGroup = await prisma.transfer.groupBy({
       by: ["currency"],
-      where: { ...whereBase, status: "COMPLETED" },
+      where: whereBase,
       _sum: { amount: true, commission: true },
       _count: true,
     })

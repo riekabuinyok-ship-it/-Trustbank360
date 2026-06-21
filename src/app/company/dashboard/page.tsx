@@ -88,6 +88,7 @@ export default function DashboardPage() {
   const cf = data?.commissionFlow || {}
   const ins = data?.insights || {}
   const byCurrency = data?.byCurrency || {}
+  const counts = data?.counts || {}
   
   const alertsData = alerts || {}
   const companyCurrencies = data?.companyCurrencies || ["SSP"]
@@ -166,6 +167,34 @@ export default function DashboardPage() {
             </Link>
           </div>
         )}
+      </div>
+
+      {/* STATUS SUMMARY — always visible */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Total Transactions</p>
+            <p className="text-2xl font-bold">{loading ? "-" : (counts.total ?? data?.transferCount ?? 0)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Completed</p>
+            <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : (counts.completed ?? 0)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Pending</p>
+            <p className="text-2xl font-bold text-amber-600">{loading ? "-" : (counts.pending ?? 0)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Cancelled</p>
+            <p className="text-2xl font-bold text-red-600">{loading ? "-" : (counts.cancelled ?? 0)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions for Teller */}

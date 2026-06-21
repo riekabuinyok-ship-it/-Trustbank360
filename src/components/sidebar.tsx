@@ -1,6 +1,5 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -33,6 +32,7 @@ import {
   Moon,
 } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useState, useMemo, useEffect } from "react"
 import { signOut, useSession } from "next-auth/react"
@@ -233,11 +233,19 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const { theme, setTheme } = useTheme()
   const pathname = usePathname()
   const { data: session } = useSession()
   const user = session?.user as any
   const role = user?.role as string
   const unreadMessages = useUnreadMessages()
+
+  useEffect(() => setMounted(true), [])
+
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
 
   const navItems = useMemo(() => {
     if (!role) return []

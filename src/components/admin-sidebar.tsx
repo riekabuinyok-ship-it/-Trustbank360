@@ -48,6 +48,14 @@ const navItems = [
 export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
   const pathname = usePathname()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const { theme, setTheme } = useTheme()
+
+  useEffect(() => setMounted(true), [])
+
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
 
   const isCollapsed = collapsed ?? false
 
@@ -112,6 +120,16 @@ export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onT
               <ArrowLeft className="h-5 w-5 flex-shrink-0" />
               {!isCollapsed && <span>Back to Dashboard</span>}
             </Link>
+            <button
+              onClick={toggleTheme}
+              className={cn(
+                "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-surface-600 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800",
+                isCollapsed && "justify-center px-2"
+              )}
+            >
+              {mounted && theme === "dark" ? <Sun className="h-5 w-5 flex-shrink-0" /> : <Moon className="h-5 w-5 flex-shrink-0" />}
+              {!isCollapsed && <span>{mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
+            </button>
             <button
               onClick={() => setShowLogoutDialog(true)}
               className={cn(
