@@ -140,7 +140,7 @@ model Company {
 model CommissionSetting {
   id        String         @id @default(cuid())
   companyId String
-  currency  Currency
+  currency  Currency @default(SSP)
   mode      CommissionMode @default(PERCENTAGE)
   value     Float          @default(2)
   minFee    Float?

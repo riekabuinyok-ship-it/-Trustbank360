@@ -1,5 +1,6 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -28,10 +29,12 @@ import {
   Bell,
   User as UserIcon,
   RefreshCw,
+  Sun,
+  Moon,
 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState, useMemo } from "react"
+import { useTheme } from "next-themes"
+import { useState, useMemo, useEffect } from "react"
 import { signOut, useSession } from "next-auth/react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
@@ -79,7 +82,15 @@ const iconMap: Record<string, any> = {
 export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
   const pathname = usePathname()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { data: session } = useSession()
+  const { theme, setTheme } = useTheme()
+
+  useEffect(() => setMounted(true), [])
+
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
   const user = session?.user as any
   const role = user?.role as string
 
@@ -181,10 +192,14 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowLogoutDialog(true)}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowLogoutDialog(true)}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme}>
+                {mounted && theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                {mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -292,7 +307,14 @@ export function MobileNav() {
                 )
               })}
             </nav>
-            <div className="border-t border-surface-200 dark:border-surface-700 p-4">
+            <div className="border-t border-surface-200 dark:border-surface-700 p-4 space-y-1">
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800 transition-colors"
+              >
+                {mounted && theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </button>
               <button
                 onClick={() => setShowLogoutDialog(true)}
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/20"
@@ -335,6 +357,14 @@ export function MobileBottomNav() {
   const user = session?.user as any
   const unreadMessages = useUnreadMessages()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const { theme, setTheme } = useTheme()
+
+  useEffect(() => setMounted(true), [])
+
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
 
   if (!user) return null
 
@@ -374,6 +404,13 @@ export function MobileBottomNav() {
               </Link>
             )
           })}
+          <button
+            onClick={toggleTheme}
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+          >
+            {mounted && theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <span className="text-[10px] font-medium">{mounted && theme === "dark" ? "Light" : "Dark"}</span>
+          </button>
           <button
             onClick={() => setShowLogoutDialog(true)}
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors text-muted-foreground hover:text-danger-500"

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu, X, Sun, Moon } from "lucide-react"
+import { useTheme } from "next-themes"
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -17,6 +18,14 @@ const navLinks = [
 
 export function PublicNavbar() {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const { theme, setTheme } = useTheme()
+
+  useEffect(() => setMounted(true), [])
+
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-surface-950/90 backdrop-blur-md border-b border-surface-200 dark:border-surface-800">
@@ -43,6 +52,13 @@ export function PublicNavbar() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              aria-label={mounted && theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {mounted && theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             <Link href="/login">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
@@ -51,9 +67,18 @@ export function PublicNavbar() {
             </Link>
           </div>
 
-          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="lg:hidden flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              aria-label={mounted && theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {mounted && theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button onClick={() => setOpen(!open)} className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
       </div>
 
