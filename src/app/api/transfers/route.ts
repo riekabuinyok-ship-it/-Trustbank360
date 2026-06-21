@@ -85,6 +85,14 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { senderName, senderPhone, senderNationality, senderIdType, senderIdNumber, receiverName, receiverPhone, destinationBranchId, amount, currency, transactionType, commissionType, notes, mobileProviderId, receiverMobile, receiverIdNumber } = body
 
+    if (!senderName || !senderPhone || !receiverName || !receiverPhone || !destinationBranchId || !amount || !currency) {
+      return NextResponse.json({ error: "Missing required fields: sender name, sender phone, receiver name, receiver phone, destination branch, amount, and currency are required." }, { status: 400 })
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      return NextResponse.json({ error: "Amount must be a positive number." }, { status: 400 })
+    }
+
     let sender = await prisma.customer.findFirst({
       where: { phone: senderPhone, companyId: user.companyId },
     })
@@ -209,7 +217,7 @@ export async function POST(request: Request) {
     return NextResponse.json(transfer)
   } catch (error: any) {
     console.error("Transfer error:", error)
-    const message = process.env.NODE_ENV === "development" ? error.message : "Failed to create transfer"
+    const message = error?.message || "Failed to create transfer"
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
