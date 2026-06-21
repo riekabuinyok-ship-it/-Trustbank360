@@ -101,7 +101,8 @@ export default function NewStaffPage() {
           setPlanError(data)
           return
         }
-        toast.error(data.error || data.message || "Staff invitation failed")
+        const errorMsg = data.message || data.error || "Staff invitation failed"
+        toast.error(errorMsg, { duration: 6000 })
         return
       }
       const data = await res.json()
@@ -200,6 +201,78 @@ export default function NewStaffPage() {
         </div>
       </form>
       <PlanLimitModal error={planError} onClose={() => setPlanError(null)} />
+
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-emerald-600 mb-1">
+              <CheckCircle2 className="h-5 w-5" />
+              <DialogTitle className="text-lg">Staff Invited Successfully</DialogTitle>
+            </div>
+            <DialogDescription>
+              Share the temporary password with the new staff member. This password will never be shown again.
+            </DialogDescription>
+          </DialogHeader>
+
+          {tempPasswordData && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-surface-50 dark:bg-surface-800/50 p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Name</span>
+                  <span className="font-medium">{tempPasswordData.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="font-medium">{tempPasswordData.email}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Role</span>
+                  <span className="font-medium capitalize">{tempPasswordData.role.replace(/_/g, " ").toLowerCase()}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Temporary Password</Label>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-800">
+                  <code className="flex-1 text-sm font-mono font-bold break-all select-all">{tempPasswordData.password}</code>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCopyPassword}
+                    className="flex-shrink-0"
+                  >
+                    {copied ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {copied && (
+                  <p className="text-xs text-emerald-600 font-medium">Copied to clipboard!</p>
+                )}
+              </div>
+
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-800">
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  <strong>⚠️ Important:</strong> This password will not be shown again. Copy it now or share it with the new staff member. They will be required to change it on first login.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button onClick={handleCopyPassword} variant="outline" className="gap-2">
+              {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Copied!" : "Copy Password"}
+            </Button>
+            <Button onClick={() => router.push("/company/staff")}>
+              Done — Go to Staff List
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

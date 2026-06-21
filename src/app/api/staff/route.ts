@@ -108,9 +108,24 @@ export async function POST(request: Request) {
     if (error instanceof PlanEnforcementError) {
       return NextResponse.json(error.toJSON(), { status: 403 })
     }
+
+    // Handle Prisma unique constraint violation (duplicate email)
+    if ((error as any)?.code === "P2002") {
+      const target = ((error as any)?.meta?.target as string[]) || []
+      if (target.includes("email")) {
+        return NextResponse.json({
+          error: "This email address is already registered.",
+          message: "A staff member with this email already exists in the system. Please use a different email address.",
+        }, { status: 409 })
+      }
+    }
+
+    const errorMsg = error instanceof Error ? error.message : "Staff invitation failed"
+    console.error("Staff creation error:", errorMsg)
+
     return NextResponse.json({
       error: "Staff invitation failed",
-      message: "An unexpected error occurred. Please try again later or contact support if the issue persists.",
+      message: errorMsg,
     }, { status: 500 })
   }
 }
