@@ -73,8 +73,8 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const user = session.user as any
 
-  if (user.role !== "BRANCH_MANAGER" && user.role !== "branch_manager" && user.role !== "TELLER" && user.role !== "teller") {
-    return NextResponse.json({ error: "Only Branch Managers and Tellers can create transfers" }, { status: 403 })
+  if (user.role !== "BRANCH_MANAGER" && user.role !== "branch_manager" && user.role !== "TELLER" && user.role !== "teller" && user.role !== "COMPANY_OWNER" && user.role !== "company_owner" && user.role !== "COMPANY_ADMIN" && user.role !== "company_admin") {
+    return NextResponse.json({ error: "Only Branch Managers, Tellers, and Company Admins can create transfers" }, { status: 403 })
   }
 
   if (!user.branchId) {
@@ -207,8 +207,9 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(transfer)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Transfer error:", error)
-    return NextResponse.json({ error: "Failed to create transfer" }, { status: 500 })
+    const message = process.env.NODE_ENV === "development" ? error.message : "Failed to create transfer"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
