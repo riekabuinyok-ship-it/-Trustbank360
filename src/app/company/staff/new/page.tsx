@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UserPlus, Loader2, ArrowLeft } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { UserPlus, Loader2, ArrowLeft, Copy, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 import PlanLimitModal from "@/components/ui/plan-limit-modal"
 
@@ -35,6 +36,14 @@ export default function NewStaffPage() {
     branchId: "",
     role: "TELLER",
   })
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [tempPasswordData, setTempPasswordData] = useState<{
+    name: string
+    email: string
+    password: string
+    role: string
+  } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const isBranchManager = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager"
 
@@ -57,6 +66,26 @@ export default function NewStaffPage() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleCopyPassword = useCallback(async () => {
+    if (!tempPasswordData?.password) return
+    try {
+      await navigator.clipboard.writeText(tempPasswordData.password)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = tempPasswordData.password
+      ta.style.position = "fixed"
+      ta.style.opacity = "0"
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }
+  }, [tempPasswordData])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -76,8 +105,15 @@ export default function NewStaffPage() {
         return
       }
       const data = await res.json()
-      toast.success(`Staff invited! Temporary password: ${data.tempPassword}`)
-      router.push("/company/staff")
+      setTempPasswordData({
+        name: form.name,
+        email: form.email,
+        password: data.tempPassword,
+        role: form.role,
+      })
+      setCopied(false)
+      setPasswordDialogOpen(true)
+      navigator.clipboard.writeText(data.tempPassword).catch(() => {})
     } catch {
       toast.error("An unexpected error occurred. Please try again.")
     } finally {

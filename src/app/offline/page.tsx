@@ -24,16 +24,20 @@ const authLinks = [
 export default function OfflinePage() {
   const [seconds, setSeconds] = useState(30)
   const [offlineSince, setOfflineSince] = useState<string>("")
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     setOfflineSince(new Date().toLocaleTimeString())
+    try {
+      setIsLoggedIn(document.cookie.includes("next-auth.session-token"))
+    } catch {
+      setIsLoggedIn(false)
+    }
     const timer = setInterval(() => {
       setSeconds((s) => Math.max(0, s - 1))
     }, 1000)
     return () => clearInterval(timer)
   }, [])
-
-  const isLoggedIn = typeof window !== "undefined" && document.cookie.includes("next-auth.session-token")
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center p-4">

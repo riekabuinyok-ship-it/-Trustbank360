@@ -22,10 +22,13 @@ export function ServiceWorkerRegister() {
             if (newWorker) {
               newWorker.addEventListener("statechange", () => {
                 if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                  // New version available
-                  if (confirm("A new version of TrustBank360 is available. Reload to update?")) {
-                    newWorker.postMessage({ type: "SKIP_WAITING" })
-                    window.location.reload()
+                  try {
+                    if (confirm("A new version of TrustBank360 is available. Reload to update?")) {
+                      newWorker.postMessage({ type: "SKIP_WAITING" })
+                      window.location.reload()
+                    }
+                  } catch {
+                    // confirm() may fail in some offline contexts
                   }
                 }
               })
