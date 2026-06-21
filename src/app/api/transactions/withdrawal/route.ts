@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateTransactionNumber } from "@/lib/utils"
-import { formatApiError } from "@/lib/api-error"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -29,10 +28,6 @@ export async function POST(request: Request) {
 
     const company = await prisma.company.findUnique({ where: { id: user.companyId } })
     if (!company) return NextResponse.json({ error: "Company not found" }, { status: 404 })
-
-    if (company.overLimit) {
-      return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
-    }
 
     const transactionNumber = generateTransactionNumber()
 
