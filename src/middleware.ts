@@ -13,12 +13,15 @@ export async function middleware(request: NextRequest) {
 
   // 1. Public routes → allow
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    response.headers.set("X-Robots-Tag", "index, follow")
+    return response
   }
 
   // 2. Next.js internals / API routes → allow
   if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/api/")) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    return response
   }
 
   const token = await getToken({ req: request })
@@ -78,7 +81,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (pathname.startsWith("/company")) {
-      return NextResponse.next()
+      const response = NextResponse.next()
+      response.headers.set("X-Robots-Tag", "noindex, nofollow")
+      return response
     }
 
     // Default: send company roles to their dashboard

@@ -48,12 +48,22 @@
     --ring: 212.7 26.8% 83.9%;
   }
 
-  * {
+  *,
+  *::before,
+  *::after {
     @apply border-border;
+  }
+
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overflow-x: hidden;
+    max-width: 100vw;
+    min-height: 100vh;
   }
 }
 
@@ -72,6 +82,33 @@
 
   .stats-card {
     @apply glass-card rounded-xl p-6 transition-all duration-200 hover:shadow-md;
+  }
+
+  .responsive-page {
+    @apply w-full max-w-full overflow-x-hidden;
+  }
+
+  .responsive-table {
+    @apply w-full table-auto;
+  }
+
+  .responsive-table th,
+  .responsive-table td {
+    @apply px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-xs sm:text-sm;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}
+
+@layer utilities {
+  .break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .no-overflow {
+    overflow-x: hidden;
+    max-width: 100%;
   }
 }
 

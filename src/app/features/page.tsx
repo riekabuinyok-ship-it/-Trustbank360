@@ -1,7 +1,15 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
+
+export const metadata: Metadata = {
+  title: "Features",
+  description: "Explore TrustBank360 platform features: money transfers, mobile money integration, forex bureau operations, KYC compliance, analytics, and reporting.",
+  openGraph: { title: "Features - TrustBank360", description: "Complete platform features for money transfer businesses." },
+  alternates: { canonical: "/features" },
+}
 
 const features = [
   {

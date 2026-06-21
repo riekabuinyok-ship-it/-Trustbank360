@@ -1,7 +1,15 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
+
+export const metadata: Metadata = {
+  title: "About",
+  description: "Learn about TrustBank360's mission to build financial infrastructure for Africa's money transfer ecosystem. We empower money transfer businesses across the continent.",
+  openGraph: { title: "About - TrustBank360", description: "Building the financial infrastructure for Africa's money transfer ecosystem." },
+  alternates: { canonical: "/about" },
+}
 
 export default function AboutPage() {
   return (

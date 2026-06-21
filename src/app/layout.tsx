@@ -3,8 +3,14 @@ import { Providers } from "./providers"
 import { ServiceWorkerRegister } from "@/components/sw-register"
 import "./globals.css"
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://trustbank360.com"
+
 export const metadata: Metadata = {
-  title: "TrustBank360 - Enterprise Fintech Platform for Money Transfer & Remittance",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "TrustBank360 - Enterprise Fintech Platform for Money Transfer & Remittance",
+    template: "%s | TrustBank360",
+  },
   description: "Multi-company money transfer and remittance management platform for money transfer businesses, forex bureaus, remittance agencies, and financial institutions across Africa and globally.",
   keywords: ["money transfer", "remittance", "fintech", "forex", "banking", "South Sudan", "Africa"],
   manifest: "/manifest.json",
@@ -14,6 +20,27 @@ export const metadata: Metadata = {
     title: "TrustBank360",
   },
   applicationName: "TrustBank360",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "TrustBank360",
+    title: "TrustBank360 - Enterprise Fintech Platform for Money Transfer & Remittance",
+    description: "Multi-company money transfer and remittance management platform serving Africa and beyond.",
+    url: siteUrl,
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "TrustBank360" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TrustBank360 - Enterprise Fintech Platform",
+    description: "Multi-company money transfer and remittance management platform serving Africa and beyond.",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  alternates: { canonical: siteUrl },
   other: {}
 }
 

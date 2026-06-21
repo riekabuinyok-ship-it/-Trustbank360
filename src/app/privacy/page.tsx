@@ -1,8 +1,20 @@
+import type { Metadata } from "next"
 import { PublicLayout } from "@/components/public-layout"
+import { techArticleSchema } from "@/lib/seo"
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "TrustBank360 Privacy Policy. Learn how we collect, use, and protect your personal and transaction data.",
+  robots: { index: true, follow: true },
+  alternates: { canonical: "/privacy" },
+}
+
+const jsonLd = techArticleSchema("Privacy Policy", "TrustBank360 Privacy Policy - how we collect, use, and protect your data.", "/privacy")
 
 export default function PrivacyPage() {
   return (
     <PublicLayout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <section className="pt-28 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Privacy Policy</h1>

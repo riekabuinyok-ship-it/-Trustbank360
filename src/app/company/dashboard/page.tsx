@@ -119,12 +119,16 @@ export default function DashboardPage() {
                 <CardContent className="p-3 flex items-start gap-3">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{w.reason}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium break-anywhere">{w.reason}</p>
+                    <p className="text-xs text-muted-foreground break-anywhere">
                       {new Date(w.createdAt).toLocaleDateString()} &middot; {w.createdBy?.name || "Admin"}
                     </p>
                   </div>
-                  <button onClick={() => dismissWarning(w.id)} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                  <button
+                    onClick={() => dismissWarning(w.id)}
+                    className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                    aria-label="Dismiss warning"
+                  >
                     <X className="h-4 w-4" />
                   </button>
                 </CardContent>
@@ -135,10 +139,10 @@ export default function DashboardPage() {
       )}
 
       {/* HEADER + GREETING */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex flex-wrap items-center gap-2 mt-1">
             <p className="text-muted-foreground text-sm">
               {isSupervisory ? "Company Overview" : isBranchManager ? "Branch Operations" : "Front Desk Operations"}
             </p>
@@ -146,17 +150,18 @@ export default function DashboardPage() {
           </div>
         </div>
         {isOperational && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link href="/company/transfers/payout">
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2" size="sm">
                 <Search className="h-4 w-4" />
-                Search
+                <span className="hidden sm:inline">Search</span>
               </Button>
             </Link>
             <Link href="/company/transfers/new">
-              <Button className="gap-2">
+              <Button className="gap-2" size="sm">
                 <Plus className="h-4 w-4" />
-                {isTeller ? "Send Money" : "New Transaction"}
+                <span className="hidden sm:inline">{isTeller ? "Send Money" : "New Transaction"}</span>
+                <span className="sm:hidden">{isTeller ? "Send" : "New"}</span>
               </Button>
             </Link>
           </div>
@@ -450,16 +455,20 @@ export default function DashboardPage() {
             {announcements.filter((a: any) => !dismissedAnnouncements.has(a.id)).map((a: any) => (
               <Card key={a.id}>
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{a.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{a.content}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium break-anywhere">{a.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1 break-anywhere">{a.content}</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Badge variant="outline" className="text-[10px]">
+                    <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-start">
+                      <Badge variant="outline" className="text-[10px] whitespace-nowrap">
                         {new Date(a.createdAt).toLocaleDateString()}
                       </Badge>
-                      <button onClick={() => dismissAnnouncement(a.id)} className="text-muted-foreground hover:text-foreground">
+                      <button
+                        onClick={() => dismissAnnouncement(a.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="Dismiss announcement"
+                      >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
@@ -473,9 +482,9 @@ export default function DashboardPage() {
 
       {/* 9. ALERTS (suspension - at the bottom) */}
       {alerts && !isActive && (
-        <div className="bg-red-600 text-white px-6 py-3 rounded-lg flex items-center gap-3">
+        <div className="bg-red-600 text-white px-4 sm:px-6 py-3 rounded-lg flex items-center gap-3">
           <ShieldAlert className="h-5 w-5 flex-shrink-0" />
-          <p className="text-sm font-medium">Your company has been suspended. Contact platform admin for assistance.</p>
+          <p className="text-sm font-medium break-anywhere">Your company has been suspended. Contact platform admin for assistance.</p>
         </div>
       )}
     </div>

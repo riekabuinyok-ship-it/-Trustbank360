@@ -1,8 +1,20 @@
+import type { Metadata } from "next"
 import { PublicLayout } from "@/components/public-layout"
+import { techArticleSchema } from "@/lib/seo"
+
+export const metadata: Metadata = {
+  title: "Watch Tutorial",
+  description: "Learn how to use TrustBank360 with our step-by-step training video. Covers creating transactions, managing branches, processing payouts, and more.",
+  openGraph: { title: "Watch Tutorial - TrustBank360", description: "Step-by-step training tutorial for TrustBank360." },
+  alternates: { canonical: "/tutorials" },
+}
+
+const jsonLd = techArticleSchema("TrustBank360 Training Tutorial", "Step-by-step training tutorial for TrustBank360 platform.", "/tutorials")
 
 export default function PublicTutorialsPage() {
   return (
     <PublicLayout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <section className="pt-28 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">

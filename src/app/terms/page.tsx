@@ -1,8 +1,20 @@
+import type { Metadata } from "next"
 import { PublicLayout } from "@/components/public-layout"
+import { techArticleSchema } from "@/lib/seo"
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "TrustBank360 Terms of Service. Understand the terms governing the use of our money transfer and remittance management platform.",
+  robots: { index: true, follow: true },
+  alternates: { canonical: "/terms" },
+}
+
+const jsonLd = techArticleSchema("Terms of Service", "TrustBank360 Terms of Service - terms governing the use of our platform.", "/terms")
 
 export default function TermsPage() {
   return (
     <PublicLayout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <section className="pt-28 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Terms of Service</h1>

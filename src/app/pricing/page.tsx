@@ -1,7 +1,15 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description: "Simple, transparent pricing for TrustBank360. Choose from Small Company ($10/mo), Medium Company ($30/mo), or Enterprise ($60/mo). All plans include a free trial.",
+  openGraph: { title: "Pricing - TrustBank360", description: "Simple, transparent pricing plans for your money transfer business." },
+  alternates: { canonical: "/pricing" },
+}
 
 const plans = [
   {

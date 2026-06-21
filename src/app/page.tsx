@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { IMAGES } from "@/lib/images"
@@ -5,10 +6,25 @@ import { PublicLayout } from "@/components/public-layout"
 import { ForexBoard } from "@/components/forex-board"
 import { HomeStats } from "@/components/home-stats"
 import { TryDemoButton } from "@/components/try-demo-button"
+import { organizationSchema, softwareApplicationSchema } from "@/lib/seo"
+
+export const metadata: Metadata = {
+  title: "TrustBank360 - Enterprise Fintech Platform for Money Transfer & Remittance",
+  description: "Multi-company money transfer and remittance management platform for money transfer businesses, forex bureaus, remittance agencies, and financial institutions across Africa and globally.",
+  openGraph: {
+    title: "TrustBank360 - Enterprise Fintech Platform",
+    description: "Manage branches, staff, transactions, and compliance from a single dashboard.",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+  },
+  alternates: { canonical: "/" },
+}
+
+const jsonLd = [organizationSchema(), softwareApplicationSchema()]
 
 export default function LandingPage() {
   return (
     <PublicLayout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero */}
       <section className="relative min-h-[90vh] flex items-center">
         <div className="absolute inset-0">

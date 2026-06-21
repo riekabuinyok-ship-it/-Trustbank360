@@ -41,28 +41,32 @@ export function DataTable<TData, TValue>({ columns, data, searchKey, pageSize = 
     initialState: { pagination: { pageSize } },
   })
 
+  const rows = table.getRowModel().rows
+  const totalPages = table.getPageCount()
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       {searchKey && (
-        <div className="flex items-center">
+        <div className="flex items-center w-full">
           <input
             placeholder="Search..."
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full sm:max-w-sm h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
       )}
-      <div className="rounded-lg border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+
+      <div className="rounded-lg border overflow-hidden w-full">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full responsive-table">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id} className="border-b bg-muted/50">
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider cursor-pointer select-none"
+                      className="text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider cursor-pointer select-none group"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <div className="flex items-center gap-1">
@@ -78,11 +82,11 @@ export function DataTable<TData, TValue>({ columns, data, searchKey, pageSize = 
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+              {rows?.length ? (
+                rows.map((row) => (
                   <tr key={row.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="p-4 align-middle text-sm">
+                      <td key={cell.id} className="align-middle break-anywhere">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -110,15 +114,17 @@ export function DataTable<TData, TValue>({ columns, data, searchKey, pageSize = 
           </table>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 w-full">
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Page {table.getState().pagination.pageIndex + 1} of {totalPages || 1}
         </p>
         <div className="flex items-center gap-2">
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             className="inline-flex items-center justify-center rounded-md border p-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-accent"
+            aria-label="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -126,6 +132,7 @@ export function DataTable<TData, TValue>({ columns, data, searchKey, pageSize = 
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             className="inline-flex items-center justify-center rounded-md border p-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-accent"
+            aria-label="Next page"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

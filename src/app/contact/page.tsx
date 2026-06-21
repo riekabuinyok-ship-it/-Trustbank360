@@ -1,7 +1,15 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description: "Get in touch with TrustBank360. Contact our sales team for pricing, support, and partnership inquiries. Email: support@trustbank360.com. Phone: +211 924 440 899.",
+  openGraph: { title: "Contact - TrustBank360", description: "Get in touch with the TrustBank360 team." },
+  alternates: { canonical: "/contact" },
+}
 
 export default function ContactPage() {
   return (
