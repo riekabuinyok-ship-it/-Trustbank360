@@ -26,44 +26,58 @@ export default function LandingPage() {
     <PublicLayout>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero */}
-      <section className="relative min-h-[90vh] flex items-center">
+      <section className="relative h-screen overflow-hidden flex items-center">
         <div className="absolute inset-0">
           <Image src={IMAGES.hero.main} alt="Money transfer" fill className="object-cover" priority />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/40" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-sm mb-6 border border-white/20">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-              Digital Transaction Record Management
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
-              Transforming Transaction Record Management Across East Africa
-            </h1>
-            <p className="mt-6 text-lg text-white/80 max-w-xl">
-              Replace paper books and manual ledgers with a secure digital platform designed for money transfer operators, forex bureaus, SACCOs, microfinance institutions, and financial service providers across East Africa.
-            </p>
-            <div className="mt-6 p-4 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/50 backdrop-blur-sm">
-              <div className="flex items-start gap-3">
-                <span className="text-lg flex-shrink-0 mt-0.5">🔒</span>
-                <div>
-                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">TrustBank360 Never Holds Your Money</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">We digitize records and transaction tracking. All funds remain with your organization and existing banking systems.</p>
-                </div>
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left Column — Text */}
+            <div className="text-left">
+              {/* Trust badge above headline */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-200 font-medium mb-4 backdrop-blur-sm">
+                <span className="text-xs">🔒</span>
+                TrustBank360 Never Holds Your Money — We digitize records and transaction tracking. All funds remain with your organization and existing banking systems.
+              </div>
+
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs mb-4 border border-white/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+                Digital Transaction Record Management
+              </div>
+
+              {/* Headline */}
+              <h1 className="text-2xl sm:text-3xl lg:text-[2.5rem] font-bold text-white leading-tight">
+                Transforming Transaction Record Management Across East Africa
+              </h1>
+
+              {/* Sub-headline */}
+              <p className="mt-3 text-sm sm:text-base text-white/80 max-w-lg leading-relaxed">
+                Replace paper books and manual ledgers with a secure digital platform designed for money transfer operators, forex bureaus, SACCOs, microfinance institutions, and financial service providers across East Africa.
+              </p>
+
+              {/* CTAs — single row */}
+              <div className="flex flex-wrap items-center gap-2 mt-5">
+                <Link href="/signup" className="inline-flex items-center px-4 py-2 rounded-lg bg-secondary text-white font-semibold text-sm hover:bg-secondary-600 transition-colors shadow-md shadow-secondary/25">
+                  Start Free Trial
+                </Link>
+                <Link href="/features" className="inline-flex items-center px-4 py-2 rounded-lg bg-white/15 text-white font-semibold text-sm hover:bg-white/25 transition-colors border border-white/30 backdrop-blur-sm">
+                  View Features
+                </Link>
+                <a href="https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-lg bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20 backdrop-blur-sm gap-1.5">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+                  Watch Tutorial
+                </a>
+                <TryDemoButton />
               </div>
             </div>
-            <div className="flex flex-wrap gap-4 mt-8">
-              <Link href="/signup" className="inline-flex items-center px-6 py-3 rounded-xl bg-secondary text-white font-semibold hover:bg-secondary-600 transition-colors shadow-lg shadow-secondary/25">
-                Start Free Trial
-              </Link>
-              <Link href="/features" className="inline-flex items-center px-6 py-3 rounded-xl bg-white/15 text-white font-semibold hover:bg-white/25 transition-colors border border-white/30 backdrop-blur-sm">
-                View Features
-              </Link>
-              <a href="https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-6 py-3 rounded-xl bg-white/10 text-white font-semibold hover:bg-white/20 transition-colors border border-white/20 backdrop-blur-sm gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-                Watch Tutorial
-              </a>
-              <TryDemoButton />
+
+            {/* Right Column — Image placeholder */}
+            <div className="hidden lg:flex items-center justify-center">
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                <Image src={IMAGES.features.analytics} alt="Dashboard preview" fill className="object-cover" />
+              </div>
             </div>
           </div>
         </div>
