@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Banknote, Search, Loader2, CheckCircle2, XCircle, Clock, Building2 } from "lucide-react"
+import { Search, Loader2, CheckCircle2, XCircle, Clock, Building2 } from "lucide-react"
 
 const statusIcons: Record<string, any> = {
   PENDING: Clock,
@@ -59,7 +59,7 @@ export default function TrackTransferPage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-lg mb-4">
-            <Banknote className="h-8 w-8 text-white" />
+            <img src="/images/logo-white.svg" alt="TRUSTBANK360" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl font-bold">Track Your Transfer</h1>
           <p className="text-muted-foreground mt-2">Enter your transfer code and phone number to check the status</p>

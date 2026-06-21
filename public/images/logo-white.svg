@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 360 Ring -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#ffffff" stroke-width="8" stroke-dasharray="400 134" stroke-linecap="round" opacity="0.3"/>
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#ffffff" stroke-width="8" stroke-dasharray="100 434" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Shield -->
+  <path d="M100 40 L160 60 V100 C160 140 135 165 100 175 C65 165 40 140 40 100 V60 L100 40 Z" fill="#ffffff"/>
+  
+  <!-- Bank Icon inside Shield -->
+  <path d="M70 120 H130 V125 H70 V120 Z M75 95 H82 V115 H75 V95 Z M90 95 H97 V115 H90 V95 Z M105 95 H112 V115 H105 V95 Z M120 95 H127 V115 H120 V95 Z M100 70 L65 90 H135 L100 70 Z" fill="#0F4C81"/>
+</svg>

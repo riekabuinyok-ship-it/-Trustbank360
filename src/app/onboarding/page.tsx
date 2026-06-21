@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Banknote, Check, Loader2, Upload } from "lucide-react"
+import { Check, Loader2, Upload } from "lucide-react"
 import toast from "react-hot-toast"
 
 const currencies = [
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-lg mb-4">
-            <Banknote className="h-8 w-8 text-white" />
+            <img src="/images/logo-white.svg" alt="TRUSTBANK360" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl font-bold">Welcome to TrustBank360</h1>
           <p className="text-muted-foreground mt-1">Let&apos;s set up your company profile</p>

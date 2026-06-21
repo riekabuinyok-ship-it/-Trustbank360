@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Banknote, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 
 function LoginForm() {
@@ -62,7 +62,7 @@ function LoginForm() {
           </Link>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-lg mb-4">
-            <Banknote className="h-8 w-8 text-white" />
+            <img src="/images/logo-white.svg" alt="TRUSTBANK360" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl font-bold text-surface-900 dark:text-white">TrustBank360</h1>
           <p className="text-surface-500 dark:text-surface-400 mt-1">Enterprise Fintech Platform</p>

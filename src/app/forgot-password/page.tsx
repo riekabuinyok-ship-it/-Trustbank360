@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Banknote, Mail, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import { Mail, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 
 export default function ForgotPasswordPage() {
@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-lg mb-4">
-            <Banknote className="h-8 w-8 text-white" />
+            <img src="/images/logo-white.svg" alt="TRUSTBANK360" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl font-bold text-surface-900 dark:text-white">TrustBank360</h1>
           <p className="text-surface-500 dark:text-surface-400 mt-1">Reset your password</p>
