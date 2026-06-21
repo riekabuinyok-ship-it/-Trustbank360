@@ -193,14 +193,14 @@ export default function ExchangeRatesPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Exchange Rates</h1>
-          <p className="text-muted-foreground">Manage currency exchange rates</p>
+          <p className="text-muted-foreground text-sm">Manage currency exchange rates</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+          <Button onClick={() => setDialogOpen(true)} className="gap-2 w-full sm:w-auto" size="sm">
             <Plus className="h-4 w-4" />
             Add Rate
           </Button>
@@ -222,7 +222,7 @@ export default function ExchangeRatesPage() {
             <DialogTitle>Add Exchange Rate</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>From Currency</Label>
                 <Select value={form.fromCurrency} onValueChange={(v) => setForm({ ...form, fromCurrency: v })}>
@@ -242,7 +242,7 @@ export default function ExchangeRatesPage() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Buy Rate</Label>
                 <Input type="number" step="0.01" placeholder="850.00" value={form.buyRate} onChange={(e) => setForm({ ...form, buyRate: e.target.value })} />
@@ -273,7 +273,7 @@ export default function ExchangeRatesPage() {
               <p className="text-sm text-muted-foreground">
                 {selectedRate.fromCurrency} &rarr; {selectedRate.toCurrency}
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Buy Rate</Label>
                   <Input type="number" step="0.01" value={editForm.buyRate} onChange={(e) => setEditForm({ ...editForm, buyRate: e.target.value })} />

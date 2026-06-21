@@ -1,10 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { Loader2, PlayCircle } from "lucide-react"
 
-const DEMO_USERS = [
+interface DemoUser {
+  email: string
+  label: string
+  role: string
+}
+
+const FALLBACK_USERS: DemoUser[] = [
   { email: "admin@trustbank.com", label: "Admin", role: "Company Owner" },
   { email: "manager@trustbank.com", label: "Manager", role: "Branch Manager" },
   { email: "teller@trustbank.com", label: "Teller", role: "Teller" },
@@ -16,6 +22,16 @@ const PASSWORD = "Admin@123"
 
 export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
   const [loading, setLoading] = useState<string | null>(null)
+  const [users, setUsers] = useState<DemoUser[]>(FALLBACK_USERS)
+
+  useEffect(() => {
+    fetch("/api/auth/demo-users")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.users) setUsers(data.users)
+      })
+      .catch(() => {})
+  }, [])
 
   async function handleDemoLogin(email: string) {
     setLoading(email)
@@ -36,7 +52,7 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
       <div className="space-y-3">
         <p className="text-xs text-muted-foreground text-center">Try different roles:</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {DEMO_USERS.map((user) => (
+          {users.map((user) => (
             <button
               key={user.email}
               onClick={() => handleDemoLogin(user.email)}
@@ -60,7 +76,7 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
 
   return (
     <button
-      onClick={() => handleDemoLogin(DEMO_USERS[0].email)}
+      onClick={() => handleDemoLogin(users[0]?.email || FALLBACK_USERS[0].email)}
       disabled={loading !== null}
       className="inline-flex items-center px-6 py-3 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/25 gap-2 disabled:opacity-50"
     >

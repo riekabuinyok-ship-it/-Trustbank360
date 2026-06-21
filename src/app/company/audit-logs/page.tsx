@@ -51,22 +51,20 @@ export default function AuditLogsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Audit Logs</h1>
-          <p className="text-muted-foreground">Track all system activities</p>
-        </div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div>
+        <h1 className="text-2xl font-bold">Audit Logs</h1>
+        <p className="text-muted-foreground text-sm">Track all system activities</p>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full overflow-hidden">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
             System Activity Log
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

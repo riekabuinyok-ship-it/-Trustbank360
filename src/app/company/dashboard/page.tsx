@@ -201,7 +201,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </Link>
-          <Link href="/company/transfers">
+          <Link href="/company/reports">
             <Card className="hover:border-primary-300 transition-colors cursor-pointer">
               <CardContent className="p-4 text-center">
                 <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-2">

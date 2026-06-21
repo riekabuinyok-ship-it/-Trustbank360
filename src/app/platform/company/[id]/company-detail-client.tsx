@@ -83,20 +83,20 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
     : "secondary" as const
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       <BackButton href="/platform/companies" label="Back to Companies" />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
             <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">{company.name}</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold break-anywhere">{company.name}</h1>
             <p className="text-sm text-muted-foreground">Registered since {new Date(company.createdAt).toLocaleDateString()}</p>
           </div>
         </div>
-        <Badge variant={statusVariant} className="text-sm px-3 py-1">{statusLabel}</Badge>
+        <Badge variant={statusVariant} className="text-sm px-3 py-1 self-start sm:self-auto">{statusLabel}</Badge>
       </div>
 
       {/* Summary stats */}

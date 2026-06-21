@@ -211,13 +211,13 @@ export default function AdminEnforcementPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <ShieldAlert className="h-6 w-6 text-primary" />
           Enforcement & Control Panel
         </h1>
-        <p className="text-muted-foreground">Manage company compliance and platform enforcement actions</p>
+        <p className="text-muted-foreground text-sm">Manage company compliance and platform enforcement actions</p>
       </div>
 
       <Card>
@@ -240,9 +240,9 @@ export default function AdminEnforcementPage() {
                 return (
                   <Card key={company.id} className="border-l-4" style={{ borderLeftColor: company.isActive ? "#00A86B" : "#EF4444" }}>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold truncate">{company.name}</h3>
-                        <Badge variant={company.isActive ? "success" : "destructive"}>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                        <h3 className="font-semibold break-anywhere min-w-0">{company.name}</h3>
+                        <Badge variant={company.isActive ? "success" : "destructive"} className="self-start sm:self-auto">
                           {company.isActive ? "Active" : "Suspended"}
                         </Badge>
                       </div>

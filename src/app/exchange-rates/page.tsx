@@ -23,7 +23,7 @@ export default function ExchangeRatesPage() {
       if (data.analyses) setAllRates(data.analyses)
       setLastUpdated(new Date().toLocaleTimeString())
     } catch {
-      // silent
+      // stay with existing data on fetch failure
     } finally {
       setLoading(false)
     }

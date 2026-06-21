@@ -95,25 +95,25 @@ export default function CustomerDetailPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 w-full max-w-full overflow-hidden">
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
         <ArrowLeft className="h-4 w-4 mr-2" /> Back
       </Button>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
             <User className="h-6 w-6 text-primary-600 dark:text-primary-400" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">{customer.fullName}</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold break-anywhere">{customer.fullName}</h1>
             <p className="text-sm text-muted-foreground">
               Customer since {new Date(customer.createdAt).toLocaleDateString()}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Badge className={verificationStatusColors[customer.verificationStatus]}>
             {customer.verificationStatus}
           </Badge>

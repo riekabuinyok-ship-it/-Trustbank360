@@ -204,7 +204,7 @@ export default function BillingPage() {
             </div>
 
             {/* Plan limits summary */}
-            <div className="grid sm:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
               <div className="p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50">
                 <p className="text-xs text-muted-foreground">Plan</p>
                 <p className="text-lg font-bold">{currentPlan.name}</p>
@@ -249,7 +249,7 @@ export default function BillingPage() {
             <CardDescription>Compare plans and switch anytime</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {plans.map((p) => {
                 const isCurrent = currentPlan?.id === p.id
                 const isLoading = switchingPlan === p.id

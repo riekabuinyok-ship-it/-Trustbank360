@@ -83,13 +83,13 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Settings className="h-6 w-6" />
           Platform Settings
         </h1>
-        <p className="text-muted-foreground">Manage global platform configuration</p>
+        <p className="text-muted-foreground text-sm">Manage global platform configuration</p>
       </div>
 
       <Card>
@@ -117,7 +117,7 @@ export default function AdminSettingsPage() {
               placeholder="https://example.com/logo.png"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="primaryColor">Primary Color</Label>
               <div className="flex gap-2 items-center">

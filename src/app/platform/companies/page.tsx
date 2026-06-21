@@ -148,17 +148,17 @@ export default function AdminCompaniesPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       <div>
         <h1 className="text-2xl font-bold">Companies</h1>
-        <p className="text-muted-foreground">Manage all registered companies on the platform</p>
+        <p className="text-muted-foreground text-sm">Manage all registered companies on the platform</p>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">All Companies</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground">Loading companies...</div>
           ) : (

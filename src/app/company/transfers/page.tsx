@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useSession } from "next-auth/react"
+import toast from "react-hot-toast"
 import { SlaTimer } from "@/components/sla-timer"
 
 const statusColors: Record<string, string> = {
@@ -116,7 +117,7 @@ export default function TransfersPage() {
       setCancelReason("")
       setSelected(null)
     } catch (e: any) {
-      alert(e.message)
+      toast.error(e.message || "Failed to cancel transaction")
     } finally {
       setActionLoading(null)
     }
@@ -137,7 +138,7 @@ export default function TransfersPage() {
       setReverseReason("")
       setSelected(null)
     } catch (e: any) {
-      alert(e.message)
+      toast.error(e.message || "Failed to reverse transaction")
     } finally {
       setActionLoading(null)
     }
@@ -181,7 +182,7 @@ export default function TransfersPage() {
       window.open(url, "_blank")
       loadTransfers()
     } catch (e: any) {
-      alert(e.message)
+      toast.error(e.message || "Failed to print receipt")
     } finally {
       setActionLoading(null)
     }

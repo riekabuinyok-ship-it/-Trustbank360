@@ -122,25 +122,25 @@ export default function BranchesPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Branches</h1>
-          <p className="text-muted-foreground">Manage your branches</p>
+          <p className="text-muted-foreground text-sm">Manage your branches</p>
         </div>
-        <Link href="/company/branches/new">
-          <Button className="gap-2">
+        <Link href="/company/branches/new" className="w-full sm:w-auto">
+          <Button className="gap-2 w-full sm:w-auto" size="sm">
             <Plus className="h-4 w-4" />
             New Branch
           </Button>
         </Link>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">All Branches</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <DataTable columns={columns} data={branches} />
         </CardContent>
       </Card>

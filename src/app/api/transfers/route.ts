@@ -184,7 +184,7 @@ export async function POST(request: Request) {
         userId: user.id,
         action: "TRANSACTION_CREATED",
         resource: "TRANSFER",
-        details: `Transaction ${transactionNumber} created - Secret Code: ${secretCode}`,
+        details: `Transaction ${transactionNumber} created`,
         branchId: user.branchId,
         companyId: user.companyId,
       },

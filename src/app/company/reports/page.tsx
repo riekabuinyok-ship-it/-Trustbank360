@@ -151,13 +151,13 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-          <p className="text-muted-foreground">View and export reports</p>
+          <p className="text-muted-foreground text-sm">View and export reports</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={exportPDF}>
             <FileText className="h-4 w-4" /> PDF
           </Button>

@@ -426,16 +426,14 @@ export default function AdminSubscriptionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Subscriptions & Revenue</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage subscription plans and track payments</p>
-        </div>
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
+      <div>
+        <h1 className="text-2xl font-bold">Subscriptions & Revenue</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage subscription plans and track payments</p>
       </div>
 
       {/* Revenue Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -705,7 +703,7 @@ export default function AdminSubscriptionsPage() {
                 placeholder="Brief description of the plan"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price">Price</Label>
                 <Input
@@ -846,7 +844,7 @@ export default function AdminSubscriptionsPage() {
             </div>
           ) : currencyManagementMode === "add" ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fromCurrency">From Currency</Label>
                   <Select
@@ -880,7 +878,7 @@ export default function AdminSubscriptionsPage() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="buyRate">Buy Rate</Label>
                   <Input

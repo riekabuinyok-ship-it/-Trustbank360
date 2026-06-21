@@ -98,7 +98,9 @@ export function ForexBoard() {
       setPairGroups(groups.slice(0, 12))
       setLastUpdated(new Date().toLocaleTimeString())
     } catch {
-      // silent
+      if (pairGroups.length === 0) {
+        setPairGroups([])
+      }
     } finally {
       setLoading(false)
     }

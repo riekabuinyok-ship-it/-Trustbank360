@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         transferId,
         userId: user.id,
         action: "PAYOUT_CONFIRMED",
-        details: `Payout completed by ${user.name}${secretCode ? `. Secret Code: ${secretCode}` : ""}`,
+        details: `Payout completed by ${user.name}`,
         branchId: user.branchId,
       })
 

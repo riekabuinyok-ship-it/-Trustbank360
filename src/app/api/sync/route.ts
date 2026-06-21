@@ -5,6 +5,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
 import { createAuditLog } from "@/lib/log-event"
 import {
   validateCustomerForSync,
@@ -249,12 +250,13 @@ async function processStaffSync(
 
   let staff
   if (action === "CREATE") {
+    const hashedPassword = await bcrypt.hash(payload.password || "changeme123", 12)
     staff = await prisma.user.create({
       data: {
         name: payload.name,
         email: payload.email,
         phone: payload.phone,
-        password: payload.password,
+        password: hashedPassword,
         role: payload.role,
         position: payload.position,
         status: payload.status || "INVITED",
