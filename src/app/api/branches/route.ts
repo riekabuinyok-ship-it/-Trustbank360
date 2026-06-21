@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { PlanEnforcementError, updateOverLimit } from "@/lib/plan-enforcement"
 import { formatApiError, formatPlanError } from "@/lib/api-error"
-import { getLimit, getPlanByName } from "@/lib/plan-config"
+import { getLimit, getPlanByName, getAllowedCurrencies } from "@/lib/plan-config"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -70,17 +70,13 @@ export async function POST(request: Request) {
         },
       })
 
-      const newCurrencies = ["SSP", "USD", "KES", "UGX"]
+      const newCurrencies = getAllowedCurrencies(planName)
       const walletCurrencies = await tx.wallet.groupBy({
         by: ["currency"],
         where: { companyId: user.companyId },
       })
-      const currencyLimit = getLimit(planName, "currencies")
       const existingSet = new Set(walletCurrencies.map((w) => w.currency))
       const addedCurrencies = newCurrencies.filter((c) => !existingSet.has(c as any))
-      if (currencyLimit !== Infinity && (walletCurrencies.length + addedCurrencies.length > currencyLimit)) {
-        throw new PlanEnforcementError(formatPlanError("CURRENCY_LIMIT_REACHED", planName, walletCurrencies.length, currencyLimit))
-      }
 
       await tx.wallet.createMany({
         data: addedCurrencies.map((currency) => ({
