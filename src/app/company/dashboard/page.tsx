@@ -93,19 +93,13 @@ export default function DashboardPage() {
   const dailyVolume = data?.dailyVolume || []
   const recentTransactions = data?.recentTransactions || []
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setActiveCurrency("ALL")
-    }
-  }, [])
-
-  // Currency-filtered data: if "ALL" use top-level, otherwise per-currency
-  const currencyData = activeCurrency === "ALL" ? null : (data?.byCurrency?.[activeCurrency])
-  const activeCounts = currencyData?.counts ?? data?.counts ?? {}
-  const activeMf = currencyData?.moneyFlow ?? data?.moneyFlow ?? {}
-  const activeCf = currencyData?.commissionFlow ?? data?.commissionFlow ?? {}
-  const activeRecentTxs = currencyData?.recentTransactions ?? data?.recentTransactions ?? []
-  const activeWalletBalance = currencyData?.balance ?? 0
+  // Currency-filtered data
+  const currencyData = data?.byCurrency?.[activeCurrency]
+  const activeCounts = data?.counts ?? {}
+  const activeMf = data?.moneyFlow ?? {}
+  const activeCf = data?.commissionFlow ?? {}
+  const activeRecentTxs = data?.recentTransactions ?? []
+  const activeWalletBalance = 0
 
   const { isActive, warnings, announcements } = alertsData
 
@@ -248,24 +242,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 2 & 3. DASHBOARD STATISTICS + WALLET BALANCES (Currency Tabs) */}
+      {/* 2 & 3. DASHBOARD STATISTICS (Currency Tabs) */}
       {companyCurrencies.length > 0 && (
         <Tabs value={activeCurrency} onValueChange={setActiveCurrency}>
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="ALL">ALL</TabsTrigger>
             {companyCurrencies.map((cur: string) => (
               <TabsTrigger key={cur} value={cur}>{cur}</TabsTrigger>
             ))}
           </TabsList>
-          {["ALL", ...companyCurrencies].map((cur: string) => {
-            const curr = cur === "ALL" ? null : (data?.byCurrency?.[cur])
-            const displayCount = curr?.count ?? (cur === "ALL" ? (data?.counts?.total ?? 0) : 0)
-            const displayVolume = curr?.volume ?? (cur === "ALL" ? (data?.moneyFlow?.all ?? 0) : 0)
-            const displayCommission = curr?.commission ?? (cur === "ALL" ? (data?.commissionFlow?.all ?? 0) : 0)
-            const displayBalance = curr?.balance ?? (cur === "ALL" ? Object.values(data?.byCurrency ?? {}).reduce((s: number, c: any) => s + (c.balance || 0), 0) : 0)
+          {companyCurrencies.map((cur: string) => {
+            const curr = data?.byCurrency?.[cur]
+            const displayCount = curr?.count ?? 0
+            const displayVolume = curr?.volume ?? 0
+            const displayCommission = curr?.commission ?? 0
             return (
               <TabsContent key={cur} value={cur}>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Transactions</p>
@@ -275,19 +267,13 @@ export default function DashboardPage() {
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Volume</p>
-                      <p className="text-2xl font-bold">{loading ? "-" : formatCurrency(displayVolume, cur === "ALL" ? "SSP" : cur)}</p>
+                      <p className="text-2xl font-bold">{loading ? "-" : formatCurrency(displayVolume, cur)}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Commission</p>
-                      <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : formatCurrency(displayCommission, cur === "ALL" ? "SSP" : cur)}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                      <p className="text-2xl font-bold text-primary">{loading ? "-" : formatCurrency(displayBalance, cur === "ALL" ? "SSP" : cur)}</p>
+                      <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : formatCurrency(displayCommission, cur)}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -302,7 +288,7 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
           <DollarSign className="h-5 w-5 text-primary" />
           Money Flow
-          {activeCurrency !== "ALL" && <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>}
+          <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
@@ -349,7 +335,7 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
           <Percent className="h-5 w-5 text-emerald-500" />
           Commission Flow
-          {activeCurrency !== "ALL" && <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>}
+          <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>
           <span className="text-xs font-normal text-muted-foreground">(Separate revenue stream)</span>
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -456,7 +442,7 @@ export default function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Recent Transactions
-            {activeCurrency !== "ALL" && <span className="text-sm font-normal text-muted-foreground"> ({activeCurrency})</span>}
+            <span className="text-sm font-normal text-muted-foreground"> ({activeCurrency})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
