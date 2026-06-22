@@ -21,6 +21,7 @@ export const ERROR_TITLES: Record<string, string> = {
   BRANCH_LIMIT_REACHED: "Branch limit reached",
   STAFF_LIMIT_REACHED: "Staff limit reached",
   CURRENCY_LIMIT_REACHED: "Currency limit reached",
+  MONTHLY_TRANSFER_LIMIT_REACHED: "Monthly transfer limit reached",
   FEATURE_NOT_AVAILABLE: "Feature not available",
   AUDIT_LOGS_NOT_AVAILABLE: "Audit logs not available",
   API_ACCESS_NOT_AVAILABLE: "API access not available",
@@ -28,6 +29,13 @@ export const ERROR_TITLES: Record<string, string> = {
   ANALYTICS_NOT_AVAILABLE: "Analytics not available",
   CUSTOM_REPORTS_NOT_AVAILABLE: "Custom reports not available",
   DEDICATED_SUPPORT_NOT_AVAILABLE: "Dedicated support not available",
+  BRANCH_WALLETS_NOT_AVAILABLE: "Branch wallets not available",
+  KYC_COMPLIANCE_NOT_AVAILABLE: "KYC & compliance not available",
+  ADVANCED_KYC_AML_NOT_AVAILABLE: "Advanced KYC/AML not available",
+  CUSTOM_DOMAIN_NOT_AVAILABLE: "Custom domain not available",
+  CUSTOM_INTEGRATIONS_NOT_AVAILABLE: "Custom integrations not available",
+  DEDICATED_ACCOUNT_MANAGER_NOT_AVAILABLE: "Dedicated account manager not available",
+  PRIORITY_SUPPORT_NOT_AVAILABLE: "Priority support not available",
   COMPANY_OVER_LIMIT: "Plan limits exceeded",
   NO_SUBSCRIPTION: "No active subscription",
   UNKNOWN_PLAN: "Unknown plan",
@@ -40,6 +48,8 @@ export const ERROR_MESSAGES: Record<string, (...args: any[]) => string> = {
     `You've reached the maximum number of staff users allowed on your ${plan || "current"} plan. Upgrade to invite more team members.`,
   CURRENCY_LIMIT_REACHED: (plan) =>
     `You cannot add more currencies under your ${plan || "current"} plan. Upgrade to support additional currencies.`,
+  MONTHLY_TRANSFER_LIMIT_REACHED: (plan, used, limit) =>
+    `You've used ${used} of ${limit} transfers this month on your ${plan || "current"} plan. Upgrade to Medium or Enterprise for unlimited transfers.`,
   FEATURE_NOT_AVAILABLE: (plan, _used, _limit, feature) =>
     `"${feature}" is not available on your ${plan || "current"} plan. Upgrade to access this feature.`,
   AUDIT_LOGS_NOT_AVAILABLE: () =>
@@ -48,6 +58,20 @@ export const ERROR_MESSAGES: Record<string, (...args: any[]) => string> = {
     "API access is not included in your current plan. Upgrade to Medium or Enterprise for API access.",
   CUSTOM_BRANDING_NOT_AVAILABLE: () =>
     "Custom branding is not available on your current plan. Upgrade to customize your company appearance.",
+  BRANCH_WALLETS_NOT_AVAILABLE: () =>
+    "Branch wallets are not available on your current plan. Upgrade to access branch-level wallets.",
+  KYC_COMPLIANCE_NOT_AVAILABLE: () =>
+    "KYC & compliance features are not available on your current plan. Upgrade to Medium or Enterprise.",
+  ADVANCED_KYC_AML_NOT_AVAILABLE: () =>
+    "Advanced KYC/AML is only available on the Enterprise plan. Contact sales to upgrade.",
+  CUSTOM_DOMAIN_NOT_AVAILABLE: () =>
+    "Custom domain is only available on the Enterprise plan. Contact sales to upgrade.",
+  CUSTOM_INTEGRATIONS_NOT_AVAILABLE: () =>
+    "Custom integrations are only available on the Enterprise plan. Contact sales to upgrade.",
+  DEDICATED_ACCOUNT_MANAGER_NOT_AVAILABLE: () =>
+    "A dedicated account manager is only available on the Enterprise plan. Contact sales to upgrade.",
+  PRIORITY_SUPPORT_NOT_AVAILABLE: () =>
+    "Priority support is only available on the Enterprise plan. Contact sales to upgrade.",
   COMPANY_OVER_LIMIT: () =>
     "Your company has exceeded its plan limits. Upgrade to continue creating resources.",
   NO_SUBSCRIPTION: () =>

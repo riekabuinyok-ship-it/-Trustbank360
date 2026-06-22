@@ -97,6 +97,11 @@ export async function POST(req: Request) {
         const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } })
         const trialEndsAt = plan ? new Date(now.getTime() + plan.trialDays * 86400000) : null
 
+        const previousSub = await prisma.subscription.findUnique({
+          where: { companyId },
+          select: { plan: { select: { name: true } } },
+        })
+
         await prisma.subscription.upsert({
           where: { companyId },
           update: {
@@ -120,6 +125,22 @@ export async function POST(req: Request) {
             endDate: trialEndsAt,
           },
         })
+
+        if (plan && previousSub?.plan?.name !== plan.name) {
+          try {
+            await prisma.planAuditLog.create({
+              data: {
+                companyId,
+                fromPlan: previousSub?.plan?.name ?? "None",
+                toPlan: plan.name,
+                reason: "Stripe checkout.session.completed",
+                triggeredBy: null,
+              },
+            })
+          } catch (auditErr) {
+            log("WARN", `[${requestId}] Failed to write plan audit log: ${auditErr instanceof Error ? auditErr.message : String(auditErr)}`)
+          }
+        }
 
         if (eventData.amount_total) {
           const subRecord = await prisma.subscription.findFirst({

@@ -6,17 +6,26 @@ export type FeatureName =
   | "branches"
   | "staff"
   | "currencies"
+  | "transfers"
   | "auditLogs"
   | "apiAccess"
   | "customBranding"
   | "advancedAnalytics"
   | "customReports"
   | "dedicatedSupport"
+  | "branchWallets"
+  | "kycCompliance"
+  | "advancedKycAml"
+  | "customDomain"
+  | "customIntegrations"
+  | "dedicatedAccountManager"
+  | "prioritySupport"
 
 export interface PlanLimits {
   branches: number
   staff: number
   currencies: number
+  monthlyTransferLimit: number | null
 }
 
 export interface PlanFeatures {
@@ -26,6 +35,13 @@ export interface PlanFeatures {
   advancedAnalytics: boolean
   customReports: boolean
   dedicatedSupport: boolean
+  branchWallets: boolean
+  kycCompliance: boolean
+  advancedKycAml: boolean
+  customDomain: boolean
+  customIntegrations: boolean
+  dedicatedAccountManager: boolean
+  prioritySupport: boolean
 }
 
 export interface PlanDefinition {
@@ -42,7 +58,7 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
     name: "Small Company",
     displayName: "Small Company",
     trialDays: 30,
-    limits: { branches: 2, staff: 5, currencies: 2 },
+    limits: { branches: 2, staff: 5, currencies: 2, monthlyTransferLimit: 1000 },
     features: {
       auditLogs: false,
       apiAccess: "none",
@@ -50,6 +66,13 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
       advancedAnalytics: false,
       customReports: false,
       dedicatedSupport: false,
+      branchWallets: true,
+      kycCompliance: false,
+      advancedKycAml: false,
+      customDomain: false,
+      customIntegrations: false,
+      dedicatedAccountManager: false,
+      prioritySupport: false,
     },
     allowedCurrencies: ["SSP", "KES"],
   },
@@ -57,7 +80,7 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
     name: "Medium Company",
     displayName: "Medium Company",
     trialDays: 60,
-    limits: { branches: 10, staff: 25, currencies: 3 },
+    limits: { branches: 10, staff: 25, currencies: 6, monthlyTransferLimit: null },
     features: {
       auditLogs: true,
       apiAccess: "basic",
@@ -65,14 +88,21 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
       advancedAnalytics: true,
       customReports: true,
       dedicatedSupport: false,
+      branchWallets: true,
+      kycCompliance: true,
+      advancedKycAml: false,
+      customDomain: false,
+      customIntegrations: false,
+      dedicatedAccountManager: false,
+      prioritySupport: false,
     },
-    allowedCurrencies: ["SSP", "KES", "UGX"],
+    allowedCurrencies: ["SSP", "KES", "UGX", "USD", "EUR", "GBP"],
   },
   Enterprise: {
     name: "Enterprise",
     displayName: "Enterprise",
     trialDays: 90,
-    limits: { branches: Infinity, staff: Infinity, currencies: Infinity },
+    limits: { branches: Infinity, staff: Infinity, currencies: Infinity, monthlyTransferLimit: null },
     features: {
       auditLogs: true,
       apiAccess: "full",
@@ -80,8 +110,18 @@ export const PLANS: Record<PlanName, PlanDefinition> = {
       advancedAnalytics: true,
       customReports: true,
       dedicatedSupport: true,
+      branchWallets: true,
+      kycCompliance: true,
+      advancedKycAml: true,
+      customDomain: true,
+      customIntegrations: true,
+      dedicatedAccountManager: true,
+      prioritySupport: true,
     },
-    allowedCurrencies: ["SSP", "KES", "UGX", "EUR", "GBP", "AED", "USD"],
+    allowedCurrencies: [
+      "SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED",
+      "ETB", "TZS", "ZAR", "NGN", "GHS", "CAD", "AUD",
+    ],
   },
 }
 
@@ -91,20 +131,38 @@ export function getAllowedCurrencies(planName: string): string[] {
 }
 
 export type LimitFeature = "branches" | "staff" | "currencies"
-export type BooleanFeature = "auditLogs" | "customBranding" | "advancedAnalytics" | "customReports" | "dedicatedSupport"
+export type BooleanFeature =
+  | "auditLogs"
+  | "customBranding"
+  | "advancedAnalytics"
+  | "customReports"
+  | "dedicatedSupport"
+  | "branchWallets"
+  | "kycCompliance"
+  | "advancedKycAml"
+  | "customDomain"
+  | "customIntegrations"
+  | "dedicatedAccountManager"
+  | "prioritySupport"
 
 export function isLimitFeature(f: FeatureName): f is LimitFeature {
   return f === "branches" || f === "staff" || f === "currencies"
 }
 
 export function isBooleanFeature(f: FeatureName): f is BooleanFeature {
-  return !isLimitFeature(f) && f !== "apiAccess"
+  return !isLimitFeature(f) && f !== "apiAccess" && f !== "transfers"
 }
 
 export function getLimit(planName: string, feature: LimitFeature): number {
   const p = PLANS[planName as PlanName]
   if (!p) return 0
   return p.limits[feature]
+}
+
+export function getMonthlyTransferLimit(planName: string): number | null {
+  const p = PLANS[planName as PlanName]
+  if (!p) return null
+  return p.limits.monthlyTransferLimit
 }
 
 export function getFeature(planName: string, feature: BooleanFeature): boolean {
@@ -143,10 +201,18 @@ export const ERROR_CODES: Record<FeatureName, string> = {
   branches: "BRANCH_LIMIT_REACHED",
   staff: "STAFF_LIMIT_REACHED",
   currencies: "CURRENCY_LIMIT_REACHED",
+  transfers: "MONTHLY_TRANSFER_LIMIT_REACHED",
   auditLogs: "AUDIT_LOGS_NOT_AVAILABLE",
   apiAccess: "API_ACCESS_NOT_AVAILABLE",
   customBranding: "CUSTOM_BRANDING_NOT_AVAILABLE",
   advancedAnalytics: "ANALYTICS_NOT_AVAILABLE",
   customReports: "CUSTOM_REPORTS_NOT_AVAILABLE",
   dedicatedSupport: "DEDICATED_SUPPORT_NOT_AVAILABLE",
+  branchWallets: "BRANCH_WALLETS_NOT_AVAILABLE",
+  kycCompliance: "KYC_COMPLIANCE_NOT_AVAILABLE",
+  advancedKycAml: "ADVANCED_KYC_AML_NOT_AVAILABLE",
+  customDomain: "CUSTOM_DOMAIN_NOT_AVAILABLE",
+  customIntegrations: "CUSTOM_INTEGRATIONS_NOT_AVAILABLE",
+  dedicatedAccountManager: "DEDICATED_ACCOUNT_MANAGER_NOT_AVAILABLE",
+  prioritySupport: "PRIORITY_SUPPORT_NOT_AVAILABLE",
 }

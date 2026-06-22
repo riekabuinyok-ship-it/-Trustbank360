@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateTransactionNumber, generateSecretCode, MOBILE_MONEY_TYPES } from "@/lib/utils"
 import { getCommissionSetting, calculateCommission } from "@/lib/commission"
+import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -90,6 +91,15 @@ export async function POST(request: Request) {
 
     if (isNaN(amount) || amount <= 0) {
       return NextResponse.json({ error: "Amount must be a positive number." }, { status: 400 })
+    }
+
+    try {
+      await checkPlanLimit({ companyId: user.companyId, feature: "transfers" })
+    } catch (e) {
+      if (e instanceof PlanEnforcementError) {
+        return NextResponse.json(e.toJSON(), { status: 403 })
+      }
+      throw e
     }
 
     let sender = await prisma.customer.findFirst({

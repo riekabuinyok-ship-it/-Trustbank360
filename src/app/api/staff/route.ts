@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import { PlanEnforcementError, updateOverLimit } from "@/lib/plan-enforcement"
+import { PlanEnforcementError, updateOverLimit, withPlanLimitLock } from "@/lib/plan-enforcement"
 import { formatApiError, formatPlanError } from "@/lib/api-error"
 import { getLimit, getPlanByName } from "@/lib/plan-config"
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     const tempPassword = Math.random().toString(36).slice(-10)
     const hashedPassword = await bcrypt.hash(tempPassword, 12)
 
-    const staff = await prisma.$transaction(async (tx) => {
+    const staff = await withPlanLimitLock(user.companyId, async (tx) => {
       const staffCount = await tx.user.count({ where: { companyId: user.companyId } })
       const limit = getLimit(planName, "staff")
       if (limit !== Infinity && staffCount >= limit) {

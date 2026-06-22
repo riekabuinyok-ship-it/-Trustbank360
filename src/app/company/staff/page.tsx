@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ColumnDef } from "@tanstack/react-table"
-import { Users, Plus, UserPlus, Pencil, Trash2 } from "lucide-react"
+import { Users, Plus, UserPlus, Pencil, Trash2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { roleLabels, roleColors } from "@/lib/permissions"
 import toast from "react-hot-toast"
@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 export default function StaffPage() {
   const router = useRouter()
@@ -32,6 +33,11 @@ export default function StaffPage() {
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleteName, setDeleteName] = useState<string>("")
+  const { getMetric, isLimitReached, isNearLimit, refresh: refreshUsage } = usePlanLimits()
+
+  const staffMetric = getMetric("staff")
+  const staffAtLimit = isLimitReached("staff")
+  const staffNearLimit = isNearLimit("staff")
 
   const isSupervisor = user?.role === "COMPANY_OWNER" || user?.role === "company_owner" ||
     user?.role === "COMPANY_ADMIN" || user?.role === "company_admin"
@@ -51,6 +57,7 @@ export default function StaffPage() {
       if (res.ok) {
         setStaff(staff.map((s) => (s.id === userId ? { ...s, status: newStatus } : s)))
         toast.success(`Staff ${newStatus === "ACTIVE" ? "activated" : "suspended"} successfully`)
+        refreshUsage()
       } else {
         const data = await res.json()
         toast.error(data.error || `Unable to ${newStatus === "ACTIVE" ? "activate" : "suspend"} staff member`)
@@ -68,6 +75,7 @@ export default function StaffPage() {
       if (res.ok) {
         setStaff(staff.filter((s) => s.id !== userId))
         toast.success("Staff member removed successfully")
+        refreshUsage()
       } else {
         const data = await res.json()
         toast.error(data.error || "Unable to remove staff member")
@@ -124,15 +132,65 @@ export default function StaffPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">Staff</h1>
-          <p className="text-muted-foreground text-sm">Manage your team</p>
+          <p className="text-muted-foreground text-sm">
+            Manage your team
+            {staffMetric.limit !== null && (
+              <span className="ml-2 text-xs">
+                ({staffMetric.current}/{staffMetric.limit} used)
+              </span>
+            )}
+          </p>
         </div>
-        <Link href="/company/staff/new" className="w-full sm:w-auto">
-          <Button className="gap-2 w-full sm:w-auto" size="sm">
-            <UserPlus className="h-4 w-4" />
-            Invite Staff
-          </Button>
-        </Link>
+        {staffAtLimit ? (
+          <Link href="/company/settings/billing" className="w-full sm:w-auto">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto" size="sm">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              Upgrade to invite staff
+            </Button>
+          </Link>
+        ) : (
+          <Link href="/company/staff/new" className="w-full sm:w-auto">
+            <Button className="gap-2 w-full sm:w-auto" size="sm">
+              <UserPlus className="h-4 w-4" />
+              Invite Staff
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {staffAtLimit && (
+        <div className="p-3 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              Staff limit reached
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+              You've used all {staffMetric.limit} staff seats on your current plan.
+              Upgrade to invite more team members.
+            </p>
+          </div>
+          <Link href="/company/settings/billing">
+            <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-400">
+              Upgrade Plan
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {staffNearLimit && !staffAtLimit && (
+        <div className="p-3 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+              Approaching staff limit
+            </p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-0.5">
+              You have {staffMetric.remaining} staff seat{staffMetric.remaining === 1 ? "" : "s"} remaining on your current plan.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>

@@ -91,30 +91,30 @@ enum RiskLevel {
 }
 
 model Company {
-  id                   String    @id @default(cuid())
+  id                   String         @id @default(cuid())
   name                 String
   businessTypes        BusinessType[]
   country              String
   registrationNumber   String?
   taxId                String?
-  numberOfBranches     Int       @default(1)
-  numberOfStaff        Int       @default(1)
-  mainCurrency         Currency  @default(SSP)
+  numberOfBranches     Int            @default(1)
+  numberOfStaff        Int            @default(1)
+  mainCurrency         Currency       @default(SSP)
   additionalCurrencies Currency[]
   address              String?
   phone                String?
   email                String?
   website              String?
   logo                 String?
-  primaryColor         String    @default("#0F4C81")
-  secondaryColor       String    @default("#00A86B")
-  accentColor          String    @default("#F4B400")
+  primaryColor         String         @default("#0F4C81")
+  secondaryColor       String         @default("#00A86B")
+  accentColor          String         @default("#F4B400")
   customDomain         String?
-  isActive             Boolean   @default(true)
-  onboardingComplete   Boolean   @default(false)
-  overLimit            Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  isActive             Boolean        @default(true)
+  onboardingComplete   Boolean        @default(false)
+  overLimit            Boolean        @default(false)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   users              User[]
   branches           Branch[]
@@ -133,14 +133,30 @@ model Company {
   violationLogs      ViolationLog[]
   syncQueueItems     SyncQueueItem[]
   syncConflicts      SyncConflict[]
+  planAuditLogs      PlanAuditLog[]
 
   @@map("companies")
+}
+
+model PlanAuditLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  fromPlan    String
+  toPlan      String
+  reason      String?
+  triggeredBy String?
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@map("plan_audit_logs")
 }
 
 model CommissionSetting {
   id        String         @id @default(cuid())
   companyId String
-  currency  Currency @default(SSP)
+  currency  Currency       @default(SSP)
   mode      CommissionMode @default(PERCENTAGE)
   value     Float          @default(2)
   minFee    Float?
@@ -154,63 +170,63 @@ model CommissionSetting {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String
-  email          String    @unique
-  phone          String?
-  password       String
-  role           UserRole
-  position       String?
-  status         StaffStatus @default(INVITED)
-  mustChangePassword Boolean @default(false)
-  twoFactorSecret  String?
-  twoFactorEnabled Boolean @default(false)
-  image          String?
-  emailVerified  DateTime?
-  lastLoginAt    DateTime?
-  lastActiveAt   DateTime?
-  companyId      String?
-  branchId       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String      @id @default(cuid())
+  name               String
+  email              String      @unique
+  phone              String?
+  password           String
+  role               UserRole
+  position           String?
+  status             StaffStatus @default(INVITED)
+  mustChangePassword Boolean     @default(false)
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean     @default(false)
+  image              String?
+  emailVerified      DateTime?
+  lastLoginAt        DateTime?
+  lastActiveAt       DateTime?
+  companyId          String?
+  branchId           String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
-  company  Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  branch   Branch?  @relation(fields: [branchId], references: [id])
-  
-  sentMessages     Message[]     @relation("SentMessages")
-  receivedMessages Message[]     @relation("ReceivedMessages")
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch  Branch?  @relation(fields: [branchId], references: [id])
+
+  sentMessages     Message[]          @relation("SentMessages")
+  receivedMessages Message[]          @relation("ReceivedMessages")
   notifications    Notification[]
   auditLogs        AuditLog[]
-  issuedTransfers  Transfer[]    @relation("IssuedByUser")
-  paidTransfers    Transfer[]    @relation("PaidByUser")
+  issuedTransfers  Transfer[]         @relation("IssuedByUser")
+  paidTransfers    Transfer[]         @relation("PaidByUser")
   createdRates     ExchangeRate[]
   events           TransactionEvent[]
   adminMessages    AdminMessage[]
   violationLogs    ViolationLog[]
-  verifiedPayments Payment[]     @relation("VerifiedByUser")
+  verifiedPayments Payment[]          @relation("VerifiedByUser")
 
   @@map("users")
 }
 
 model Branch {
-  id              String   @id @default(cuid())
-  name            String
-  code            String   @unique
-  country         String
-  state           String?
-  city            String
-  address         String?
-  managerId       String?
-  contactPhone    String?
-  contactEmail    String?
-  isActive        Boolean  @default(true)
-  companyId       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  country      String
+  state        String?
+  city         String
+  address      String?
+  managerId    String?
+  contactPhone String?
+  contactEmail String?
+  isActive     Boolean  @default(true)
+  companyId    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  users    User[]
-  wallets  Wallet[]
+  company       Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  users         User[]
+  wallets       Wallet[]
   transfersFrom BranchTransaction[] @relation("SenderBranch")
   transfersTo   BranchTransaction[] @relation("ReceiverBranch")
   events        TransactionEvent[]
@@ -220,33 +236,33 @@ model Branch {
 }
 
 model BranchTransaction {
-  id             String   @id @default(cuid())
-  transferId     String
-  senderBranchId String
+  id               String @id @default(cuid())
+  transferId       String
+  senderBranchId   String
   receiverBranchId String
 
   transfer       Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
   senderBranch   Branch   @relation("SenderBranch", fields: [senderBranchId], references: [id])
   receiverBranch Branch   @relation("ReceiverBranch", fields: [receiverBranchId], references: [id])
 
+  @@unique([transferId])
   @@index([senderBranchId])
   @@index([receiverBranchId])
-  @@unique([transferId])
   @@map("branch_transactions")
 }
 
 model Wallet {
-  id         String   @id @default(cuid())
-  currency   Currency
-  balance    Float    @default(0)
-  openingBalance Float @default(0)
-  branchId   String
-  companyId  String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  currency       Currency
+  balance        Float    @default(0)
+  openingBalance Float    @default(0)
+  branchId       String
+  companyId      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch       Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
 
   @@unique([branchId, currency])
@@ -254,15 +270,15 @@ model Wallet {
 }
 
 model WalletTransaction {
-  id        String   @id @default(cuid())
-  type      String
-  amount    Float
-  reference String?
+  id          String   @id @default(cuid())
+  type        String
+  amount      Float
+  reference   String?
   description String?
-  walletId  String
-  companyId String
-  branchId  String
-  createdAt DateTime @default(now())
+  walletId    String
+  companyId   String
+  branchId    String
+  createdAt   DateTime @default(now())
 
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
@@ -291,7 +307,7 @@ model CompanyMobileProvider {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
 
-  company  Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company  Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   provider MobileMoneyProvider @relation(fields: [providerId], references: [id])
 
   @@unique([companyId, providerId])
@@ -307,8 +323,8 @@ model FloatWallet {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  company  Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  provider MobileMoneyProvider @relation(fields: [providerId], references: [id])
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider     MobileMoneyProvider @relation(fields: [providerId], references: [id])
   transactions FloatTransaction[]
 
   @@unique([companyId, providerId])
@@ -316,13 +332,13 @@ model FloatWallet {
 }
 
 model FloatTransaction {
-  id          String   @id @default(cuid())
-  type        String
-  amount      Float
-  description String?
+  id            String   @id @default(cuid())
+  type          String
+  amount        Float
+  description   String?
   floatWalletId String
-  companyId   String
-  createdAt   DateTime @default(now())
+  companyId     String
+  createdAt     DateTime @default(now())
 
   floatWallet FloatWallet @relation(fields: [floatWalletId], references: [id], onDelete: Cascade)
 
@@ -330,22 +346,22 @@ model FloatTransaction {
 }
 
 model ExchangeRate {
-  id             String   @id @default(cuid())
-  fromCurrency   Currency
-  toCurrency     Currency
-  buyRate        Float
-  sellRate       Float
-  isActive       Boolean  @default(true)
-  isPublic       Boolean  @default(true)
-  scheduledAt    DateTime?
-  expiresAt      DateTime?
-  companyId      String
-  createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String    @id @default(cuid())
+  fromCurrency Currency
+  toCurrency   Currency
+  buyRate      Float
+  sellRate     Float
+  isActive     Boolean   @default(true)
+  isPublic     Boolean   @default(true)
+  scheduledAt  DateTime?
+  expiresAt    DateTime?
+  companyId    String
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy User  @relation(fields: [createdById], references: [id])
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id])
 
   @@map("exchange_rates")
 }
@@ -365,7 +381,7 @@ model Customer {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company             Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   transfersAsSender   Transfer[] @relation("Sender")
   transfersAsReceiver Transfer[] @relation("Receiver")
 
@@ -373,49 +389,49 @@ model Customer {
 }
 
 model Transfer {
-  id                String         @id @default(cuid())
-  transactionNumber String         @unique
-  secretCode        String?
-  transactionType   TransactionType
-  amount            Float
-  currency          Currency
-  exchangeRate      Float?
-  commission        Float          @default(0)
-  commissionType    CommissionType @default(INCLUDED)
-  totalAmount       Float
-  senderAmount      Float?
-  receiverAmount    Float?
-  status            TransferStatus @default(PENDING)
+  id                 String          @id @default(cuid())
+  transactionNumber  String          @unique
+  secretCode         String?
+  transactionType    TransactionType
+  amount             Float
+  currency           Currency
+  exchangeRate       Float?
+  commission         Float           @default(0)
+  commissionType     CommissionType  @default(INCLUDED)
+  totalAmount        Float
+  senderAmount       Float?
+  receiverAmount     Float?
+  status             TransferStatus  @default(PENDING)
   cancellationReason String?
-  cancelledAt       DateTime?
-  reversalReason    String?
-  reversedAt        DateTime?
-  notes             String?
-  
-  mobileProviderId  String?
-  receiverMobile    String?
-  receiverIdNumber  String?
+  cancelledAt        DateTime?
+  reversalReason     String?
+  reversedAt         DateTime?
+  notes              String?
 
-  senderId          String
-  receiverId        String
-  companyId         String
-  issuedById        String
-  paidById          String?
-  paidAt            DateTime?
-  receiptPrintedAt  DateTime?
+  mobileProviderId String?
+  receiverMobile   String?
+  receiverIdNumber String?
+
+  senderId           String
+  receiverId         String
+  companyId          String
+  issuedById         String
+  paidById           String?
+  paidAt             DateTime?
+  receiptPrintedAt   DateTime?
   receiptReprintedAt DateTime?
 
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company          Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sender           Customer               @relation("Sender", fields: [senderId], references: [id])
-  receiver         Customer               @relation("Receiver", fields: [receiverId], references: [id])
-  issuedBy         User                   @relation("IssuedByUser", fields: [issuedById], references: [id])
-  paidBy           User?                  @relation("PaidByUser", fields: [paidById], references: [id])
-  mobileProvider   MobileMoneyProvider?   @relation(fields: [mobileProviderId], references: [id])
-  branchLink       BranchTransaction?
-  events           TransactionEvent[]
+  company        Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sender         Customer             @relation("Sender", fields: [senderId], references: [id])
+  receiver       Customer             @relation("Receiver", fields: [receiverId], references: [id])
+  issuedBy       User                 @relation("IssuedByUser", fields: [issuedById], references: [id])
+  paidBy         User?                @relation("PaidByUser", fields: [paidById], references: [id])
+  mobileProvider MobileMoneyProvider? @relation(fields: [mobileProviderId], references: [id])
+  branchLink     BranchTransaction?
+  events         TransactionEvent[]
 
   @@index([companyId, createdAt(sort: Desc)])
   @@index([status])
@@ -439,19 +455,19 @@ model TransactionEvent {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  subject   String?
-  content   String
-  type      String   @default("DIRECT")
-  imageUrl  String?
+  id          String    @id @default(cuid())
+  subject     String?
+  content     String
+  type        String    @default("DIRECT")
+  imageUrl    String?
   documentUrl String?
   deliveredAt DateTime?
-  readAt    DateTime?
-  senderId  String
-  receiverId String?
-  branchId  String?
-  companyId String
-  createdAt DateTime @default(now())
+  readAt      DateTime?
+  senderId    String
+  receiverId  String?
+  branchId    String?
+  companyId   String
+  createdAt   DateTime  @default(now())
 
   sender   User    @relation("SentMessages", fields: [senderId], references: [id])
   receiver User?   @relation("ReceivedMessages", fields: [receiverId], references: [id])
@@ -461,13 +477,13 @@ model Message {
 }
 
 model Announcement {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  priority  String   @default("NORMAL")
-  companyId String
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  priority    String   @default("NORMAL")
+  companyId   String
   createdById String
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -475,7 +491,7 @@ model Announcement {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
   message   String
   type      String
@@ -483,9 +499,9 @@ model Notification {
   userId    String
   companyId String?
   link      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -509,16 +525,16 @@ model AuditLog {
 }
 
 model FraudAlert {
-  id          String   @id @default(cuid())
-  type        String
-  severity    RiskLevel @default(MEDIUM)
-  description String
-  resolved    Boolean  @default(false)
-  companyId   String
-  customerId  String?
-  transferId  String?
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
+  id           String    @id @default(cuid())
+  type         String
+  severity     RiskLevel @default(MEDIUM)
+  description  String
+  resolved     Boolean   @default(false)
+  companyId    String
+  customerId   String?
+  transferId   String?
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
   resolvedById String?
 
   @@map("fraud_alerts")
@@ -546,20 +562,20 @@ enum PaymentStatus {
 }
 
 model SubscriptionPlan {
-  id           String   @id @default(cuid())
-  name         String
-  description  String?
-  price        Float
-  currency     Currency @default(USD)
-  durationDays Int
-  trialDays    Int      @default(30)
-  maxBranches  Int      @default(2)
-  maxStaff     Int      @default(5)
-  maxCurrencies Int     @default(2)
-  features     String[] @default([])
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  currency      Currency @default(USD)
+  durationDays  Int
+  trialDays     Int      @default(30)
+  maxBranches   Int      @default(2)
+  maxStaff      Int      @default(5)
+  maxCurrencies Int      @default(2)
+  features      String[] @default([])
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   subscriptions Subscription[]
 
@@ -581,8 +597,8 @@ model Subscription {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
-  company Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  plan    SubscriptionPlan  @relation(fields: [planId], references: [id])
+  company  Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id])
   payments Payment[]
 
   @@unique([companyId])
@@ -590,40 +606,40 @@ model Subscription {
 }
 
 model Payment {
-  id              String        @id @default(cuid())
-  companyId       String
-  subscriptionId  String
-  method          PaymentMethod
-  status          PaymentStatus @default(PENDING)
-  amount          Float
-  currency        Currency      @default(USD)
-  transactionId   String?
-  stripeSessionId String?
+  id                    String        @id @default(cuid())
+  companyId             String
+  subscriptionId        String
+  method                PaymentMethod
+  status                PaymentStatus @default(PENDING)
+  amount                Float
+  currency              Currency      @default(USD)
+  transactionId         String?
+  stripeSessionId       String?
   stripePaymentIntentId String?
-  proofUrl        String?
-  notes           String?
-  verifiedById    String?
-  verifiedAt      DateTime?
-  createdAt       DateTime      @default(now())
+  proofUrl              String?
+  notes                 String?
+  verifiedById          String?
+  verifiedAt            DateTime?
+  createdAt             DateTime      @default(now())
 
-  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  subscription Subscription   @relation(fields: [subscriptionId], references: [id])
-  verifiedBy   User?          @relation("VerifiedByUser", fields: [verifiedById], references: [id])
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  verifiedBy   User?        @relation("VerifiedByUser", fields: [verifiedById], references: [id])
 
-   @@map("payments")
+  @@map("payments")
 }
 
 model AdminMessage {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  type        String   @default("BROADCAST")
-  targetRole  String?
-  targetPlan  String?
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  type         String   @default("BROADCAST")
+  targetRole   String?
+  targetPlan   String?
   targetStatus String?
-  sentCount   Int      @default(0)
-  createdById String
-  createdAt   DateTime @default(now())
+  sentCount    Int      @default(0)
+  createdById  String
+  createdAt    DateTime @default(now())
 
   createdBy User @relation(fields: [createdById], references: [id])
 
@@ -631,31 +647,31 @@ model AdminMessage {
 }
 
 model ViolationLog {
-  id        String   @id @default(cuid())
-  companyId String
-  action    String
-  reason    String
+  id          String   @id @default(cuid())
+  companyId   String
+  action      String
+  reason      String
   createdById String
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy  User    @relation(fields: [createdById], references: [id])
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id])
 
   @@map("violation_logs")
 }
 
 model SyncQueueItem {
-  id         String   @id
+  id         String    @id
   companyId  String
   userId     String
   tableName  String
   recordId   String?
   action     String
   payload    Json
-  status     String   @default("PENDING")
-  retryCount Int      @default(0)
+  status     String    @default("PENDING")
+  retryCount Int       @default(0)
   lastError  String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   syncedAt   DateTime?
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -667,18 +683,18 @@ model SyncQueueItem {
 }
 
 model SyncConflict {
-  id            String   @id
+  id            String    @id
   companyId     String
   tableName     String
   recordId      String?
   localPayload  Json
   serverPayload Json
   conflictType  String
-  status        String   @default("PENDING_REVIEW")
+  status        String    @default("PENDING_REVIEW")
   resolvedBy    String?
   resolvedAt    DateTime?
   createdById   String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -689,25 +705,25 @@ model SyncConflict {
 }
 
 model PlatformSetting {
-  id              String  @id @default("platform")
-  platformName    String  @default("Trustbank360")
-  platformLogo    String?
-  primaryColor    String  @default("#0F4C81")
-  secondaryColor  String  @default("#00A86B")
-  stripePublicKey String?
-  stripeSecretKey String? @default("")
+  id                  String   @id @default("platform")
+  platformName        String   @default("Trustbank360")
+  platformLogo        String?
+  primaryColor        String   @default("#0F4C81")
+  secondaryColor      String   @default("#00A86B")
+  stripePublicKey     String?
+  stripeSecretKey     String?  @default("")
   stripeWebhookSecret String?
-  bankInstructions String?
-  bankAccountName String?
-  bankAccountNumber String?
-  bankName        String?
-  currencySettings String? @default("USD,SSP,UGX,KES")
-  maintenanceMode Boolean @default(false)
-  maintenanceMessage String?
-  emailConfig     String?
-  smsConfig       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  bankInstructions    String?
+  bankAccountName     String?
+  bankAccountNumber   String?
+  bankName            String?
+  currencySettings    String?  @default("USD,SSP,UGX,KES")
+  maintenanceMode     Boolean  @default(false)
+  maintenanceMessage  String?
+  emailConfig         String?
+  smsConfig           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@map("platform_settings")
 }

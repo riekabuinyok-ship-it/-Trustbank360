@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
-import { PlanEnforcementError, updateOverLimit } from "@/lib/plan-enforcement"
+import { PlanEnforcementError, updateOverLimit, withPlanLimitLock } from "@/lib/plan-enforcement"
 import { formatApiError, formatPlanError } from "@/lib/api-error"
 import { getLimit, getPlanByName, getAllowedCurrencies } from "@/lib/plan-config"
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     }
     const planName = sub.plan.name
 
-    const branch = await prisma.$transaction(async (tx) => {
+    const branch = await withPlanLimitLock(user.companyId, async (tx) => {
       const branchCount = await tx.branch.count({ where: { companyId: user.companyId } })
       const limit = getLimit(planName, "branches")
       if (limit !== Infinity && branchCount >= limit) {
