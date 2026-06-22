@@ -1,27 +1,19 @@
-import type { Metadata } from "next"
+import Link from "next/link"
 import { PublicLayout } from "@/components/public-layout"
-import { techArticleSchema } from "@/lib/seo"
+import { tutorials } from "@/lib/tutorials"
 
-export const metadata: Metadata = {
-  title: "Watch Tutorial",
-  description: "Learn how to use TrustBank360 with our step-by-step training video. Covers creating transactions, managing branches, processing payouts, and more.",
-  openGraph: { title: "Watch Tutorial - TrustBank360", description: "Step-by-step training tutorial for TrustBank360." },
-  alternates: { canonical: "/tutorials" },
-}
-
-const jsonLd = techArticleSchema("TrustBank360 Training Tutorial", "Step-by-step training tutorial for TrustBank360 platform.", "/tutorials")
-
-export default function PublicTutorialsPage() {
+export default function TutorialsHubPage() {
   return (
     <PublicLayout>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <section className="pt-28 pb-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold">Watch Tutorial</h1>
-            <p className="text-muted-foreground mt-2">Learn how to use TRUSTBANK360 with this step-by-step training video.</p>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl sm:text-4xl font-bold">Tutorials</h1>
+            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">Step-by-step guides to help you get the most out of TRUSTBANK360. Watch the full training video or follow each guide below.</p>
           </div>
-          <div className="aspect-video rounded-xl overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-lg">
+
+          {/* Full Video */}
+          <div className="aspect-video rounded-xl overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-lg mb-12">
             <iframe
               src="https://www.youtube.com/embed/zrFno1ygJm8"
               title="TRUSTBANK360 Training Tutorial"
@@ -30,16 +22,25 @@ export default function PublicTutorialsPage() {
               className="w-full h-full"
             />
           </div>
-          <div className="text-center mt-6">
-            <a
-              href="https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary-600 font-medium"
-            >
-              Open in YouTube
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-            </a>
+
+          {/* Tutorial Grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tutorials.map((t) => (
+              <Link
+                key={t.slug}
+                href={`/tutorials/${t.slug}`}
+                className="group p-5 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all"
+              >
+                <div className="text-2xl mb-3">{t.icon}</div>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">{t.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{t.description}</p>
+                <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                  <span>{t.steps.length} steps</span>
+                  <span>·</span>
+                  <span>{t.duration}</span>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
