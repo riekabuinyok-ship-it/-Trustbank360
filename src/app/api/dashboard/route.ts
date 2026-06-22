@@ -14,10 +14,11 @@ function getTimeRanges() {
   return { now, startOfDay, startOfWeek, startOfMonth }
 }
 
-function computeFlow(transfers: { amount: number; commission: number; createdAt: Date }[]) {
+function computeFlow(transfers: { amount: number; commission: number; status?: string; createdAt: Date }[]) {
+  const active = transfers.filter((t) => t.status !== "CANCELLED" && t.status !== "REVERSED")
   const { startOfDay, startOfWeek, startOfMonth } = getTimeRanges()
   const byRange = (from: Date) => {
-    const filtered = transfers.filter((t) => t.createdAt >= from)
+    const filtered = active.filter((t) => t.createdAt >= from)
     return {
       amount: filtered.reduce((s, t) => s + t.amount, 0),
       commission: filtered.reduce((s, t) => s + t.commission, 0),
@@ -28,8 +29,8 @@ function computeFlow(transfers: { amount: number; commission: number; createdAt:
     week: byRange(startOfWeek),
     month: byRange(startOfMonth),
     all: {
-      amount: transfers.reduce((s, t) => s + t.amount, 0),
-      commission: transfers.reduce((s, t) => s + t.commission, 0),
+      amount: active.reduce((s, t) => s + t.amount, 0),
+      commission: active.reduce((s, t) => s + t.commission, 0),
     },
   }
 }
@@ -38,9 +39,10 @@ function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[], wal
   const byCurrency: Record<string, any> = {}
   for (const currency of planCurrencies) {
     const currTransfers = allTransfers.filter((t) => t.currency === currency)
-    const currCount = currTransfers.length
+    const activeTransfers = currTransfers.filter((t: any) => t.status !== "CANCELLED" && t.status !== "REVERSED")
+    const currCount = activeTransfers.length
     const flow = computeFlow(currTransfers)
-    const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
+    const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0, REVERSED: 0 }
     for (const t of currTransfers) {
       if (statusCounts[t.status] !== undefined) statusCounts[t.status]++
     }
@@ -80,10 +82,11 @@ function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[], wal
         all: flow.all.commission,
       },
       counts: {
-        total: currCount,
+        total: currTransfers.length,
         completed: statusCounts.COMPLETED,
         pending: statusCounts.PENDING,
         cancelled: statusCounts.CANCELLED,
+        reversed: statusCounts.REVERSED,
       },
       recentTransactions: recent,
     }
@@ -117,10 +120,11 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
   for (const w of walletGroup) walletMap[w.currency] = w._sum.balance || 0
 
   const flow = computeFlow(allTransfers)
-  const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
+  const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0, REVERSED: 0 }
   for (const t of allTransfers) {
     if (statusCounts[t.status] !== undefined) statusCounts[t.status]++
   }
+  const activeCount = allTransfers.filter((t) => t.status !== "CANCELLED" && t.status !== "REVERSED").length
   const totalAll = allTransfers.length
 
   const companyCurrencies = ["SSP"]
@@ -138,7 +142,7 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
     customerCount,
     walletBalances: walletGroup.map(w => ({ currency: w.currency, balance: w._sum.balance || 0 })),
     recentTransactions,
-    counts: statusCounts,
+    counts: { total: totalAll, ...statusCounts },
     moneyFlow: {
       today: flow.today.amount,
       week: flow.week.amount,
@@ -245,7 +249,7 @@ export async function GET() {
     const month = allFlow.month
     const allTime = allFlow.all
 
-    const countsMap: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
+    const countsMap: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0, REVERSED: 0 }
     let totalAll = 0
     for (const t of allTransfers) {
       if (countsMap[t.status] !== undefined) countsMap[t.status]++
@@ -355,6 +359,7 @@ export async function GET() {
         completed: countsMap["COMPLETED"] || 0,
         pending: countsMap["PENDING"] || 0,
         cancelled: countsMap["CANCELLED"] || 0,
+        reversed: countsMap["REVERSED"] || 0,
       },
       byCurrency,
       companyCurrencies: planCurrencies,
