@@ -84,11 +84,8 @@ export default function DashboardPage() {
   const isTeller = role === "TELLER" || role === "teller"
   const isBranchManager = role === "BRANCH_MANAGER" || role === "branch_manager"
 
-  const mf = data?.moneyFlow || {}
-  const cf = data?.commissionFlow || {}
   const ins = data?.insights || {}
   const byCurrency = data?.byCurrency || {}
-  const counts = data?.counts || {}
   
   const alertsData = alerts || {}
   const companyCurrencies = data?.companyCurrencies || ["SSP"]
@@ -97,10 +94,18 @@ export default function DashboardPage() {
   const recentTransactions = data?.recentTransactions || []
 
   useEffect(() => {
-    if (companyCurrencies.length > 0 && !companyCurrencies.includes(activeCurrency)) {
-      setActiveCurrency(companyCurrencies[0])
+    if (typeof window !== "undefined") {
+      setActiveCurrency("ALL")
     }
-  }, [companyCurrencies])
+  }, [])
+
+  // Currency-filtered data: if "ALL" use top-level, otherwise per-currency
+  const currencyData = activeCurrency === "ALL" ? null : (data?.byCurrency?.[activeCurrency])
+  const activeCounts = currencyData?.counts ?? data?.counts ?? {}
+  const activeMf = currencyData?.moneyFlow ?? data?.moneyFlow ?? {}
+  const activeCf = currencyData?.commissionFlow ?? data?.commissionFlow ?? {}
+  const activeRecentTxs = currencyData?.recentTransactions ?? data?.recentTransactions ?? []
+  const activeWalletBalance = currencyData?.balance ?? 0
 
   const { isActive, warnings, announcements } = alertsData
 
@@ -174,25 +179,25 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total Transactions</p>
-            <p className="text-2xl font-bold">{loading ? "-" : (counts.total ?? data?.transferCount ?? 0)}</p>
+            <p className="text-2xl font-bold">{loading ? "-" : (activeCounts.total ?? 0)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Completed</p>
-            <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : (counts.completed ?? 0)}</p>
+            <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : (activeCounts.completed ?? 0)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Pending</p>
-            <p className="text-2xl font-bold text-amber-600">{loading ? "-" : (counts.pending ?? 0)}</p>
+            <p className="text-2xl font-bold text-amber-600">{loading ? "-" : (activeCounts.pending ?? 0)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Cancelled</p>
-            <p className="text-2xl font-bold text-red-600">{loading ? "-" : (counts.cancelled ?? 0)}</p>
+            <p className="text-2xl font-bold text-red-600">{loading ? "-" : (activeCounts.cancelled ?? 0)}</p>
           </CardContent>
         </Card>
       </div>
@@ -247,37 +252,42 @@ export default function DashboardPage() {
       {companyCurrencies.length > 0 && (
         <Tabs value={activeCurrency} onValueChange={setActiveCurrency}>
           <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="ALL">ALL</TabsTrigger>
             {companyCurrencies.map((cur: string) => (
               <TabsTrigger key={cur} value={cur}>{cur}</TabsTrigger>
             ))}
           </TabsList>
-          {companyCurrencies.map((cur: string) => {
-            const curr = byCurrency[cur] || { count: 0, volume: 0, commission: 0, balance: 0 }
+          {["ALL", ...companyCurrencies].map((cur: string) => {
+            const curr = cur === "ALL" ? null : (data?.byCurrency?.[cur])
+            const displayCount = curr?.count ?? (cur === "ALL" ? (data?.counts?.total ?? 0) : 0)
+            const displayVolume = curr?.volume ?? (cur === "ALL" ? (data?.moneyFlow?.all ?? 0) : 0)
+            const displayCommission = curr?.commission ?? (cur === "ALL" ? (data?.commissionFlow?.all ?? 0) : 0)
+            const displayBalance = curr?.balance ?? (cur === "ALL" ? Object.values(data?.byCurrency ?? {}).reduce((s: number, c: any) => s + (c.balance || 0), 0) : 0)
             return (
               <TabsContent key={cur} value={cur}>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Transactions</p>
-                      <p className="text-2xl font-bold">{loading ? "-" : curr.count}</p>
+                      <p className="text-2xl font-bold">{loading ? "-" : displayCount}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Volume</p>
-                      <p className="text-2xl font-bold">{loading ? "-" : formatCurrency(curr.volume, cur)}</p>
+                      <p className="text-2xl font-bold">{loading ? "-" : formatCurrency(displayVolume, cur === "ALL" ? "SSP" : cur)}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Commission</p>
-                      <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : formatCurrency(curr.commission, cur)}</p>
+                      <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : formatCurrency(displayCommission, cur === "ALL" ? "SSP" : cur)}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                      <p className="text-2xl font-bold text-primary">{loading ? "-" : formatCurrency(curr.balance, cur)}</p>
+                      <p className="text-2xl font-bold text-primary">{loading ? "-" : formatCurrency(displayBalance, cur === "ALL" ? "SSP" : cur)}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -292,6 +302,7 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
           <DollarSign className="h-5 w-5 text-primary" />
           Money Flow
+          {activeCurrency !== "ALL" && <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
@@ -300,7 +311,7 @@ export default function DashboardPage() {
                 <Clock className="h-3.5 w-3.5 text-primary" />
                 <p className="text-xs text-muted-foreground">Today</p>
               </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(mf.today || 0, "SSP")}</p>
+              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.today || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -309,7 +320,7 @@ export default function DashboardPage() {
                 <TrendingUp className="h-3.5 w-3.5 text-secondary" />
                 <p className="text-xs text-muted-foreground">This Week</p>
               </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(mf.week || 0, "SSP")}</p>
+              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.week || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -318,7 +329,7 @@ export default function DashboardPage() {
                 <BarChart3 className="h-3.5 w-3.5 text-amber-500" />
                 <p className="text-xs text-muted-foreground">This Month</p>
               </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(mf.month || 0, "SSP")}</p>
+              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.month || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -327,7 +338,7 @@ export default function DashboardPage() {
                 <Building2 className="h-3.5 w-3.5 text-primary" />
                 <p className="text-xs text-muted-foreground">All Time</p>
               </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(mf.all || 0, "SSP")}</p>
+              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.all || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
         </div>
@@ -338,31 +349,32 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
           <Percent className="h-5 w-5 text-emerald-500" />
           Commission Flow
+          {activeCurrency !== "ALL" && <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>}
           <span className="text-xs font-normal text-muted-foreground">(Separate revenue stream)</span>
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card className="border-emerald-200 dark:border-emerald-900">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Today Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(cf.today || 0, "SSP")}</p>
+              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.today || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
           <Card className="border-emerald-200 dark:border-emerald-900">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">This Week Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(cf.week || 0, "SSP")}</p>
+              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.week || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
           <Card className="border-emerald-200 dark:border-emerald-900">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">This Month Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(cf.month || 0, "SSP")}</p>
+              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.month || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
           <Card className="border-emerald-200 dark:border-emerald-900">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Total Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(cf.all || 0, "SSP")}</p>
+              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.all || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
             </CardContent>
           </Card>
         </div>
@@ -443,15 +455,17 @@ export default function DashboardPage() {
       {/* 7. RECENT TRANSACTIONS */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Recent Transactions</CardTitle>
+          <CardTitle className="text-lg">Recent Transactions
+            {activeCurrency !== "ALL" && <span className="text-sm font-normal text-muted-foreground"> ({activeCurrency})</span>}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {recentTransactions.length > 0 ? (
+          {activeRecentTxs.length > 0 ? (
             <div className="divide-y">
-              {recentTransactions.map((tx: any) => (
+              {activeRecentTxs.map((tx: any) => (
                 <div key={tx.id} className="flex items-center justify-between py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{tx.sender.fullName} → {tx.receiver.fullName}</p>
+                    <p className="text-sm font-medium truncate">{tx.sender?.fullName} → {tx.receiver?.fullName}</p>
                     <p className="text-xs text-muted-foreground">{tx.transactionNumber}</p>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">

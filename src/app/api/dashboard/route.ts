@@ -5,14 +5,94 @@ import { prisma } from "@/lib/prisma"
 import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
 import { getPlanByName, getAllowedCurrencies } from "@/lib/plan-config"
 
+function getTimeRanges() {
+  const now = new Date()
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfWeek = new Date(startOfDay)
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  return { now, startOfDay, startOfWeek, startOfMonth }
+}
+
+function computeFlow(transfers: { amount: number; commission: number; createdAt: Date }[]) {
+  const { startOfDay, startOfWeek, startOfMonth } = getTimeRanges()
+  const byRange = (from: Date) => {
+    const filtered = transfers.filter((t) => t.createdAt >= from)
+    return {
+      amount: filtered.reduce((s, t) => s + t.amount, 0),
+      commission: filtered.reduce((s, t) => s + t.commission, 0),
+    }
+  }
+  return {
+    today: byRange(startOfDay),
+    week: byRange(startOfWeek),
+    month: byRange(startOfMonth),
+    all: {
+      amount: transfers.reduce((s, t) => s + t.amount, 0),
+      commission: transfers.reduce((s, t) => s + t.commission, 0),
+    },
+  }
+}
+
+function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[], walletMap: Record<string, number>) {
+  const byCurrency: Record<string, any> = {}
+  for (const currency of planCurrencies) {
+    const currTransfers = allTransfers.filter((t) => t.currency === currency)
+    const currCount = currTransfers.length
+    const flow = computeFlow(currTransfers)
+    const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
+    for (const t of currTransfers) {
+      if (statusCounts[t.status] !== undefined) statusCounts[t.status]++
+    }
+
+    // Take top 10 recent transactions for this currency
+    const recent = [...currTransfers]
+      .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 10)
+      .map((t: any) => ({
+        id: t.id,
+        transactionNumber: t.transactionNumber,
+        amount: t.amount,
+        currency: t.currency,
+        commission: t.commission,
+        status: t.status,
+        createdAt: t.createdAt,
+        issuedBy: t.issuedBy,
+        sender: t.sender,
+        receiver: t.receiver,
+      }))
+
+    byCurrency[currency] = {
+      count: currCount,
+      volume: flow.all.amount,
+      commission: flow.all.commission,
+      balance: walletMap[currency] || 0,
+      moneyFlow: {
+        today: flow.today.amount,
+        week: flow.week.amount,
+        month: flow.month.amount,
+        all: flow.all.amount,
+      },
+      commissionFlow: {
+        today: flow.today.commission,
+        week: flow.week.commission,
+        month: flow.month.commission,
+        all: flow.all.commission,
+      },
+      counts: {
+        total: currCount,
+        completed: statusCounts.COMPLETED,
+        pending: statusCounts.PENDING,
+        cancelled: statusCounts.CANCELLED,
+      },
+      recentTransactions: recent,
+    }
+  }
+  return byCurrency
+}
+
 async function getBasicDashboard(user: any, whereBase: any, isOperational: boolean) {
-  const [transferCount, statusCounts, customerCount, walletGroup, recentTransfers] = await Promise.all([
-    prisma.transfer.count({ where: whereBase }),
-    prisma.transfer.groupBy({
-      by: ["status"],
-      where: whereBase,
-      _count: true,
-    }),
+  const [customerCount, walletGroup, allTransfers] = await Promise.all([
     prisma.customer.count({ where: { companyId: user.companyId } }),
     prisma.wallet.groupBy({
       by: ["currency"],
@@ -30,75 +110,55 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
         receiver: { select: { fullName: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 10,
     }),
   ])
 
-  const totalBalance = walletGroup.reduce((s, w) => s + (w._sum.balance || 0), 0)
+  const walletMap: Record<string, number> = {}
+  for (const w of walletGroup) walletMap[w.currency] = w._sum.balance || 0
 
-  const countsMap: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
-  let totalAll = 0
-  for (const s of statusCounts) {
-    countsMap[s.status] = s._count
-    totalAll += s._count
+  const flow = computeFlow(allTransfers)
+  const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
+  for (const t of allTransfers) {
+    if (statusCounts[t.status] !== undefined) statusCounts[t.status]++
   }
+  const totalAll = allTransfers.length
 
-  // Simple money flow — all statuses
-  const allTransfers = await prisma.transfer.findMany({
-    where: whereBase,
-    select: { amount: true, commission: true, createdAt: true },
-  })
+  const companyCurrencies = ["SSP"]
+  const walletKeys = Object.keys(walletMap)
+  const planCurrencies = walletKeys.length > 0 ? walletKeys : ["SSP"]
+  const byCurrency = buildPerCurrencyData(allTransfers, planCurrencies, walletMap)
 
-  const now = new Date()
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const startOfWeek = new Date(startOfDay)
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  const sumByRange = (from: Date) => {
-    const filtered = allTransfers.filter((t) => t.createdAt >= from)
-    return {
-      amount: filtered.reduce((s, t) => s + t.amount, 0),
-      commission: filtered.reduce((s, t) => s + t.commission, 0),
-    }
-  }
-
-  const today = sumByRange(startOfDay)
-  const week = sumByRange(startOfWeek)
-  const month = sumByRange(startOfMonth)
-  const allTime = {
-    amount: allTransfers.reduce((s, t) => s + t.amount, 0),
-    commission: allTransfers.reduce((s, t) => s + t.commission, 0),
-  }
+  // Top 10 most recent overall
+  const recentTransactions = allTransfers.slice(0, 10)
 
   return NextResponse.json({
     basic: true,
-    totalBalance,
+    totalBalance: walletGroup.reduce((s, w) => s + (w._sum.balance || 0), 0),
     transferCount: totalAll,
     customerCount,
     walletBalances: walletGroup.map(w => ({ currency: w.currency, balance: w._sum.balance || 0 })),
-    recentTransactions: recentTransfers,
-    counts: countsMap,
+    recentTransactions,
+    counts: statusCounts,
     moneyFlow: {
-      today: today.amount,
-      week: week.amount,
-      month: month.amount,
-      all: allTime.amount,
+      today: flow.today.amount,
+      week: flow.week.amount,
+      month: flow.month.amount,
+      all: flow.all.amount,
     },
     commissionFlow: {
-      today: today.commission,
-      week: week.commission,
-      month: month.commission,
-      all: allTime.commission,
+      today: flow.today.commission,
+      week: flow.week.commission,
+      month: flow.month.commission,
+      all: flow.all.commission,
     },
-    byCurrency: { SSP: { count: totalAll, volume: allTime.amount, commission: allTime.commission, balance: totalBalance } },
-    companyCurrencies: ["SSP"],
+    byCurrency,
+    companyCurrencies: planCurrencies,
     topBranches: [],
     dailyVolume: [],
     insights: {
       topBranch: null,
       topTeller: null,
-      avgTransactionSize: totalAll > 0 ? allTime.amount / totalAll : 0,
+      avgTransactionSize: totalAll > 0 ? flow.all.amount / totalAll : 0,
       branchRanking: [],
       tellerRanking: [],
       activeBranches: 0,
@@ -165,50 +225,34 @@ export async function GET() {
       // fall back to company currencies
     }
 
-    const aggregate = async (where: any) => {
-      const [totals, commissions] = await Promise.all([
-        prisma.transfer.aggregate({
-          where,
-          _sum: { amount: true },
-          _count: true,
-        }),
-        prisma.transfer.aggregate({
-          where,
-          _sum: { commission: true },
-        }),
-      ])
-      return {
-        totalAmount: totals._sum.amount || 0,
-        totalCommission: commissions._sum.commission || 0,
-        count: totals._count,
-      }
-    }
-
-    const [today, week, month, allTime] = await Promise.all([
-      aggregate({ ...whereBase, createdAt: { gte: startOfDay } }),
-      aggregate({ ...whereBase, createdAt: { gte: startOfWeek } }),
-      aggregate({ ...whereBase, createdAt: { gte: startOfMonth } }),
-      aggregate(whereBase),
-    ])
-
-    const statusCounts = await prisma.transfer.groupBy({
-      by: ["status"],
+    // Fetch all transfers once — compute aggregates in memory
+    const allTransfers = await prisma.transfer.findMany({
       where: whereBase,
-      _count: true,
+      select: {
+        id: true, transactionNumber: true, amount: true, currency: true,
+        status: true, createdAt: true,
+        commission: true,
+        issuedBy: { select: { name: true } },
+        sender: { select: { fullName: true } },
+        receiver: { select: { fullName: true } },
+      },
+      orderBy: { createdAt: "desc" },
     })
-    const countsMap: Record<string, number> = {}
+
+    const allFlow = computeFlow(allTransfers)
+    const today = allFlow.today
+    const week = allFlow.week
+    const month = allFlow.month
+    const allTime = allFlow.all
+
+    const countsMap: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0 }
     let totalAll = 0
-    for (const s of statusCounts) {
-      countsMap[s.status] = s._count
-      totalAll += s._count
+    for (const t of allTransfers) {
+      if (countsMap[t.status] !== undefined) countsMap[t.status]++
+      totalAll++
     }
 
-    const currencyGroup = await prisma.transfer.groupBy({
-      by: ["currency"],
-      where: whereBase,
-      _sum: { amount: true, commission: true },
-      _count: true,
-    })
+    const recentTransactions = allTransfers.slice(0, 10)
 
     const walletGroup = await prisma.wallet.groupBy({
       by: ["currency"],
@@ -216,20 +260,9 @@ export async function GET() {
       _sum: { balance: true },
     })
     const walletMap: Record<string, number> = {}
-    for (const w of walletGroup) {
-      walletMap[w.currency] = w._sum.balance || 0
-    }
+    for (const w of walletGroup) walletMap[w.currency] = w._sum.balance || 0
 
-    const byCurrency: Record<string, any> = {}
-    for (const currency of planCurrencies) {
-      const found = currencyGroup.find((c) => c.currency === currency)
-      byCurrency[currency] = {
-        count: found?._count || 0,
-        volume: found?._sum.amount || 0,
-        commission: found?._sum.commission || 0,
-        balance: walletMap[currency] || 0,
-      }
-    }
+    const byCurrency = buildPerCurrencyData(allTransfers, planCurrencies, walletMap)
 
     const branchBalances = await prisma.wallet.findMany({
       where: { companyId: user.companyId, balance: { gt: 0 } },
@@ -272,24 +305,6 @@ export async function GET() {
       .map(([date, amount]) => ({ date, amount }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
-    const recentTransactions = await prisma.transfer.findMany({
-      where: { ...whereBase },
-      select: {
-        id: true,
-        transactionNumber: true,
-        amount: true,
-        currency: true,
-        commission: true,
-        status: true,
-        createdAt: true,
-        issuedBy: { select: { name: true } },
-        sender: { select: { fullName: true } },
-        receiver: { select: { fullName: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    })
-
     const branchInsights = branchStats
       .map((b) => {
         const total = b.transfersFrom.reduce((s, t) => s + t.transfer.amount, 0)
@@ -320,20 +335,20 @@ export async function GET() {
       })
       .sort((a, b) => b.totalCommission - a.totalCommission)
 
-    const avgTransactionSize = allTime.count > 0 ? allTime.totalAmount / allTime.count : 0
+    const avgTransactionSize = totalAll > 0 ? allTime.amount / totalAll : 0
 
     return NextResponse.json({
       moneyFlow: {
-        today: today.totalAmount,
-        week: week.totalAmount,
-        month: month.totalAmount,
-        all: allTime.totalAmount,
+        today: today.amount,
+        week: week.amount,
+        month: month.amount,
+        all: allTime.amount,
       },
       commissionFlow: {
-        today: today.totalCommission,
-        week: week.totalCommission,
-        month: month.totalCommission,
-        all: allTime.totalCommission,
+        today: today.commission,
+        week: week.commission,
+        month: month.commission,
+        all: allTime.commission,
       },
       counts: {
         total: totalAll,
