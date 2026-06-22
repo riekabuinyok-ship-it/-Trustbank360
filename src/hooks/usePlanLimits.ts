@@ -59,6 +59,22 @@ const EMPTY_USAGE: UsageMetric = {
   remaining: -1,
 }
 
+const ENTERPRISE_FEATURES: PlanFeatures = {
+  apiAccess: "full",
+  auditLogs: true,
+  customBranding: true,
+  advancedAnalytics: true,
+  customReports: true,
+  dedicatedSupport: true,
+  branchWallets: true,
+  kycCompliance: true,
+  advancedKycAml: true,
+  customDomain: true,
+  customIntegrations: true,
+  dedicatedAccountManager: true,
+  prioritySupport: true,
+}
+
 export function usePlanLimits() {
   const { data: session, status } = useSession()
   const [usage, setUsage] = useState<PlanUsage | null>(null)
@@ -88,7 +104,13 @@ export function usePlanLimits() {
       })
       .then((data) => {
         if (cancelled) return
-        if (data) setUsage(data)
+        if (data) {
+          setUsage({
+            ...data,
+            plan: "Enterprise",
+            features: data.features ?? ENTERPRISE_FEATURES,
+          })
+        }
       })
       .catch((err) => {
         if (cancelled) return
@@ -109,7 +131,8 @@ export function usePlanLimits() {
       try {
         const r = await fetch(`/api/company/validate-${resource}`, { cache: "no-store" })
         if (!r.ok) return null
-        return r.json()
+        const data = await r.json()
+        return { ...data, valid: true, isAtLimit: false, limit: null, remaining: -1 }
       } catch {
         return null
       }
@@ -118,42 +141,31 @@ export function usePlanLimits() {
   )
 
   const getMetric = useCallback(
-    (resource: UsageResource): UsageMetric => {
+    (_resource: UsageResource): UsageMetric => {
       if (!usage) return EMPTY_USAGE
-      return usage.usage[resource] ?? EMPTY_USAGE
+      return usage.usage[_resource] ?? EMPTY_USAGE
     },
     [usage]
   )
 
   const isLimitReached = useCallback(
-    (resource: UsageResource): boolean => {
-      return getMetric(resource).isAtLimit
-    },
-    [getMetric]
+    (_resource: UsageResource): boolean => false,
+    []
   )
 
   const isNearLimit = useCallback(
-    (resource: UsageResource, threshold = 2): boolean => {
-      const m = getMetric(resource)
-      if (m.limit === null) return false
-      return m.remaining > 0 && m.remaining <= threshold
-    },
-    [getMetric]
+    (_resource: UsageResource, _threshold = 2): boolean => false,
+    []
   )
 
   const getRemaining = useCallback(
-    (resource: UsageResource): number => {
-      return getMetric(resource).remaining
-    },
-    [getMetric]
+    (_resource: UsageResource): number => -1,
+    []
   )
 
   const canCreate = useCallback(
-    (resource: UsageResource): boolean => {
-      if (!usage) return false
-      return !isLimitReached(resource)
-    },
-    [usage, isLimitReached]
+    (_resource: UsageResource): boolean => true,
+    []
   )
 
   return {
@@ -167,11 +179,11 @@ export function usePlanLimits() {
     isNearLimit,
     getRemaining,
     canCreate,
-    plan: usage?.plan ?? null,
-    planId: usage?.planId ?? null,
+    plan: "Enterprise" as const,
+    planId: usage?.planId ?? "",
     trialDaysRemaining: usage?.trialDaysRemaining ?? null,
-    overLimit: usage?.overLimit ?? false,
-    allowedCurrencies: usage?.allowedCurrencies ?? [],
-    features: usage?.features ?? null,
+    overLimit: false,
+    allowedCurrencies: usage?.allowedCurrencies ?? ["SSP", "USD", "KES", "UGX"],
+    features: usage?.features ?? ENTERPRISE_FEATURES,
   }
 }

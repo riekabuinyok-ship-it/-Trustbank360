@@ -42,42 +42,42 @@ export const ERROR_TITLES: Record<string, string> = {
 }
 
 export const ERROR_MESSAGES: Record<string, (...args: any[]) => string> = {
-  BRANCH_LIMIT_REACHED: (plan) =>
-    `You've reached the maximum number of branches for your ${plan || "current"} plan. Upgrade to add more branches.`,
-  STAFF_LIMIT_REACHED: (plan) =>
-    `You've reached the maximum number of staff users allowed on your ${plan || "current"} plan. Upgrade to invite more team members.`,
-  CURRENCY_LIMIT_REACHED: (plan) =>
-    `You cannot add more currencies under your ${plan || "current"} plan. Upgrade to support additional currencies.`,
-  MONTHLY_TRANSFER_LIMIT_REACHED: (plan, used, limit) =>
-    `You've used ${used} of ${limit} transfers this month on your ${plan || "current"} plan. Upgrade to Medium or Enterprise for unlimited transfers.`,
-  FEATURE_NOT_AVAILABLE: (plan, _used, _limit, feature) =>
-    `"${feature}" is not available on your ${plan || "current"} plan. Upgrade to access this feature.`,
+  BRANCH_LIMIT_REACHED: () =>
+    "Your Enterprise plan includes unlimited branches.",
+  STAFF_LIMIT_REACHED: () =>
+    "Your Enterprise plan includes unlimited staff.",
+  CURRENCY_LIMIT_REACHED: () =>
+    "Your Enterprise plan includes unlimited currencies.",
+  MONTHLY_TRANSFER_LIMIT_REACHED: () =>
+    "Your Enterprise plan includes unlimited transfers.",
+  FEATURE_NOT_AVAILABLE: (_plan, _used, _limit, feature) =>
+    `All features are included on the Enterprise plan. (${feature || "This feature"} is available.)`,
   AUDIT_LOGS_NOT_AVAILABLE: () =>
-    "Audit logs are available on Medium and Enterprise plans. Upgrade to view audit history.",
+    "Audit logs are included on the Enterprise plan.",
   API_ACCESS_NOT_AVAILABLE: () =>
-    "API access is not included in your current plan. Upgrade to Medium or Enterprise for API access.",
+    "Full API access is included on the Enterprise plan.",
   CUSTOM_BRANDING_NOT_AVAILABLE: () =>
-    "Custom branding is not available on your current plan. Upgrade to customize your company appearance.",
+    "Custom branding is included on the Enterprise plan.",
   BRANCH_WALLETS_NOT_AVAILABLE: () =>
-    "Branch wallets are not available on your current plan. Upgrade to access branch-level wallets.",
+    "Branch wallets are included on the Enterprise plan.",
   KYC_COMPLIANCE_NOT_AVAILABLE: () =>
-    "KYC & compliance features are not available on your current plan. Upgrade to Medium or Enterprise.",
+    "KYC & compliance features are included on the Enterprise plan.",
   ADVANCED_KYC_AML_NOT_AVAILABLE: () =>
-    "Advanced KYC/AML is only available on the Enterprise plan. Contact sales to upgrade.",
+    "Advanced KYC/AML is included on the Enterprise plan.",
   CUSTOM_DOMAIN_NOT_AVAILABLE: () =>
-    "Custom domain is only available on the Enterprise plan. Contact sales to upgrade.",
+    "Custom domain is included on the Enterprise plan.",
   CUSTOM_INTEGRATIONS_NOT_AVAILABLE: () =>
-    "Custom integrations are only available on the Enterprise plan. Contact sales to upgrade.",
+    "Custom integrations are included on the Enterprise plan.",
   DEDICATED_ACCOUNT_MANAGER_NOT_AVAILABLE: () =>
-    "A dedicated account manager is only available on the Enterprise plan. Contact sales to upgrade.",
+    "A dedicated account manager is included on the Enterprise plan.",
   PRIORITY_SUPPORT_NOT_AVAILABLE: () =>
-    "Priority support is only available on the Enterprise plan. Contact sales to upgrade.",
+    "Priority support is included on the Enterprise plan.",
   COMPANY_OVER_LIMIT: () =>
-    "Your company has exceeded its plan limits. Upgrade to continue creating resources.",
+    "All Enterprise resources are unlimited.",
   NO_SUBSCRIPTION: () =>
-    "Your company does not have an active subscription. Please subscribe to a plan to get started.",
+    "Your company does not have an active subscription. Please contact support.",
   UNKNOWN_PLAN: (plan) =>
-    `Your current plan "${plan || "Unknown"}" is not recognized. Please contact support.`,
+    `Plan "${plan || "Unknown"}" is not recognized. Defaulting to Enterprise.`,
 }
 
 export function formatApiError(

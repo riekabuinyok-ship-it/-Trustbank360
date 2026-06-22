@@ -3,14 +3,16 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
-import { PlanEnforcementError, updateOverLimit, withPlanLimitLock } from "@/lib/plan-enforcement"
-import { formatApiError, formatPlanError } from "@/lib/api-error"
-import { getLimit, getPlanByName, getAllowedCurrencies } from "@/lib/plan-config"
+import { ensureEnterprisePlan } from "@/lib/migrate-to-enterprise"
+import { formatApiError } from "@/lib/api-error"
+import { getAllowedCurrencies } from "@/lib/plan-config"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const user = session.user as any
+
+  await ensureEnterprisePlan(user.companyId)
 
   const branches = await prisma.branch.findMany({
     where: { companyId: user.companyId },
@@ -33,52 +35,37 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { overLimit: true } })
-    if (company?.overLimit) {
-      return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
-    }
+    await ensureEnterprisePlan(user.companyId)
 
-    const sub = await prisma.subscription.findUnique({
+    const existingBranches = await prisma.branch.findMany({
       where: { companyId: user.companyId },
-      select: { plan: { select: { name: true } } },
+      select: { id: true },
     })
-    if (!sub || !getPlanByName(sub.plan.name)) {
-      return NextResponse.json(formatApiError("NO_SUBSCRIPTION"), { status: 403 })
-    }
-    const planName = sub.plan.name
 
-    const branch = await withPlanLimitLock(user.companyId, async (tx) => {
-      const branchCount = await tx.branch.count({ where: { companyId: user.companyId } })
-      const limit = getLimit(planName, "branches")
-      if (limit !== Infinity && branchCount >= limit) {
-        throw new PlanEnforcementError(formatPlanError("BRANCH_LIMIT_REACHED", planName, branchCount, limit))
-      }
+    const created = await prisma.branch.create({
+      data: {
+        name: body.name,
+        code: generateBranchCode(body.name, existingBranches.length),
+        country: body.country,
+        state: body.state,
+        city: body.city,
+        address: body.address,
+        contactPhone: body.contactPhone,
+        contactEmail: body.contactEmail,
+        companyId: user.companyId,
+      },
+    })
 
-      const existingBranches = await tx.branch.findMany({ where: { companyId: user.companyId }, select: { id: true } })
+    const allowedCurrencies = getAllowedCurrencies()
+    const walletCurrencies = await prisma.wallet.groupBy({
+      by: ["currency"],
+      where: { companyId: user.companyId },
+    })
+    const existingSet = new Set(walletCurrencies.map((w) => w.currency))
+    const addedCurrencies = allowedCurrencies.filter((c) => !existingSet.has(c as any))
 
-      const created = await tx.branch.create({
-        data: {
-          name: body.name,
-          code: generateBranchCode(body.name, existingBranches.length),
-          country: body.country,
-          state: body.state,
-          city: body.city,
-          address: body.address,
-          contactPhone: body.contactPhone,
-          contactEmail: body.contactEmail,
-          companyId: user.companyId,
-        },
-      })
-
-      const newCurrencies = getAllowedCurrencies(planName)
-      const walletCurrencies = await tx.wallet.groupBy({
-        by: ["currency"],
-        where: { companyId: user.companyId },
-      })
-      const existingSet = new Set(walletCurrencies.map((w) => w.currency))
-      const addedCurrencies = newCurrencies.filter((c) => !existingSet.has(c as any))
-
-      await tx.wallet.createMany({
+    if (addedCurrencies.length > 0) {
+      await prisma.wallet.createMany({
         data: addedCurrencies.map((currency) => ({
           currency: currency as any,
           balance: 0,
@@ -87,28 +74,30 @@ export async function POST(request: Request) {
           companyId: user.companyId,
         })),
       })
-
-      return created
-    })
-
-    updateOverLimit(user.companyId).catch(() => {})
+    }
 
     await prisma.auditLog.create({
       data: {
         userId: user.id,
         action: "CREATE_BRANCH",
         resource: "BRANCH",
-        details: `Branch ${branch.name} created`,
-        branchId: branch.id,
+        details: `Branch ${created.name} created`,
+        branchId: created.id,
         companyId: user.companyId,
       },
     })
 
-    return NextResponse.json(branch)
+    return NextResponse.json(created)
   } catch (error) {
-    if (error instanceof PlanEnforcementError) {
-      return NextResponse.json(error.toJSON(), { status: 403 })
-    }
-    return NextResponse.json(formatApiError("BRANCH_LIMIT_REACHED", { upgradeRequired: false, title: "Branch creation failed", message: "We couldn't create this branch. Please try again or contact support if the issue persists." }), { status: 500 })
+    console.error("[POST /api/branches] Failed:", error)
+    const realMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      formatApiError("BRANCH_CREATION_FAILED", {
+        title: "Branch creation failed",
+        message: `We couldn't create this branch. ${realMessage}`,
+        upgradeRequired: false,
+      }),
+      { status: 500 }
+    )
   }
 }

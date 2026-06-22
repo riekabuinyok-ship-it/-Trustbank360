@@ -142,6 +142,9 @@ export async function POST(req: Request) {
           }
         }
 
+        const { ensureEnterprisePlan } = await import("@/lib/migrate-to-enterprise")
+        await ensureEnterprisePlan(companyId)
+
         if (eventData.amount_total) {
           const subRecord = await prisma.subscription.findFirst({
             where: { stripeSubscriptionId: eventData.subscription },

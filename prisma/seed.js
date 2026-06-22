@@ -27,12 +27,16 @@ async function main() {
     )
   );
 
-  // Create default subscription plans (upsert by name)
+  // Create default subscription plan (single Enterprise plan)
   const planData = [
-    { name: 'Small Company', description: 'For small money transfer businesses', price: 10, currency: 'USD', durationDays: 30, trialDays: 30, maxBranches: 2, maxStaff: 5, maxCurrencies: 2, features: ['Up to 2 Branches', 'Up to 5 Staff Users', 'Basic Money Transfers', 'Customer Management', 'Basic Reports', 'Email Support', 'Secure Cloud Hosting', 'Branch Wallets'], isActive: true },
-    { name: 'Medium Company', description: 'For growing remittance agencies', price: 30, currency: 'USD', durationDays: 30, trialDays: 60, maxBranches: 10, maxStaff: 25, maxCurrencies: 6, features: ['Up to 10 Branches', 'Up to 25 Staff Users', 'Unlimited Transfers', 'Branch Wallets', 'KYC & Compliance', 'Advanced Reports', 'Priority Email & Chat Support', 'Branch Performance Analytics', 'Audit Logs', 'Basic API Access', 'Custom Branding'], isActive: true },
-    { name: 'Enterprise', description: 'For large-scale financial institutions', price: 60, currency: 'USD', durationDays: 30, trialDays: 90, maxBranches: 999999, maxStaff: 999999, maxCurrencies: 999999, features: ['Unlimited Branches', 'Unlimited Staff Users', 'Unlimited Transfers', 'Branch Wallets', 'Advanced KYC/AML', 'Advanced Analytics', 'Custom Reports', '24/7 Dedicated Support', 'Dedicated Account Manager', 'Priority Processing', 'Full API Access', 'Custom Integrations', 'Custom Branding & Domain', 'Enterprise Security Features', 'Unlimited Currencies'], isActive: true },
+    { name: 'Enterprise', description: 'All features included. Unlimited branches, staff, and currencies.', price: 60, currency: 'USD', durationDays: 30, trialDays: 30, maxBranches: 999999, maxStaff: 999999, maxCurrencies: 999999, features: ['Unlimited Branches', 'Unlimited Staff Users', 'Unlimited Currencies', 'Unlimited Transfers', 'Branch Wallets', 'Advanced KYC/AML', 'Advanced Analytics', 'Custom Reports', '24/7 Dedicated Support', 'Dedicated Account Manager', 'Priority Processing', 'Full API Access', 'Custom Integrations', 'Custom Branding & Domain', 'Enterprise Security Features'], isActive: true },
   ]
+
+  // Remove old plans (Small/Medium) if they exist
+  await prisma.subscriptionPlan.deleteMany({
+    where: { name: { in: ['Small Company', 'Medium Company'] } },
+  })
+
   const plans = await Promise.all(
     planData.map(async (p) => {
       const existing = await prisma.subscriptionPlan.findFirst({ where: { name: p.name } })
@@ -93,7 +97,7 @@ async function main() {
   ]);
 
   // Create wallets for each branch
-  const currencies = ['SSP', 'USD', 'KES', 'UGX', 'EUR', 'GBP', 'AED'];
+  const currencies = ['SSP', 'USD', 'KES', 'UGX'];
   for (const branch of branches) {
     for (const currency of currencies) {
       await prisma.wallet.create({

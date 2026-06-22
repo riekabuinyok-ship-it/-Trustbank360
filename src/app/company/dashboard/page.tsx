@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/utils"
 import { BusinessTypeBadges } from "@/components/business-type-badge"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { PlanUsageDashboard } from "@/components/plan-usage-dashboard"
+import { EnterpriseBanner } from "@/components/plan-usage-dashboard"
 
 const STORAGE_KEY_ANNOUNCEMENTS = "dismissedAnnouncements"
 const STORAGE_KEY_WARNINGS = "dismissedWarnings"
@@ -169,9 +169,19 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* PLAN USAGE DASHBOARD — for company owner/admin only */}
+      {/* ENTERPRISE BANNER — for company owner/admin only */}
       {isSupervisory && (
-        <PlanUsageDashboard variant="full" />
+        <EnterpriseBanner
+          usage={
+            data?.byCurrency
+              ? {
+                  branches: data.totalBranches ?? 0,
+                  staff: data.totalStaff ?? 0,
+                  currencies: data.totalCurrencies ?? 0,
+                }
+              : undefined
+          }
+        />
       )}
 
       {/* STATUS SUMMARY — always visible */}

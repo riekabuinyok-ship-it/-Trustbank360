@@ -3,23 +3,20 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { createStripeCustomer, createStripeSubscription } from "@/lib/subscription"
+import { getAllowedCurrencies } from "@/lib/plan-config"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password, companyName, businessTypes, country, registrationNumber, taxId, phone, mobileProviders, planId } = body
-
-    if (!planId) {
-      return NextResponse.json({ error: "Plan selection is required" }, { status: 400 })
-    }
+    const { name, email, password, companyName, businessTypes, country, registrationNumber, taxId, phone, mobileProviders } = body
 
     if (!password || password.length < 8) {
       return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
     }
 
-    const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } })
+    const plan = await prisma.subscriptionPlan.findFirst({ where: { name: "Enterprise" } })
     if (!plan || !plan.isActive) {
-      return NextResponse.json({ error: "Invalid or inactive plan" }, { status: 400 })
+      return NextResponse.json({ error: "Enterprise plan is not configured. Please contact support." }, { status: 500 })
     }
 
     const existing = await prisma.user.findUnique({ where: { email } })
@@ -44,8 +41,8 @@ export async function POST(request: Request) {
         taxId,
         phone,
         email,
-        numberOfBranches: Math.min(1, plan.maxBranches),
-        numberOfStaff: Math.min(1, plan.maxStaff),
+        numberOfBranches: 1,
+        numberOfStaff: 1,
         users: {
           create: {
             name,
@@ -69,10 +66,8 @@ export async function POST(request: Request) {
       include: { branches: true, users: true },
     })
 
-    // Create default wallets for main branch (respect plan currency limit)
-    const allCurrencies = ["SSP", "USD", "KES", "UGX", "EUR", "GBP", "AED"]
-    const maxCurrencies = plan.maxCurrencies >= 999999 ? allCurrencies.length : plan.maxCurrencies
-    const initialCurrencies = allCurrencies.slice(0, maxCurrencies)
+    // Create default wallets for main branch with all Enterprise currencies
+    const initialCurrencies = getAllowedCurrencies()
     await prisma.wallet.createMany({
       data: initialCurrencies.map((currency) => ({
         currency: currency as any,
@@ -111,7 +106,7 @@ export async function POST(request: Request) {
     // Create Stripe customer and subscription with trial
     try {
       const customer = await createStripeCustomer(company.id, email, name)
-      const stripeSub = await createStripeSubscription(company.id, planId, customer.id)
+      const stripeSub = await createStripeSubscription(company.id, plan.id, customer.id)
 
       const trialEndsAt = new Date(Date.now() + plan.trialDays * 86400000)
 

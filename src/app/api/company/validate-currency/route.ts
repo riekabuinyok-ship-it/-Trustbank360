@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { buildValidation } from "@/lib/plan-validate"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -13,9 +12,19 @@ export async function GET() {
   const walletCurrencies = await prisma.wallet.groupBy({
     by: ["currency"],
     where: { companyId: user.companyId },
-  })
+  }).catch(() => [])
   const current = walletCurrencies.length
-  const result = await buildValidation(user.companyId, "currencies", current)
-  if (!result) return NextResponse.json({ error: "No active subscription" }, { status: 404 })
-  return NextResponse.json(result)
+
+  return NextResponse.json({
+    resource: "currencies",
+    valid: true,
+    current,
+    limit: null,
+    remaining: -1,
+    percentage: 0,
+    isAtLimit: false,
+    message: "Unlimited currencies on Enterprise plan",
+    suggestedPlan: null,
+    suggestedPlanMessage: null,
+  })
 }

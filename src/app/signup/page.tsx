@@ -167,10 +167,6 @@ export default function SignupPage() {
       return
     }
     if (step === 3) {
-      if (!form.planId) {
-        toast.error("Please select a subscription plan")
-        return
-      }
       if (needsProviders) {
         setStep(4)
       } else {
@@ -190,10 +186,11 @@ export default function SignupPage() {
   async function handleSubmit() {
     setLoading(true)
     try {
+      const { planId: _ignored, ...payload } = form
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
@@ -372,66 +369,44 @@ export default function SignupPage() {
               {step === 3 && (
                 <>
                   <div className="space-y-2">
-                    <Label>Subscription Plan *</Label>
-                    <p className="text-xs text-muted-foreground">You can upgrade or change your plan anytime from the billing settings.</p>
-                    {plansLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+                    <Label>Subscription Plan</Label>
+                    <p className="text-xs text-muted-foreground">All features are included. You can manage billing from the company settings after signup.</p>
+                    <div className="mt-2 p-5 rounded-xl border-2 border-primary bg-primary-50 dark:bg-primary-900/20">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-lg font-bold">Enterprise</p>
+                          <p className="text-3xl font-extrabold text-primary-600 dark:text-primary-400 mt-2">
+                            $60<span className="text-sm font-normal text-muted-foreground">/month</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">30-day free trial</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/40 px-3 py-1 rounded-full">
+                          <Check className="h-3 w-3" /> Included
+                        </span>
                       </div>
-                    ) : plans.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No plans available. Please try again later.
+                      <div className="border-t border-border my-4" />
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-secondary-500" /> Unlimited branches
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-secondary-500" /> Unlimited staff
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-secondary-500" /> Unlimited currencies
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-secondary-500" /> Unlimited transfers
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-secondary-500" /> Advanced KYC/AML, custom reports, dedicated support
+                        </p>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-                        {plans.map((plan) => {
-                          const selected = form.planId === plan.id
-                          const symbol = currencySymbols[plan.currency] || "$"
-                          return (
-                            <button
-                              key={plan.id}
-                              type="button"
-                              onClick={() => updateField("planId", plan.id)}
-                              className={`p-5 rounded-xl border-2 text-left transition-all ${
-                                selected
-                                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-md"
-                                  : "border-input hover:border-primary-300"
-                              }`}
-                            >
-                              <p className="text-lg font-bold text-surface-900 dark:text-white">{plan.name}</p>
-                              <p className="text-3xl font-extrabold text-primary-600 dark:text-primary-400 mt-2">
-                                {symbol}{plan.price}<span className="text-sm font-normal text-muted-foreground">/mo</span>
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">{plan.trialDays}-day free trial</p>
-                              <div className="border-t border-border my-4" />
-                              <div className="space-y-2">
-                                <p className="text-xs font-semibold text-surface-700 dark:text-surface-300">Includes:</p>
-                                <div className="space-y-1.5">
-                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                    <Check className="h-3 w-3 text-secondary-500" /> Up to {plan.maxBranches === 999999 ? "unlimited" : plan.maxBranches} {plan.maxBranches === 1 ? "branch" : "branches"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                    <Check className="h-3 w-3 text-secondary-500" /> Up to {plan.maxStaff === 999999 ? "unlimited" : plan.maxStaff} staff
-                                  </p>
-                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                    <Check className="h-3 w-3 text-secondary-500" /> Up to {plan.maxCurrencies === 999999 ? "unlimited" : plan.maxCurrencies} currencies
-                                  </p>
-                                </div>
-                              </div>
-                              {selected && (
-                                <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/40 px-3 py-1 rounded-full">
-                                  <Check className="h-3 w-3" /> Selected
-                                </div>
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
+                    </div>
                   </div>
                   <div className="flex gap-4 pt-2">
                     <Button type="button" variant="outline" onClick={() => setStep(2)} className="w-full" size="lg">Back</Button>
-                    <Button type="button" onClick={handleNext} className="w-full" size="lg" disabled={!form.planId}>
+                    <Button type="button" onClick={handleNext} className="w-full" size="lg">
                       {needsProviders ? "Continue" : "Create Company Account"}
                     </Button>
                   </div>

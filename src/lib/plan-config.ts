@@ -1,4 +1,4 @@
-export type PlanName = "Small Company" | "Medium Company" | "Enterprise"
+export type PlanName = "Enterprise"
 
 export type ApiAccessLevel = "none" | "basic" | "full"
 
@@ -50,84 +50,44 @@ export interface PlanDefinition {
   features: PlanFeatures
   trialDays: number
   displayName: string
+  monthlyPrice: number
+  currency: string
   allowedCurrencies: string[]
 }
 
-export const PLANS: Record<PlanName, PlanDefinition> = {
-  "Small Company": {
-    name: "Small Company",
-    displayName: "Small Company",
-    trialDays: 30,
-    limits: { branches: 2, staff: 5, currencies: 2, monthlyTransferLimit: 1000 },
-    features: {
-      auditLogs: false,
-      apiAccess: "none",
-      customBranding: false,
-      advancedAnalytics: false,
-      customReports: false,
-      dedicatedSupport: false,
-      branchWallets: true,
-      kycCompliance: false,
-      advancedKycAml: false,
-      customDomain: false,
-      customIntegrations: false,
-      dedicatedAccountManager: false,
-      prioritySupport: false,
-    },
-    allowedCurrencies: ["SSP", "KES"],
+export const ENTERPRISE_PLAN: PlanDefinition = {
+  name: "Enterprise",
+  displayName: "Enterprise",
+  trialDays: 30,
+  monthlyPrice: 60,
+  currency: "USD",
+  limits: { branches: Infinity, staff: Infinity, currencies: Infinity, monthlyTransferLimit: null },
+  features: {
+    auditLogs: true,
+    apiAccess: "full",
+    customBranding: true,
+    advancedAnalytics: true,
+    customReports: true,
+    dedicatedSupport: true,
+    branchWallets: true,
+    kycCompliance: true,
+    advancedKycAml: true,
+    customDomain: true,
+    customIntegrations: true,
+    dedicatedAccountManager: true,
+    prioritySupport: true,
   },
-  "Medium Company": {
-    name: "Medium Company",
-    displayName: "Medium Company",
-    trialDays: 60,
-    limits: { branches: 10, staff: 25, currencies: 6, monthlyTransferLimit: null },
-    features: {
-      auditLogs: true,
-      apiAccess: "basic",
-      customBranding: true,
-      advancedAnalytics: true,
-      customReports: true,
-      dedicatedSupport: false,
-      branchWallets: true,
-      kycCompliance: true,
-      advancedKycAml: false,
-      customDomain: false,
-      customIntegrations: false,
-      dedicatedAccountManager: false,
-      prioritySupport: false,
-    },
-    allowedCurrencies: ["SSP", "KES", "UGX", "USD", "EUR", "GBP"],
-  },
-  Enterprise: {
-    name: "Enterprise",
-    displayName: "Enterprise",
-    trialDays: 90,
-    limits: { branches: Infinity, staff: Infinity, currencies: Infinity, monthlyTransferLimit: null },
-    features: {
-      auditLogs: true,
-      apiAccess: "full",
-      customBranding: true,
-      advancedAnalytics: true,
-      customReports: true,
-      dedicatedSupport: true,
-      branchWallets: true,
-      kycCompliance: true,
-      advancedKycAml: true,
-      customDomain: true,
-      customIntegrations: true,
-      dedicatedAccountManager: true,
-      prioritySupport: true,
-    },
-    allowedCurrencies: [
-      "SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED",
-      "ETB", "TZS", "ZAR", "NGN", "GHS", "CAD", "AUD",
-    ],
-  },
+  allowedCurrencies: ["SSP", "USD", "KES", "UGX"],
 }
 
-export function getAllowedCurrencies(planName: string): string[] {
-  const plan = getPlanByName(planName)
-  return plan?.allowedCurrencies || ["SSP", "KES"]
+export const PLANS: Record<PlanName, PlanDefinition> = {
+  Enterprise: ENTERPRISE_PLAN,
+}
+
+export const DEFAULT_ALLOWED_CURRENCIES: readonly string[] = ["SSP", "USD", "KES", "UGX"] as const
+
+export function getAllowedCurrencies(_planName?: string): string[] {
+  return [...DEFAULT_ALLOWED_CURRENCIES]
 }
 
 export type LimitFeature = "branches" | "staff" | "currencies"
@@ -153,48 +113,35 @@ export function isBooleanFeature(f: FeatureName): f is BooleanFeature {
   return !isLimitFeature(f) && f !== "apiAccess" && f !== "transfers"
 }
 
-export function getLimit(planName: string, feature: LimitFeature): number {
-  const p = PLANS[planName as PlanName]
-  if (!p) return 0
-  return p.limits[feature]
+export function getLimit(_planName: string, feature: LimitFeature): number {
+  return Infinity
 }
 
-export function getMonthlyTransferLimit(planName: string): number | null {
-  const p = PLANS[planName as PlanName]
-  if (!p) return null
-  return p.limits.monthlyTransferLimit
+export function getMonthlyTransferLimit(_planName: string): number | null {
+  return null
 }
 
-export function getFeature(planName: string, feature: BooleanFeature): boolean {
-  const p = PLANS[planName as PlanName]
-  if (!p) return false
-  return p.features[feature]
+export function getFeature(_planName: string, feature: BooleanFeature): boolean {
+  return true
 }
 
-export function getApiAccess(planName: string): ApiAccessLevel {
-  const p = PLANS[planName as PlanName]
-  if (!p) return "none"
-  return p.features.apiAccess
+export function getApiAccess(_planName: string): ApiAccessLevel {
+  return "full"
 }
 
-export function getPlanByName(planName: string): PlanDefinition | undefined {
-  return PLANS[planName as PlanName]
+export function getPlanByName(planName: string | null | undefined): PlanDefinition {
+  if (planName && PLANS[planName as PlanName]) {
+    return PLANS[planName as PlanName]
+  }
+  return ENTERPRISE_PLAN
 }
 
 export const UPGRADE_PATH: Record<PlanName, PlanName | null> = {
-  "Small Company": "Medium Company",
-  "Medium Company": "Enterprise",
   Enterprise: null,
 }
 
-export function getUpgradeSuggestion(planName: string): { plan: string; message: string } | null {
-  const next = UPGRADE_PATH[planName as PlanName]
-  if (!next) return null
-  const nextPlan = PLANS[next]
-  return {
-    plan: next,
-    message: `Upgrade to ${nextPlan.displayName} to remove this limit.`,
-  }
+export function getUpgradeSuggestion(_planName: string): { plan: string; message: string } | null {
+  return null
 }
 
 export const ERROR_CODES: Record<FeatureName, string> = {
