@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/exchange-rates", label: "Exchange Rates" },
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/try-demo", label: "Try Demo" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "https://youtu.be/zrFno1ygJm8?si=4jyaa5Jkn_yVr5nK", label: "Watch Tutorial", external: true },

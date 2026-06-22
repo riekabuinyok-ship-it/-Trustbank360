@@ -5,7 +5,7 @@ import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
 import { ForexBoard } from "@/components/forex-board"
 import { HomeStats } from "@/components/home-stats"
-import { TryDemoButton } from "@/components/try-demo-button"
+import { TryDemoButton, TryDemoAccountsSection } from "@/components/try-demo-button"
 import { organizationSchema, softwareApplicationSchema } from "@/lib/seo"
 
 export const metadata: Metadata = {
@@ -76,6 +76,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Try Demo Accounts Section */}
+      <TryDemoAccountsSection />
 
       {/* Live Exchange Rate Market */}
       <ForexBoard />
