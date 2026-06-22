@@ -99,7 +99,7 @@ export default function DashboardPage() {
   const activeMf = data?.moneyFlow ?? {}
   const activeCf = data?.commissionFlow ?? {}
   const activeRecentTxs = data?.recentTransactions ?? []
-  const activeWalletBalance = 0
+  const activeWalletBalance = currencyData?.balance ?? 0
 
   const { isActive, warnings, announcements } = alertsData
 
@@ -257,7 +257,7 @@ export default function DashboardPage() {
             const displayCommission = curr?.commission ?? 0
             return (
               <TabsContent key={cur} value={cur}>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Transactions</p>
@@ -274,6 +274,12 @@ export default function DashboardPage() {
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Commission</p>
                       <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : formatCurrency(displayCommission, cur)}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground">Wallet Balance</p>
+                      <p className="text-2xl font-bold text-primary">{loading ? "-" : formatCurrency(activeWalletBalance, cur)}</p>
                     </CardContent>
                   </Card>
                 </div>

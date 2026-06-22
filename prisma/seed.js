@@ -99,8 +99,8 @@ async function main() {
       await prisma.wallet.create({
         data: {
           currency,
-          balance: currency === 'SSP' ? 5000000 : currency === 'USD' ? 100000 : currency === 'KES' ? 3000000 : currency === 'UGX' ? 50000000 : 0,
-          openingBalance: currency === 'SSP' ? 5000000 : currency === 'USD' ? 100000 : currency === 'KES' ? 3000000 : currency === 'UGX' ? 50000000 : 0,
+          balance: 0,
+          openingBalance: 0,
           branchId: branch.id,
           companyId: company.id,
         },
