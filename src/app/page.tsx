@@ -5,7 +5,7 @@ import { IMAGES } from "@/lib/images"
 import { PublicLayout } from "@/components/public-layout"
 import { ForexBoard } from "@/components/forex-board"
 import { HomeStats } from "@/components/home-stats"
-import { TryDemoButton, TryDemoAccountsSection } from "@/components/try-demo-button"
+import { TryDemoAccountsSection } from "@/components/try-demo-button"
 import { organizationSchema, softwareApplicationSchema } from "@/lib/seo"
 
 export const metadata: Metadata = {
@@ -63,7 +63,6 @@ export default function LandingPage() {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
                   Watch Tutorial
                 </a>
-                <span className="[&_button]:!px-4 [&_button]:!py-2 [&_button]:!rounded-lg [&_button]:!text-sm"><TryDemoButton /></span>
               </div>
             </div>
 
