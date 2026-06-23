@@ -26,9 +26,6 @@ export async function GET() {
           plan: { select: { name: true, price: true } },
         },
       },
-      wallets: {
-        select: { balance: true },
-      },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -42,7 +39,6 @@ export async function GET() {
     onboardingComplete: c.onboardingComplete,
     userCount: c._count.users,
     branchCount: c._count.branches,
-    walletBalance: c.wallets.reduce((s, w) => s + w.balance, 0),
     owner: c.users[0] || null,
     subscription: c.subscription
       ? {

@@ -55,8 +55,12 @@ const FEATURE_USAGE_FETCHERS: Record<string, (companyId: string) => Promise<numb
   branches: (cid) => prisma.branch.count({ where: { companyId: cid } }),
   staff: (cid) => prisma.user.count({ where: { companyId: cid } }),
   currencies: async (cid) => {
-    const wc = await prisma.wallet.groupBy({ by: ["currency"], where: { companyId: cid } })
-    return wc.length
+    const transfers = await prisma.transfer.findMany({
+      where: { companyId: cid, status: { notIn: ["CANCELLED", "REVERSED"] } },
+      select: { currency: true },
+      distinct: ["currency"],
+    })
+    return transfers.length
   },
   transfers: async (cid) => {
     const start = new Date()
@@ -106,10 +110,14 @@ export async function getPlanUsageSummary(companyId: string): Promise<PlanUsageS
   try {
     const { planId } = await getCompanyPlan(companyId)
 
-    const [branchCount, staffCount, walletCurrencies] = await Promise.all([
+    const [branchCount, staffCount, transferCurrencies] = await Promise.all([
       prisma.branch.count({ where: { companyId } }).catch(() => 0),
       prisma.user.count({ where: { companyId } }).catch(() => 0),
-      prisma.wallet.groupBy({ by: ["currency"], where: { companyId } }).then((r) => r.length).catch(() => 0),
+      prisma.transfer.findMany({
+        where: { companyId, status: { notIn: ["CANCELLED", "REVERSED"] } },
+        select: { currency: true },
+        distinct: ["currency"],
+      }).then((r) => r.length).catch(() => 0),
     ])
 
     const transferCount = await getCurrentUsage(companyId, "transfers")
@@ -134,7 +142,7 @@ export async function getPlanUsageSummary(companyId: string): Promise<PlanUsageS
       usage: {
         branches: buildUnlimitedMetric(branchCount),
         staff: buildUnlimitedMetric(staffCount),
-        currencies: buildUnlimitedMetric(walletCurrencies),
+        currencies: buildUnlimitedMetric(transferCurrencies),
         transfers: buildUnlimitedMetric(transferCount),
       },
     }

@@ -121,9 +121,7 @@ model Company {
   exchangeRates      ExchangeRate[]
   customers          Customer[]
   transfers          Transfer[]
-  wallets            Wallet[]
   mobileProviders    CompanyMobileProvider[]
-  floatWallets       FloatWallet[]
   messages           Message[]
   announcements      Announcement[]
   auditLogs          AuditLog[]
@@ -226,7 +224,6 @@ model Branch {
 
   company       Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   users         User[]
-  wallets       Wallet[]
   transfersFrom BranchTransaction[] @relation("SenderBranch")
   transfersTo   BranchTransaction[] @relation("ReceiverBranch")
   events        TransactionEvent[]
@@ -251,40 +248,6 @@ model BranchTransaction {
   @@map("branch_transactions")
 }
 
-model Wallet {
-  id             String   @id @default(cuid())
-  currency       Currency
-  balance        Float    @default(0)
-  openingBalance Float    @default(0)
-  branchId       String
-  companyId      String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  branch       Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  transactions WalletTransaction[]
-
-  @@unique([branchId, currency])
-  @@map("wallets")
-}
-
-model WalletTransaction {
-  id          String   @id @default(cuid())
-  type        String
-  amount      Float
-  reference   String?
-  description String?
-  walletId    String
-  companyId   String
-  branchId    String
-  createdAt   DateTime @default(now())
-
-  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-
-  @@map("wallet_transactions")
-}
-
 model MobileMoneyProvider {
   id        String   @id @default(cuid())
   name      String
@@ -294,7 +257,6 @@ model MobileMoneyProvider {
   createdAt DateTime @default(now())
 
   companyProviders CompanyMobileProvider[]
-  floatWallets     FloatWallet[]
   transfers        Transfer[]
 
   @@map("mobile_money_providers")
@@ -312,37 +274,6 @@ model CompanyMobileProvider {
 
   @@unique([companyId, providerId])
   @@map("company_mobile_providers")
-}
-
-model FloatWallet {
-  id         String   @id @default(cuid())
-  balance    Float    @default(0)
-  currency   Currency
-  companyId  String
-  providerId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  provider     MobileMoneyProvider @relation(fields: [providerId], references: [id])
-  transactions FloatTransaction[]
-
-  @@unique([companyId, providerId])
-  @@map("float_wallets")
-}
-
-model FloatTransaction {
-  id            String   @id @default(cuid())
-  type          String
-  amount        Float
-  description   String?
-  floatWalletId String
-  companyId     String
-  createdAt     DateTime @default(now())
-
-  floatWallet FloatWallet @relation(fields: [floatWalletId], references: [id], onDelete: Cascade)
-
-  @@map("float_transactions")
 }
 
 model ExchangeRate {

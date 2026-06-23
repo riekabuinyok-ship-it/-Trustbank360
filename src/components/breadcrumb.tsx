@@ -15,7 +15,6 @@ const labelMap: Record<string, string> = {
   "branches/new": "New Branch",
   staff: "Staff",
   "staff/new": "New Staff",
-  wallets: "Wallets",
   "exchange-rates": "Exchange Rates",
   compliance: "Compliance",
   reports: "Reports",

@@ -35,7 +35,7 @@ function computeFlow(transfers: { amount: number; commission: number; status?: s
   }
 }
 
-function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[], walletMap: Record<string, number>) {
+function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[]) {
   const byCurrency: Record<string, any> = {}
   for (const currency of planCurrencies) {
     const currTransfers = allTransfers.filter((t) => t.currency === currency)
@@ -68,7 +68,6 @@ function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[], wal
       count: currCount,
       volume: flow.all.amount,
       commission: flow.all.commission,
-      balance: walletMap[currency] || 0,
       moneyFlow: {
         today: flow.today.amount,
         week: flow.week.amount,
@@ -95,13 +94,8 @@ function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[], wal
 }
 
 async function getBasicDashboard(user: any, whereBase: any, isOperational: boolean) {
-  const [customerCount, walletGroup, allTransfers] = await Promise.all([
+  const [customerCount, allTransfers] = await Promise.all([
     prisma.customer.count({ where: { companyId: user.companyId } }),
-    prisma.wallet.groupBy({
-      by: ["currency"],
-      where: { companyId: user.companyId },
-      _sum: { balance: true },
-    }),
     prisma.transfer.findMany({
       where: whereBase,
       select: {
@@ -116,9 +110,6 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
     }),
   ])
 
-  const walletMap: Record<string, number> = {}
-  for (const w of walletGroup) walletMap[w.currency] = w._sum.balance || 0
-
   const flow = computeFlow(allTransfers)
   const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, CANCELLED: 0, REVERSED: 0 }
   for (const t of allTransfers) {
@@ -127,20 +118,17 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
   const activeCount = allTransfers.filter((t) => t.status !== "CANCELLED" && t.status !== "REVERSED").length
   const totalAll = allTransfers.length
 
-  const companyCurrencies = ["SSP"]
-  const walletKeys = Object.keys(walletMap)
-  const planCurrencies = walletKeys.length > 0 ? walletKeys : ["SSP"]
-  const byCurrency = buildPerCurrencyData(allTransfers, planCurrencies, walletMap)
+  const transferCurrencies = Array.from(new Set(allTransfers.map((t) => t.currency).filter(Boolean)))
+  const planCurrencies = transferCurrencies.length > 0 ? transferCurrencies : ["SSP"]
+  const byCurrency = buildPerCurrencyData(allTransfers, planCurrencies)
 
   // Top 10 most recent overall
   const recentTransactions = allTransfers.slice(0, 10)
 
   return NextResponse.json({
     basic: true,
-    totalBalance: walletGroup.reduce((s, w) => s + (w._sum.balance || 0), 0),
     transferCount: totalAll,
     customerCount,
-    walletBalances: walletGroup.map(w => ({ currency: w.currency, balance: w._sum.balance || 0 })),
     recentTransactions,
     counts: { total: totalAll, ...statusCounts },
     moneyFlow: {
@@ -258,21 +246,7 @@ export async function GET() {
 
     const recentTransactions = allTransfers.slice(0, 10)
 
-    const walletGroup = await prisma.wallet.groupBy({
-      by: ["currency"],
-      where: { companyId: user.companyId },
-      _sum: { balance: true },
-    })
-    const walletMap: Record<string, number> = {}
-    for (const w of walletGroup) walletMap[w.currency] = w._sum.balance || 0
-
-    const byCurrency = buildPerCurrencyData(allTransfers, planCurrencies, walletMap)
-
-    const branchBalances = await prisma.wallet.findMany({
-      where: { companyId: user.companyId, balance: { gt: 0 } },
-      select: { currency: true, balance: true },
-      orderBy: { balance: "desc" },
-    })
+    const byCurrency = buildPerCurrencyData(allTransfers, planCurrencies)
 
     const branchStats = await prisma.branch.findMany({
       where: { companyId: user.companyId, isActive: true },
@@ -363,7 +337,6 @@ export async function GET() {
       },
       byCurrency,
       companyCurrencies: planCurrencies,
-      branchBalances,
       topBranches,
       dailyVolume,
       recentTransactions,

@@ -38,12 +38,16 @@ export async function POST(request: Request) {
     if (currentSub && currentSub.planId !== planId) {
       const targetPlan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } })
       if (targetPlan) {
-        const [branchCount, staffCount, walletCurrencies] = await Promise.all([
+        const [branchCount, staffCount, transferCurrencies] = await Promise.all([
           prisma.branch.count({ where: { companyId } }),
           prisma.user.count({ where: { companyId } }),
-          prisma.wallet.groupBy({ by: ["currency"], where: { companyId } }),
+          prisma.transfer.findMany({
+            where: { companyId, status: { notIn: ["CANCELLED", "REVERSED"] } },
+            select: { currency: true },
+            distinct: ["currency"],
+          }),
         ])
-        const currencyCount = walletCurrencies.length
+        const currencyCount = transferCurrencies.length
 
         const errors: string[] = []
         if (targetPlan.maxBranches < 999999 && branchCount > targetPlan.maxBranches) {

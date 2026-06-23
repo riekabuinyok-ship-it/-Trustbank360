@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { createStripeCustomer, createStripeSubscription } from "@/lib/subscription"
-import { getAllowedCurrencies } from "@/lib/plan-config"
 
 export async function POST(request: Request) {
   try {
@@ -66,18 +65,6 @@ export async function POST(request: Request) {
       include: { branches: true, users: true },
     })
 
-    // Create default wallets for main branch with all Enterprise currencies
-    const initialCurrencies = getAllowedCurrencies()
-    await prisma.wallet.createMany({
-      data: initialCurrencies.map((currency) => ({
-        currency: currency as any,
-        balance: 0,
-        openingBalance: 0,
-        branchId: company.branches[0].id,
-        companyId: company.id,
-      })),
-    })
-
     // Link selected mobile money providers
     if (mobileProviders && mobileProviders.length > 0) {
       const providers = await prisma.mobileMoneyProvider.findMany({
@@ -90,15 +77,6 @@ export async function POST(request: Request) {
         data: providers.map((p) => ({
           companyId: company.id,
           providerId: p.id,
-        })),
-      })
-
-      await prisma.floatWallet.createMany({
-        data: providers.map((p) => ({
-          companyId: company.id,
-          providerId: p.id,
-          currency: p.country,
-          balance: 0,
         })),
       })
     }

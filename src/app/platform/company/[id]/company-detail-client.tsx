@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { BackButton } from "@/components/back-button"
 import {
   Building2, Mail, Phone, Globe, MapPin, Hash, Users, Store, ScrollText,
-  Wallet, CreditCard, ArrowLeftRight, Crown,
+  CreditCard, ArrowLeftRight, Crown, Banknote,
 } from "lucide-react"
 
 function getStatusBadge(isActive: boolean, onboardingComplete: boolean) {
@@ -100,11 +100,10 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard icon={<Users className="h-5 w-5" />} label="Staff" value={String(company._count?.users ?? 0)} />
         <StatCard icon={<Store className="h-5 w-5" />} label="Branches" value={String(company._count?.branches ?? 0)} />
         <StatCard icon={<ArrowLeftRight className="h-5 w-5" />} label="Transfers" value={String(fin?.totalTransfers ?? 0)} />
-        <StatCard icon={<Wallet className="h-5 w-5" />} label="Wallets" value={String(company.wallets?.length ?? 0)} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -181,7 +180,7 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
               Financial Overview
             </CardTitle>
           </CardHeader>
@@ -200,19 +199,6 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
                 <p className="text-2xl font-bold">{fin.totalTransfers}</p>
               </div>
             </div>
-            {company.wallets && company.wallets.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Wallet Balances</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {company.wallets.map((w: any, i: number) => (
-                    <div key={i} className="p-3 rounded-lg border text-center">
-                      <p className="text-xs text-muted-foreground uppercase">{w.currency}</p>
-                      <p className="text-sm font-bold">{formatCurrency(w.balance)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}

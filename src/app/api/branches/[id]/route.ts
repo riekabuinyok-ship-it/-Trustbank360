@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const branch = await prisma.branch.findFirst({
     where: { id, companyId: user.companyId },
-    include: { _count: { select: { users: true, wallets: true } } },
+    include: { _count: { select: { users: true } } },
   })
   if (!branch) return NextResponse.json({ error: "Branch not found in your organization." }, { status: 404 })
 
@@ -106,7 +106,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   try {
-    await prisma.wallet.deleteMany({ where: { branchId: id } })
     await prisma.branch.delete({ where: { id } })
 
     await prisma.auditLog.create({

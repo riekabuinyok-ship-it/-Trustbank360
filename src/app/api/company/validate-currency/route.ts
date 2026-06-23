@@ -9,11 +9,12 @@ export async function GET() {
   const user = session.user as any
   if (!user?.companyId) return NextResponse.json({ error: "No company context" }, { status: 400 })
 
-  const walletCurrencies = await prisma.wallet.groupBy({
-    by: ["currency"],
-    where: { companyId: user.companyId },
+  const transferCurrencies = await prisma.transfer.findMany({
+    where: { companyId: user.companyId, status: { notIn: ["CANCELLED", "REVERSED"] } },
+    select: { currency: true },
+    distinct: ["currency"],
   }).catch(() => [])
-  const current = walletCurrencies.length
+  const current = transferCurrencies.length
 
   return NextResponse.json({
     resource: "currencies",

@@ -45,7 +45,6 @@ const RESOURCE_TYPES = [
   { value: "SUBSCRIPTION", label: "Subscription" },
   { value: "SETTINGS", label: "Settings" },
   { value: "EXCHANGE_RATE", label: "Exchange Rate" },
-  { value: "WALLET", label: "Wallet" },
 ]
 
 function getActionBadge(action: string) {

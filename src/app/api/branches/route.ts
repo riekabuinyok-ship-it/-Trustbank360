@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { ensureEnterprisePlan } from "@/lib/migrate-to-enterprise"
 import { formatApiError } from "@/lib/api-error"
-import { getAllowedCurrencies } from "@/lib/plan-config"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -16,7 +15,7 @@ export async function GET() {
 
   const branches = await prisma.branch.findMany({
     where: { companyId: user.companyId },
-    include: { _count: { select: { users: true, wallets: true } } },
+    include: { _count: { select: { users: true } } },
     orderBy: { createdAt: "desc" },
   })
 
@@ -55,26 +54,6 @@ export async function POST(request: Request) {
         companyId: user.companyId,
       },
     })
-
-    const allowedCurrencies = getAllowedCurrencies()
-    const walletCurrencies = await prisma.wallet.groupBy({
-      by: ["currency"],
-      where: { companyId: user.companyId },
-    })
-    const existingSet = new Set(walletCurrencies.map((w) => w.currency))
-    const addedCurrencies = allowedCurrencies.filter((c) => !existingSet.has(c as any))
-
-    if (addedCurrencies.length > 0) {
-      await prisma.wallet.createMany({
-        data: addedCurrencies.map((currency) => ({
-          currency: currency as any,
-          balance: 0,
-          openingBalance: 0,
-          branchId: created.id,
-          companyId: user.companyId,
-        })),
-      })
-    }
 
     await prisma.auditLog.create({
       data: {

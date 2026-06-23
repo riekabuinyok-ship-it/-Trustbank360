@@ -96,29 +96,10 @@ async function main() {
     prisma.user.create({ data: { name: 'Tom Auditor', email: 'auditor@trustbank.com', password, role: 'AUDITOR', status: 'ACTIVE', companyId: company.id, branchId: branches[0].id } }),
   ]);
 
-  // Create wallets for each branch
-  const currencies = ['SSP', 'USD', 'KES', 'UGX'];
-  for (const branch of branches) {
-    for (const currency of currencies) {
-      await prisma.wallet.create({
-        data: {
-          currency,
-          balance: 0,
-          openingBalance: 0,
-          branchId: branch.id,
-          companyId: company.id,
-        },
-      });
-    }
-  }
-
-  // Link company to providers and create float wallets
+  // Link company to mobile money providers
   const sspProviders = providers.filter(p => p.country === 'SSP');
   for (const p of sspProviders) {
     await prisma.companyMobileProvider.create({ data: { companyId: company.id, providerId: p.id } });
-    await prisma.floatWallet.create({
-      data: { companyId: company.id, providerId: p.id, currency: 'SSP', balance: 1000000 },
-    });
   }
 
   // Create exchange rates

@@ -100,7 +100,6 @@ export default function DashboardPage() {
   const activeMf = currencyData?.moneyFlow ?? { today: 0, week: 0, month: 0, all: 0 }
   const activeCf = currencyData?.commissionFlow ?? { today: 0, week: 0, month: 0, all: 0 }
   const activeRecentTxs = currencyData?.recentTransactions ?? []
-  const activeWalletBalance = currencyData?.balance ?? 0
   const hasCurrencyData = (currencyData?.count ?? 0) > 0
 
   const { isActive, warnings, announcements } = alertsData
@@ -291,12 +290,6 @@ export default function DashboardPage() {
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground">Commission</p>
                       <p className="text-2xl font-bold text-emerald-600">{loading ? "-" : formatCurrency(displayCommission, cur)}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                      <p className="text-2xl font-bold text-primary">{loading ? "-" : formatCurrency(activeWalletBalance, cur)}</p>
                     </CardContent>
                   </Card>
                 </div>

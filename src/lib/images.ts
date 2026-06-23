@@ -33,7 +33,6 @@ export const IMAGES = {
   empty: {
     transactions: "/images/empty-transactions.svg",
     customers: "/images/empty-customers.svg",
-    wallets: "/images/empty-wallets.svg",
     reports: "/images/empty-reports.svg",
     branches: "/images/empty-branches.svg",
     staff: "/images/empty-staff.svg",

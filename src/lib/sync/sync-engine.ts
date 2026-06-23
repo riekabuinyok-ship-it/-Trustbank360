@@ -168,7 +168,6 @@ function getEndpointForTable(
     staff: "/api/staff",
     branches: "/api/branches",
     exchangeRates: "/api/exchange-rates",
-    wallets: "/api/wallets",
     announcements: "/api/company/announcements",
   }
 

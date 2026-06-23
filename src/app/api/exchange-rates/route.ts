@@ -40,19 +40,6 @@ export async function POST(request: Request) {
       return NextResponse.json(formatApiError("COMPANY_OVER_LIMIT"), { status: 403 })
     }
 
-    const wallets = await prisma.wallet.findMany({
-      where: { companyId: user.companyId, currency: { in: [body.fromCurrency, body.toCurrency] as any } },
-      select: { currency: true },
-    })
-    const walletCurrencies = new Set(wallets.map((w) => w.currency))
-    if (!walletCurrencies.has(body.fromCurrency) || !walletCurrencies.has(body.toCurrency)) {
-      return NextResponse.json(formatApiError("CURRENCY_LIMIT_REACHED", {
-        title: "Currency not available",
-        message: "Exchange rates for this currency pair are not allowed under your current plan.",
-        upgradeRequired: true,
-      }), { status: 403 })
-    }
-
     // Deactivate existing rate
     await prisma.exchangeRate.updateMany({
       where: { fromCurrency: body.fromCurrency, toCurrency: body.toCurrency, companyId: user.companyId },

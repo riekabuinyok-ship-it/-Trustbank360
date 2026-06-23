@@ -141,7 +141,6 @@ export function getNavItems(role: UserRole): { href: string; label: string; icon
   if (isSupervisoryRole(role)) {
     items.push({ href: "/company/branches", label: "Branches", icon: "Building2" })
     items.push({ href: "/company/staff", label: "Staff", icon: "Users" })
-    items.push({ href: "/company/wallets", label: "Wallets", icon: "Wallet" })
     items.push({ href: "/company/exchange-rates", label: "Exchange Rates", icon: "Percent" })
     items.push({ href: "/company/commissions", label: "Commission Settings", icon: "Percent" })
     items.push({ href: "/company/compliance", label: "Compliance", icon: "ShieldCheck" })
@@ -153,7 +152,6 @@ export function getNavItems(role: UserRole): { href: string; label: string; icon
   // Branch Manager sees branch management
   if (role === "branch_manager" || role === "BRANCH_MANAGER") {
     items.push({ href: "/company/staff", label: "Staff", icon: "Users" })
-    items.push({ href: "/company/wallets", label: "Wallets", icon: "Wallet" })
     items.push({ href: "/company/exchange-rates", label: "Exchange Rates", icon: "Percent" })
   }
 

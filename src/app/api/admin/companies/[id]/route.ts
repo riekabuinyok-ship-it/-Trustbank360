@@ -40,9 +40,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           plan: { select: { name: true, price: true, currency: true, durationDays: true } },
         },
       },
-      wallets: {
-        select: { currency: true, balance: true, branchId: true },
-      },
       auditLogs: {
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -76,7 +73,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     ...company,
     _count: company._count,
     subscription: company.subscription,
-    wallets: company.wallets,
     financials: {
       totalTransferVolume,
       totalCommission,
