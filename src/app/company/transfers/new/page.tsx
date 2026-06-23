@@ -27,14 +27,10 @@ export default function NewTransferPage() {
   const [form, setForm] = useState({
     senderName: "",
     senderPhone: "",
-    senderNationality: "",
-    senderIdType: "",
-    senderIdNumber: "",
     senderMobile: "",
     receiverName: "",
     receiverPhone: "",
     receiverMobile: "",
-    receiverIdNumber: "",
     destinationBranchId: "",
     amount: "",
     currency: "SSP",
@@ -145,27 +141,6 @@ export default function NewTransferPage() {
                   <Input placeholder="*123*456#" value={form.senderMobile} onChange={(e) => updateField("senderMobile", e.target.value)} />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Nationality</Label>
-                  <Input placeholder="South Sudanese" value={form.senderNationality} onChange={(e) => updateField("senderNationality", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>ID Type</Label>
-                  <Select value={form.senderIdType} onValueChange={(v) => updateField("senderIdType", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NATIONAL_ID">National ID</SelectItem>
-                      <SelectItem value="PASSPORT">Passport</SelectItem>
-                      <SelectItem value="DRIVER_LICENSE">Driver License</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>ID Number</Label>
-                <Input placeholder="ID-12345" value={form.senderIdNumber} onChange={(e) => updateField("senderIdNumber", e.target.value)} />
-              </div>
             </CardContent>
           </Card>
 

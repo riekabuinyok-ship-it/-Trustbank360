@@ -18,14 +18,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { transferId, secretCode } = await request.json()
+    const { transferId, secretCode, receiverNationality, receiverIdType, receiverIdNumber } = await request.json()
     if (!transferId) {
       return NextResponse.json({ error: "transferId required" }, { status: 400 })
     }
 
     const transfer = await prisma.transfer.findUnique({
       where: { id: transferId },
-      include: { branchLink: true },
+      include: { branchLink: true, receiver: true },
     })
     if (!transfer) {
       return NextResponse.json({ error: "Transfer not found" }, { status: 404 })
@@ -48,16 +48,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid Secret Code" }, { status: 400 })
     }
 
+    // Require receiver ID verification for USD payouts
+    if (transfer.currency === "USD") {
+      const finalNationality = (receiverNationality || "").trim() || transfer.receiver?.nationality || ""
+      const finalIdType = (receiverIdType || "").trim() || transfer.receiver?.idType || ""
+      const finalIdNumber = (receiverIdNumber || "").trim() || transfer.receiver?.idNumber || ""
+
+      if (!finalNationality || !finalIdType || !finalIdNumber) {
+        return NextResponse.json({
+          success: false,
+          errorCode: "USD_ID_REQUIRED",
+          title: "Receiver ID verification required",
+          error: "Nationality, ID Type, and ID Number are required for USD payouts.",
+          message: "Please collect the receiver's Nationality, ID Type, and ID Number before completing the USD payout.",
+        }, { status: 400 })
+      }
+    }
+
     const now = new Date()
     const result = await prisma.$transaction(async (tx) => {
+      // For USD payouts, persist the receiver ID info on the transfer
+      const updateData: any = {
+        status: "COMPLETED",
+        paidById: user.id,
+        paidAt: now,
+      }
+      if (transfer.currency === "USD") {
+        updateData.receiverNationality = (receiverNationality || "").trim() || transfer.receiver?.nationality || null
+        updateData.receiverIdType = (receiverIdType || "").trim() || transfer.receiver?.idType || null
+        // Don't overwrite existing receiverIdNumber if no new one provided
+        if (receiverIdNumber && receiverIdNumber.trim()) {
+          updateData.receiverIdNumber = receiverIdNumber.trim()
+        }
+      }
+
       const updated = await tx.transfer.update({
         where: { id: transferId },
-        data: {
-          status: "COMPLETED",
-          paidById: user.id,
-          paidAt: now,
-        },
+        data: updateData,
       })
+
+      // Also update the receiver Customer record with any new ID info (for USD payouts)
+      if (transfer.currency === "USD" && transfer.receiver) {
+        const customerUpdate: any = {}
+        if (receiverNationality && receiverNationality.trim()) {
+          customerUpdate.nationality = receiverNationality.trim()
+        }
+        if (receiverIdType && receiverIdType.trim()) {
+          customerUpdate.idType = receiverIdType.trim()
+        }
+        if (receiverIdNumber && receiverIdNumber.trim()) {
+          customerUpdate.idNumber = receiverIdNumber.trim()
+        }
+        if (Object.keys(customerUpdate).length > 0) {
+          await tx.customer.update({
+            where: { id: transfer.receiver.id },
+            data: customerUpdate,
+          })
+        }
+      }
 
       await logTransactionEvent({
         transferId,
@@ -84,6 +132,11 @@ export async function POST(request: Request) {
           paidBy: user.name,
           branchId: user.branchId,
           paidAt: now.toISOString(),
+          ...(transfer.currency === "USD" && {
+            receiverNationality: (receiverNationality || "").trim() || transfer.receiver?.nationality,
+            receiverIdType: (receiverIdType || "").trim() || transfer.receiver?.idType,
+            receiverIdNumber: (receiverIdNumber || "").trim() || transfer.receiver?.idNumber,
+          }),
         }),
         branchId: user.branchId,
         companyId: user.companyId,

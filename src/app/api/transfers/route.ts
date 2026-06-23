@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { senderName, senderPhone, senderNationality, senderIdType, senderIdNumber, receiverName, receiverPhone, destinationBranchId, amount, currency, transactionType, commissionType, notes, mobileProviderId, receiverMobile, receiverIdNumber } = body
+    const { senderName, senderPhone, receiverName, receiverPhone, destinationBranchId, amount, currency, transactionType, commissionType, notes, mobileProviderId, receiverMobile } = body
 
     if (!senderName || !senderPhone || !receiverName || !receiverPhone || !destinationBranchId || !amount || !currency) {
       return NextResponse.json({ error: "Missing required fields: sender name, sender phone, receiver name, receiver phone, destination branch, amount, and currency are required." }, { status: 400 })
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     })
     if (!sender) {
       sender = await prisma.customer.create({
-        data: { fullName: senderName, phone: senderPhone, nationality: senderNationality, idType: senderIdType, idNumber: senderIdNumber, companyId: user.companyId },
+        data: { fullName: senderName, phone: senderPhone, companyId: user.companyId },
       })
     }
 
@@ -146,7 +146,6 @@ export async function POST(request: Request) {
           issuedById: user.id,
           mobileProviderId: mobileProviderId || null,
           receiverMobile: receiverMobile || null,
-          receiverIdNumber: receiverIdNumber || null,
           notes,
           status: "PENDING",
         },

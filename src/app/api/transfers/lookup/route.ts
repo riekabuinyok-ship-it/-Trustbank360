@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     where: { secretCode: code },
     include: {
       sender: { select: { fullName: true } },
-      receiver: { select: { fullName: true, phone: true } },
+      receiver: { select: { fullName: true, phone: true, nationality: true, idType: true, idNumber: true } },
       issuedBy: { select: { name: true, role: true, branch: { select: { name: true } } } },
       branchLink: {
         include: {

@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Search, CheckCircle2, Loader2, XCircle, Building2, User, ArrowRight } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, CheckCircle2, Loader2, XCircle, Building2, User, ArrowRight, ShieldCheck } from "lucide-react"
+import toast from "react-hot-toast"
 import { formatCurrency, getTransactionTypeLabel } from "@/lib/utils"
 
 const statusColors: Record<string, string> = {
@@ -23,6 +25,20 @@ export default function PayoutPage() {
   const [error, setError] = useState("")
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [step, setStep] = useState<"search" | "found" | "completed">("search")
+
+  // USD ID verification fields
+  const [receiverNationality, setReceiverNationality] = useState("")
+  const [receiverIdType, setReceiverIdType] = useState("")
+  const [receiverIdNumber, setReceiverIdNumber] = useState("")
+
+  // Pre-fill USD ID fields from receiver Customer data when transfer is found
+  useEffect(() => {
+    if (transfer && transfer.receiver) {
+      setReceiverNationality(transfer.receiver.nationality || "")
+      setReceiverIdType(transfer.receiver.idType || "")
+      setReceiverIdNumber(transfer.receiver.idNumber || "")
+    }
+  }, [transfer])
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -51,24 +67,44 @@ export default function PayoutPage() {
     }
   }
 
+  const requiresUsdId = transfer?.currency === "USD"
+  const usdIdValid = !requiresUsdId || (
+    receiverNationality.trim() !== "" &&
+    receiverIdType.trim() !== "" &&
+    receiverIdNumber.trim() !== ""
+  )
+
   async function handleCompletePayout() {
     if (!transfer) return
+    if (!usdIdValid) {
+      toast.error("Please fill in all receiver ID fields for USD payouts")
+      return
+    }
     setActionLoading("payout")
     try {
+      const body: any = { transferId: transfer.id, secretCode }
+      if (requiresUsdId) {
+        body.receiverNationality = receiverNationality.trim()
+        body.receiverIdType = receiverIdType.trim()
+        body.receiverIdNumber = receiverIdNumber.trim()
+      }
       const res = await fetch("/api/transfers/confirm-payout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transferId: transfer.id, secretCode }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || "Payout failed")
+        const msg = data.message || data.error || "Payout failed"
+        toast.error(msg)
+        setError(msg)
         return
       }
       setTransfer({ ...transfer, status: "COMPLETED" })
       setStep("completed")
+      toast.success("Payout completed successfully")
     } catch {
-      setError("Failed to process payout")
+      toast.error("Failed to process payout")
     } finally {
       setActionLoading(null)
     }
@@ -182,13 +218,70 @@ export default function PayoutPage() {
               </div>
             </div>
 
+            {/* USD ID Verification Section */}
+            {requiresUsdId && (
+              <div className="p-4 rounded-lg border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/10 dark:border-amber-800 space-y-4">
+                <div className="flex items-start gap-2">
+                  <ShieldCheck className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      USD Payout — Receiver ID Verification Required
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                      USD payouts require the receiver's Nationality, ID Type, and ID Number for compliance.
+                      Fields are pre-filled from the receiver's profile if available.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="receiverNationality">Nationality *</Label>
+                    <Input
+                      id="receiverNationality"
+                      placeholder="e.g. South Sudanese"
+                      value={receiverNationality}
+                      onChange={(e) => setReceiverNationality(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="receiverIdType">ID Type *</Label>
+                    <Select value={receiverIdType} onValueChange={setReceiverIdType}>
+                      <SelectTrigger id="receiverIdType">
+                        <SelectValue placeholder="Select ID type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NATIONAL_ID">National ID</SelectItem>
+                        <SelectItem value="PASSPORT">Passport</SelectItem>
+                        <SelectItem value="DRIVER_LICENSE">Driver License</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receiverIdNumber">ID Number *</Label>
+                  <Input
+                    id="receiverIdNumber"
+                    placeholder="e.g. ID-12345"
+                    value={receiverIdNumber}
+                    onChange={(e) => setReceiverIdNumber(e.target.value)}
+                  />
+                </div>
+                {!usdIdValid && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    All three fields are required for USD payouts.
+                  </p>
+                )}
+              </div>
+            )}
+
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <Button
               className="w-full gap-2"
               size="lg"
               onClick={handleCompletePayout}
-              disabled={actionLoading === "payout"}
+              disabled={actionLoading === "payout" || !usdIdValid}
             >
               {actionLoading === "payout" ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -223,7 +316,7 @@ export default function PayoutPage() {
             <Button
               variant="outline"
               className="w-full gap-2"
-              onClick={() => { setStep("search"); setSecretCode(""); setTransfer(null); setError("") }}
+              onClick={() => { setStep("search"); setSecretCode(""); setTransfer(null); setError(""); setReceiverNationality(""); setReceiverIdType(""); setReceiverIdNumber("") }}
             >
               <Search className="h-4 w-4" />
               Process Another Payout

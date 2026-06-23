@@ -342,6 +342,8 @@ model Transfer {
   mobileProviderId String?
   receiverMobile   String?
   receiverIdNumber String?
+  receiverNationality String?
+  receiverIdType      String?
 
   senderId           String
   receiverId         String
