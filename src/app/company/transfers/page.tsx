@@ -132,11 +132,15 @@ export default function TransfersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transferId: selected.id, reason: reverseReason }),
       })
-      if (!res.ok) throw new Error(await res.text())
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Failed to reverse transaction" }))
+        throw new Error(errorData.message || errorData.error || "Failed to reverse transaction")
+      }
       await loadTransfers()
       setShowReverseDialog(false)
       setReverseReason("")
       setSelected(null)
+      toast.success("Transaction reversed successfully")
     } catch (e: any) {
       toast.error(e.message || "Failed to reverse transaction")
     } finally {
@@ -236,9 +240,9 @@ export default function TransfersPage() {
 
   const isOperational = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager" || user?.role === "TELLER" || user?.role === "teller"
   const t = selected
-  const canCancel = t && isSenderBranch(t) && isOperational && t.status === "PENDING"
-  const canReverse = t && isSenderBranch(t) && isOperational && t.status === "COMPLETED"
-  const canProcessPayout = t && isReceiverBranch(t) && isOperational && t.status === "PENDING"
+  const canCancel = t && isSenderBranch(t) && isOperational && t.status === "PENDING" && !t.paidById
+  const canReverse = t && isSenderBranch(t) && isOperational && t.status === "PENDING" && !t.paidById
+  const canProcessPayout = t && isReceiverBranch(t) && isOperational && t.status === "PENDING" && !t.paidById
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
@@ -486,7 +490,9 @@ export default function TransfersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reverse Transaction</DialogTitle>
-            <DialogDescription>Please provide a reason for reversing this transaction.</DialogDescription>
+            <DialogDescription>
+              Please provide a reason for reversing this transaction. This action is only possible before the payout is completed.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">

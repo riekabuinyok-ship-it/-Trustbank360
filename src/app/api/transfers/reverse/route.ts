@@ -35,8 +35,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Only the sender branch can reverse this transaction" }, { status: 403 })
     }
 
-    if (transfer.status !== "COMPLETED") {
-      return NextResponse.json({ error: "Can only reverse COMPLETED transactions" }, { status: 400 })
+    if (transfer.paidById || transfer.paidAt) {
+      return NextResponse.json({
+        success: false,
+        errorCode: "PAYOUT_COMPLETED",
+        title: "Payout already completed",
+        error: "Payout has already been completed. This transaction cannot be reversed.",
+        message: "This transaction has already been paid out by the receiver branch and can no longer be reversed by the sender branch.",
+      }, { status: 400 })
+    }
+
+    if (transfer.status !== "PENDING") {
+      return NextResponse.json({
+        success: false,
+        errorCode: "INVALID_STATUS",
+        title: "Invalid transaction status",
+        error: "Only pending (pre-payout) transactions can be reversed.",
+        message: `Transaction status is ${transfer.status}. This transaction can no longer be reversed.`,
+      }, { status: 400 })
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -53,7 +69,7 @@ export async function POST(request: Request) {
         transferId,
         userId: user.id,
         action: "REVERSED",
-        details: `Transaction reversed. Reason: ${reason}`,
+        details: `Transaction reversed before payout. Reason: ${reason}`,
         branchId: user.branchId,
       })
 
