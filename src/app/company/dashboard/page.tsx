@@ -94,13 +94,14 @@ export default function DashboardPage() {
   const dailyVolume = data?.dailyVolume || []
   const recentTransactions = data?.recentTransactions || []
 
-  // Currency-filtered data
+  // Currency-filtered data — read from per-currency bucket, not top-level
   const currencyData = data?.byCurrency?.[activeCurrency]
-  const activeCounts = data?.counts ?? {}
-  const activeMf = data?.moneyFlow ?? {}
-  const activeCf = data?.commissionFlow ?? {}
-  const activeRecentTxs = data?.recentTransactions ?? []
+  const activeCounts = currencyData?.counts ?? { total: 0, completed: 0, pending: 0, cancelled: 0, reversed: 0 }
+  const activeMf = currencyData?.moneyFlow ?? { today: 0, week: 0, month: 0, all: 0 }
+  const activeCf = currencyData?.commissionFlow ?? { today: 0, week: 0, month: 0, all: 0 }
+  const activeRecentTxs = currencyData?.recentTransactions ?? []
   const activeWalletBalance = currencyData?.balance ?? 0
+  const hasCurrencyData = (currencyData?.count ?? 0) > 0
 
   const { isActive, warnings, announcements } = alertsData
 
@@ -312,44 +313,53 @@ export default function DashboardPage() {
           Money Flow
           <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {hasCurrencyData ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-xs text-muted-foreground">Today</p>
+                </div>
+                <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.today || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-3.5 w-3.5 text-secondary" />
+                  <p className="text-xs text-muted-foreground">This Week</p>
+                </div>
+                <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.week || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <BarChart3 className="h-3.5 w-3.5 text-amber-500" />
+                  <p className="text-xs text-muted-foreground">This Month</p>
+                </div>
+                <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.month || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-xs text-muted-foreground">All Time</p>
+                </div>
+                <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.all || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="h-3.5 w-3.5 text-primary" />
-                <p className="text-xs text-muted-foreground">Today</p>
-              </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.today || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              <DollarSign className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+              No {activeCurrency} transactions yet — money flow will appear here once you process {activeCurrency} transfers.
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-3.5 w-3.5 text-secondary" />
-                <p className="text-xs text-muted-foreground">This Week</p>
-              </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.week || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <BarChart3 className="h-3.5 w-3.5 text-amber-500" />
-                <p className="text-xs text-muted-foreground">This Month</p>
-              </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.month || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="h-3.5 w-3.5 text-primary" />
-                <p className="text-xs text-muted-foreground">All Time</p>
-              </div>
-              <p className="text-lg font-bold">{loading ? "-" : formatCurrency(activeMf.all || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </div>
 
       {/* 5. COMMISSION FLOW */}
@@ -360,32 +370,41 @@ export default function DashboardPage() {
           <span className="text-sm font-normal text-muted-foreground">({activeCurrency})</span>
           <span className="text-xs font-normal text-muted-foreground">(Separate revenue stream)</span>
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {hasCurrencyData ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card className="border-emerald-200 dark:border-emerald-900">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">Today Commission</p>
+                <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.today || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-emerald-200 dark:border-emerald-900">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">This Week Commission</p>
+                <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.week || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-emerald-200 dark:border-emerald-900">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">This Month Commission</p>
+                <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.month || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-emerald-200 dark:border-emerald-900">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">Total Commission</p>
+                <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.all || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
           <Card className="border-emerald-200 dark:border-emerald-900">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Today Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.today || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              <Percent className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+              No {activeCurrency} commissions yet — revenue will appear here once you process {activeCurrency} transfers.
             </CardContent>
           </Card>
-          <Card className="border-emerald-200 dark:border-emerald-900">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">This Week Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.week || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-emerald-200 dark:border-emerald-900">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">This Month Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.month || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-emerald-200 dark:border-emerald-900">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Total Commission</p>
-              <p className="text-lg font-bold text-emerald-600">{loading ? "-" : formatCurrency(activeCf.all || 0, activeCurrency === "ALL" ? "SSP" : activeCurrency)}</p>
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </div>
 
       {/* 6. CHARTS + BRANCH PERFORMANCE */}
@@ -487,7 +506,11 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">No recent transactions</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {hasCurrencyData
+                ? "No recent transactions"
+                : `No ${activeCurrency} transactions yet`}
+            </p>
           )}
           <div className="text-center pt-4 border-t mt-2">
             <Link href="/company/transfers" className="text-sm text-primary hover:underline">View all transactions</Link>
