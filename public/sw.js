@@ -1,133 +1,66 @@
-// TrustBank360 Service Worker v1.0.0
-// Offline-first financial platform for low-connectivity regions
+// TrustBank360 Service Worker v2.0.0
+// Basic PWA: offline-first financial platform for low-connectivity regions
+//
+// Strategies:
+//  - Cache-first, falling back to network (static assets: HTML, CSS, JS, images, fonts)
+//  - Network-first, falling back to cache (dynamic/API content)
+//  - Custom offline fallback page when both cache and network fail
+//  - Versioned cache names with automatic cleanup of old caches on activate
 
-const CACHE_VERSION = "v1"
-const STATIC_CACHE = `trustbank360-static-${CACHE_VERSION}`
-const DYNAMIC_CACHE = `trustbank360-dynamic-${CACHE_VERSION}`
-const API_CACHE = `trustbank360-api-${CACHE_VERSION}`
-const ASSET_CACHE = `trustbank360-assets-${CACHE_VERSION}`
+const CACHE_VERSION = "v2"
+const STATIC_CACHE = `tb360-static-${CACHE_VERSION}`
+const DYNAMIC_CACHE = `tb360-dynamic-${CACHE_VERSION}`
+const API_CACHE = `tb360-api-${CACHE_VERSION}`
 
-const STATIC_ASSETS = [
+// ---- PRECACHE LIST ----
+// Core static assets: HTML pages, manifest, icons, and key images.
+// These are precached on install so the shell works offline immediately.
+const PRECACHE_URLS = [
   "/",
-  "/login",
   "/offline",
-  "/features",
-  "/pricing",
-  "/about",
-  "/contact",
-  "/help",
-  "/privacy",
-  "/terms",
-  "/tutorials",
-  "/exchange-rates",
-  "/track",
   "/manifest.json",
   "/images/icons/icon-192.png",
   "/images/icons/icon-512.png",
-]
-
-const API_CACHE_ROUTES = [
-  "/api/company/dashboard-alerts",
-  "/api/exchange-rates",
-  "/api/company/announcements",
-  "/api/dashboard",
-  "/api/heartbeat",
-]
-
-const NETWORK_ONLY_ROUTES = [
-  "/api/auth/",
-  "/api/payments/",
-  "/api/sync",
-  "/api/transfers",
-]
-
-const STALE_WHILE_REVALIDATE_ROUTES = [
-  "/api/company/",
-  "/api/branches",
-  "/api/staff",
-  "/api/customers",
-  "/api/wallets",
-  "/api/notifications",
-  "/api/messages",
+  "/images/logo.svg",
+  "/images/logo-white.svg",
 ]
 
 // ---- INSTALL ----
+// Precache the shell. skipWaiting() activates the new SW immediately.
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then((cache) => cache.addAll(PRECACHE_URLS))
       .then(() => self.skipWaiting())
   )
 })
 
 // ---- ACTIVATE ----
+// Clean up old caches that don't match the current version, then claim clients.
 self.addEventListener("activate", (event) => {
+  const expectedCaches = new Set([STATIC_CACHE, DYNAMIC_CACHE, API_CACHE])
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(
           keys
-            .filter(
-              (key) =>
-                key !== STATIC_CACHE &&
-                key !== DYNAMIC_CACHE &&
-                key !== API_CACHE &&
-                key !== ASSET_CACHE
-            )
-            .map((key) => caches.delete(key))
+            .filter((key) => !expectedCaches.has(key))
+            .map((key) => {
+              console.log("[SW] Deleting old cache:", key)
+              return caches.delete(key)
+            })
         )
       )
       .then(() => self.clients.claim())
   )
 })
 
-// ---- FETCH ----
-self.addEventListener("fetch", (event) => {
-  const { request } = event
-  const url = new URL(request.url)
+// ---- FETCH STRATEGIES ----
 
-  // Skip non-GET and browser extension requests
-  if (request.method !== "GET" || !url.protocol.startsWith("http")) return
-  if (url.origin !== self.location.origin) return
-
-  // Network-only for sensitive routes
-  if (NETWORK_ONLY_ROUTES.some((route) => url.pathname.startsWith(route))) {
-    return event.respondWith(networkOnlyWithFallback(request))
-  }
-
-  // Cache-first for static assets
-  if (
-    url.pathname.startsWith("/_next/static") ||
-    url.pathname.startsWith("/images/") ||
-    url.pathname === "/manifest.json"
-  ) {
-    return event.respondWith(cacheFirst(request, STATIC_CACHE))
-  }
-
-  // Cache-first for navigation (HTML)
-  if (request.mode === "navigate") {
-    return event.respondWith(networkFirstWithFallback(request, STATIC_CACHE))
-  }
-
-  // Network-first for API routes
-  if (url.pathname.startsWith("/api/")) {
-    if (API_CACHE_ROUTES.some((route) => url.pathname.startsWith(route))) {
-      return event.respondWith(networkFirstWithFallback(request, API_CACHE))
-    }
-    if (STALE_WHILE_REVALIDATE_ROUTES.some((route) => url.pathname.startsWith(route))) {
-      return event.respondWith(staleWhileRevalidate(request, API_CACHE))
-    }
-    return event.respondWith(networkFirstWithFallback(request, API_CACHE))
-  }
-
-  // Stale-while-revalidate for everything else
-  return event.respondWith(staleWhileRevalidate(request, DYNAMIC_CACHE))
-})
-
-// ---- CACHE STRATEGIES ----
-
+// Cache-first: try cache, fall back to network, fall back to offline page.
+// Best for static assets that don't change often (HTML, CSS, JS, images, fonts).
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request)
   if (cached) return cached
@@ -138,12 +71,19 @@ async function cacheFirst(request, cacheName) {
       cache.put(request, response.clone())
     }
     return response
-  } catch {
-    return caches.match("/offline")
+  } catch (err) {
+    // For navigation requests, serve the offline page
+    if (request.mode === "navigate") {
+      const offline = await caches.match("/offline")
+      if (offline) return offline
+    }
+    throw err
   }
 }
 
-async function networkFirstWithFallback(request, cacheName) {
+// Network-first: try network, fall back to cache, fall back to offline page.
+// Best for dynamic/API content where freshness matters more than speed.
+async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request)
     if (response.ok) {
@@ -151,128 +91,72 @@ async function networkFirstWithFallback(request, cacheName) {
       cache.put(request, response.clone())
     }
     return response
-  } catch {
+  } catch (err) {
     const cached = await caches.match(request)
     if (cached) return cached
-    if (request.mode === "navigate") return caches.match("/offline")
-    return new Response(JSON.stringify({ offline: true, cached: false }), {
-      headers: { "Content-Type": "application/json" },
-    })
-  }
-}
-
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName)
-  const cached = await cache.match(request)
-
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) cache.put(request, response.clone())
-      return response
-    })
-    .catch(() => cached)
-
-  return cached || fetchPromise
-}
-
-async function networkOnlyWithFallback(request) {
-  try {
-    return await fetch(request)
-  } catch {
-    return new Response(JSON.stringify({ offline: true, error: "Network required" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    })
-  }
-}
-
-// ---- BACKGROUND SYNC ----
-self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-queue") {
-    event.waitUntil(processSyncQueue())
-  }
-  if (event.tag === "sync-audit-logs") {
-    event.waitUntil(syncAuditLogs())
-  }
-})
-
-async function processSyncQueue() {
-  try {
-    const clients = await self.clients.matchAll({ type: "window" })
-    for (const client of clients) {
-      client.postMessage({ type: "SYNC_TRIGGER", payload: {} })
+    if (request.mode === "navigate") {
+      const offline = await caches.match("/offline")
+      if (offline) return offline
     }
-  } catch {
-    // Silently fail - will retry on next sync
+    throw err
   }
 }
 
-async function syncAuditLogs() {
-  try {
-    const clients = await self.clients.matchAll({ type: "window" })
-    for (const client of clients) {
-      client.postMessage({ type: "SYNC_AUDIT_LOGS", payload: {} })
-    }
-  } catch {
-    // Silently fail - will retry on next sync
+// ---- FETCH ROUTER ----
+self.addEventListener("fetch", (event) => {
+  const { request } = event
+  const url = new URL(request.url)
+
+  // Skip non-GET requests and cross-origin requests
+  if (request.method !== "GET") return
+  if (url.origin !== self.location.origin) return
+
+  // Skip browser-internal requests
+  if (url.pathname.startsWith("/_next/webpack-hmr")) return
+  if (url.pathname.startsWith("/_next/data")) return
+
+  // 1. STATIC ASSETS — cache-first
+  //   Includes Next.js static chunks, public images, manifest, fonts
+  const isStaticAsset =
+    url.pathname.startsWith("/_next/static") ||
+    url.pathname.startsWith("/images/") ||
+    url.pathname.startsWith("/fonts/") ||
+    url.pathname === "/manifest.json" ||
+    url.pathname === "/sw.js" ||
+    /\.(css|js|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico)$/i.test(url.pathname)
+
+  if (isStaticAsset) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE))
+    return
   }
-}
 
-// ---- PUSH NOTIFICATIONS ----
-self.addEventListener("push", (event) => {
-  if (!event.data) return
-
-  try {
-    const data = event.data.json()
-    const options = {
-      body: data.message || data.body || "",
-      icon: "/images/icons/icon-192.png",
-      badge: "/images/icons/badge-72.png",
-      vibrate: [200, 100, 200],
-      data: data.data || {},
-      actions: data.actions || [],
-      tag: data.tag || "default",
-      renotify: data.renotify || false,
-      requireInteraction: data.requireInteraction || false,
-    }
-    event.waitUntil(
-      self.registration.showNotification(
-        data.title || "TrustBank360",
-        options
-      )
-    )
-  } catch {
-    // Malformed push data
+  // 2. API/DYNAMIC CONTENT — network-first
+  //   Includes all /api/* routes and Next.js server-rendered pages
+  const isApi = url.pathname.startsWith("/api/")
+  if (isApi) {
+    event.respondWith(networkFirst(request, API_CACHE))
+    return
   }
-})
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close()
+  // 3. HTML PAGES (navigation requests) — network-first with offline fallback
+  if (request.mode === "navigate") {
+    event.respondWith(networkFirst(request, DYNAMIC_CACHE))
+    return
+  }
 
-  const url = event.notification.data?.url || "/company/dashboard"
-
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.url.includes(url) && "focus" in client) {
-          return client.focus()
-        }
-      }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(url)
-      }
-    })
-  )
+  // 4. Everything else (images loaded via Next/Image, etc.) — cache-first
+  event.respondWith(cacheFirst(request, DYNAMIC_CACHE))
 })
 
 // ---- MESSAGE HANDLING ----
+// Allows the page to send commands to the SW (e.g. SKIP_WAITING on update).
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting()
   }
   if (event.data?.type === "CLEAR_CACHES") {
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => caches.delete(key)))
+    event.waitUntil(
+      caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
     )
   }
 })
