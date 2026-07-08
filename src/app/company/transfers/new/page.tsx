@@ -13,6 +13,27 @@ import { filterTransactionTypes } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
 
+function calcCommission(amount: number, mode: string, value: number, minFee: number | null, commissionType: string) {
+  let commission = 0
+  if (mode === "FIXED") {
+    commission = value
+  } else if (mode === "PERCENTAGE") {
+    commission = amount * (value / 100)
+  } else if (mode === "HYBRID") {
+    commission = Math.max(amount * (value / 100), minFee ?? 0)
+  }
+  commission = Math.round(commission * 100) / 100
+  const senderAmount = commissionType === "INCLUDED" ? amount : amount + commission
+  const receiverAmount = commissionType === "INCLUDED" ? amount - commission : amount
+  return { commission, senderAmount, receiverAmount }
+}
+
+function modeLabel(mode: string, value: number, minFee: number | null = null) {
+  if (mode === "FIXED") return `${value.toFixed(2)} Fixed`
+  if (mode === "HYBRID") return `${value}% (min ${minFee ?? 0})`
+  return `${value}%`
+}
+
 export default function NewTransferPage() {
   const router = useRouter()
   const { data: session } = useSession()
@@ -39,6 +60,7 @@ export default function NewTransferPage() {
     mobileProviderId: "",
     notes: "",
   })
+  const [commissionSettings, setCommissionSettings] = useState<any[]>([])
 
   useEffect(() => {
     fetch("/api/branches").then((r) => r.json()).then(setBranches).catch(() => setBranches([]))
@@ -46,6 +68,7 @@ export default function NewTransferPage() {
     fetch("/api/company/plan").then((r) => r.json()).then((d) => {
       if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
     }).catch(() => {})
+    fetch("/api/commissions/settings").then((r) => r.json()).then(setCommissionSettings).catch(() => {})
   }, [])
 
   function updateField(field: string, value: string) {
@@ -80,9 +103,13 @@ export default function NewTransferPage() {
   }
 
   const amount = parseFloat(form.amount) || 0
-  const commission = amount * 0.02
-  const receiverGets = form.commissionType === "INCLUDED" ? amount - commission : amount
-  const senderPays = form.commissionType === "SEPARATE" ? amount + commission : amount
+  const currentSetting = commissionSettings.find((s: any) => s.currency === form.currency)
+  const csMode = currentSetting?.mode || "PERCENTAGE"
+  const csValue = currentSetting?.value ?? 2
+  const csMinFee = currentSetting?.minFee ?? null
+  const { commission, senderAmount, receiverAmount } = calcCommission(amount, csMode, csValue, csMinFee, form.commissionType)
+  const receiverGets = form.commissionType === "INCLUDED" ? receiverAmount : amount
+  const senderPays = form.commissionType === "SEPARATE" ? senderAmount : amount
   const needsProvider = form.transactionType === "CASH_TO_MOBILE" || form.transactionType === "MOBILE_TO_MOBILE"
 
   return (
@@ -242,7 +269,7 @@ export default function NewTransferPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span>Transfer Amount</span>
                   <span className="text-right font-medium">{amount.toFixed(2)} {form.currency}</span>
-                  <span>Commission (2%)</span>
+                  <span>Commission ({modeLabel(csMode, csValue, csMinFee)})</span>
                   <span className="text-right font-medium text-accent-600">{commission.toFixed(2)} {form.currency}</span>
                   <span className="font-medium">Receiver Gets</span>
                   <span className="text-right font-medium text-secondary-600">{receiverGets.toFixed(2)} {form.currency}</span>

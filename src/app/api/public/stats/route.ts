@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const [companyCount, transactionCount] = await Promise.all([
       prisma.company.count({ where: { isActive: true } }),
-      prisma.transfer.count({ where: { status: "COMPLETED" } }),
+      prisma.transfer.count(),
     ])
 
     return NextResponse.json({

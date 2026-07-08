@@ -59,7 +59,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.json" />
+         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
         <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/icon-192.png" />
         <meta name="theme-color" content="#0F4C81" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

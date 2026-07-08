@@ -32,7 +32,7 @@ export function HomeStats() {
           </div>
           <div className="text-center">
             <p className="text-3xl sm:text-4xl font-bold text-primary">
-              {transactionCount !== null ? `${(transactionCount / 1000).toFixed(0)}K+` : "—"}
+              {transactionCount !== null ? (transactionCount >= 1000 ? `${(transactionCount / 1000).toFixed(0)}K+` : transactionCount.toLocaleString()) : "—"}
             </p>
             <p className="text-sm text-muted-foreground mt-1">Transactions Processed</p>
           </div>
