@@ -29,10 +29,10 @@ export function Breadcrumb() {
   const { data: session } = useSession()
   const user = session?.user as any
 
-  if (!user || pathname === "/dashboard") return null
+  if (!user || pathname === "/company/dashboard") return null
 
   const segments = pathname.split("/").filter(Boolean)
-  const homeHref = "/dashboard"
+  const homeHref = "/company/dashboard"
 
   const crumbs = segments.map((segment, i) => {
     const href = "/" + segments.slice(0, i + 1).join("/")

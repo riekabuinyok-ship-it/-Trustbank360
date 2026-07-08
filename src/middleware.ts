@@ -18,8 +18,8 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // 2. Next.js internals / API routes → allow
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/api/")) {
+  // 2. Next.js internals / static files → allow
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/api/") || pathname.startsWith("/robots") || pathname.startsWith("/sitemap")) {
     const response = NextResponse.next()
     return response
   }
@@ -77,6 +77,10 @@ export async function middleware(request: NextRequest) {
 
     // Role-based route protection
     if (pathname.startsWith("/platform")) {
+      return NextResponse.redirect(new URL("/company/dashboard", request.url))
+    }
+
+    if (pathname === "/company") {
       return NextResponse.redirect(new URL("/company/dashboard", request.url))
     }
 

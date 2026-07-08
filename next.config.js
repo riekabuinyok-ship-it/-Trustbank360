@@ -21,8 +21,20 @@ const nextConfig = {
       {
         source: '/manifest.json',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=3600' },
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
           { key: 'Content-Type', value: 'application/manifest+json' },
+        ],
+      },
+      {
+        source: '/robots.txt',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' },
+        ],
+      },
+      {
+        source: '/sitemap.xml',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' },
         ],
       },
       {

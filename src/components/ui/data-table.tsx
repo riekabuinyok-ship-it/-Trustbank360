@@ -103,7 +103,7 @@ export function DataTable<TData, TValue>({ columns, data, searchKey, pageSize = 
                       </div>
                       <p className="text-sm font-medium text-foreground mb-1">No data found</p>
                       <p className="text-xs text-muted-foreground mb-4">There are no records to display yet.</p>
-                      <a href="/dashboard" className="inline-flex items-center justify-center rounded-md border border-input bg-background h-9 px-4 text-sm font-medium hover:bg-accent transition-colors">
+                      <a href="/company/dashboard" className="inline-flex items-center justify-center rounded-md border border-input bg-background h-9 px-4 text-sm font-medium hover:bg-accent transition-colors">
                         Return to Dashboard
                       </a>
                     </div>

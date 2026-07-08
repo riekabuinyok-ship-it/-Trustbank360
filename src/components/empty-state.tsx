@@ -8,7 +8,7 @@ export function EmptyState({
   icon,
   title = "No data found",
   description,
-  actionHref = "/dashboard",
+  actionHref = "/company/dashboard",
   actionLabel = "Return to Dashboard",
 }: {
   icon?: React.ReactNode
