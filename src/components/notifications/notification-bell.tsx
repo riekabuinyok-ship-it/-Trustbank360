@@ -76,7 +76,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<AppNotification | null>(null)
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
-  const { notifications, unreadCount, soundEnabled, setSoundEnabled, markAsRead, markAllAsRead } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -178,13 +178,6 @@ export function NotificationBell() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-surface-200 dark:border-surface-700 shrink-0">
               <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  title={soundEnabled ? "Mute sounds" : "Enable sounds"}
-                >
-                  {soundEnabled ? "🔊" : "🔇"}
-                </button>
                 {notifications.length > 0 && (
                   <button
                     onClick={markAllAsRead}

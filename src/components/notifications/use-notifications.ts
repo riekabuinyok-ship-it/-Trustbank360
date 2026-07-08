@@ -17,30 +17,8 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [soundEnabled, setSoundEnabled] = useState(true)
   const prevCountRef = useRef(0)
-  const audioCtxRef = useRef<AudioContext | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
-
-  const playNotificationSound = useCallback(() => {
-    if (!soundEnabled) return
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      }
-      const ctx = audioCtxRef.current
-      const oscillator = ctx.createOscillator()
-      const gainNode = ctx.createGain()
-      oscillator.connect(gainNode)
-      gainNode.connect(ctx.destination)
-      oscillator.frequency.value = 800
-      oscillator.type = "sine"
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
-      oscillator.start(ctx.currentTime)
-      oscillator.stop(ctx.currentTime + 0.3)
-    } catch {}
-  }, [soundEnabled])
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -51,15 +29,12 @@ export function useNotifications() {
       const newCount = data.unreadCount
       setUnreadCount(newCount)
 
-      if (newCount > prevCountRef.current) {
-        playNotificationSound()
-      }
       prevCountRef.current = newCount
     } catch {
     } finally {
       setLoading(false)
     }
-  }, [playNotificationSound])
+  }, [])
 
   useEffect(() => {
     fetchNotifications()
@@ -93,8 +68,6 @@ export function useNotifications() {
     notifications,
     unreadCount,
     loading,
-    soundEnabled,
-    setSoundEnabled,
     markAsRead,
     markAllAsRead,
     refresh: fetchNotifications,
