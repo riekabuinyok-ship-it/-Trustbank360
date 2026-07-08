@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v2.0.0
+// TrustBank360 Service Worker v3.0.0
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -7,7 +7,7 @@
 //  - Custom offline fallback page when both cache and network fail
 //  - Versioned cache names with automatic cleanup of old caches on activate
 
-const CACHE_VERSION = "v2"
+const CACHE_VERSION = "v3"
 const STATIC_CACHE = `tb360-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `tb360-dynamic-${CACHE_VERSION}`
 const API_CACHE = `tb360-api-${CACHE_VERSION}`
