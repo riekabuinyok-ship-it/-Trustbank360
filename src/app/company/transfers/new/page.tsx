@@ -12,6 +12,8 @@ import { ArrowLeftRight, Loader2, ArrowLeft } from "lucide-react"
 import { filterTransactionTypes } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
+import { useOfflineTransfers } from "@/lib/hooks/use-offline-data"
+import { useNetworkStore } from "@/store/network-store"
 
 function calcCommission(amount: number, mode: string, value: number, minFee: number | null, commissionType: string) {
   let commission = 0
@@ -44,6 +46,8 @@ export default function NewTransferPage() {
   const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED"])
 
   const availableTypes = filterTransactionTypes(user?.businessTypes || [])
+  const isOnline = useNetworkStore((s) => s.isOnline)
+  const { createOfflineTransfer } = useOfflineTransfers(user?.companyId)
 
   const [form, setForm] = useState({
     senderName: "",
@@ -80,10 +84,19 @@ export default function NewTransferPage() {
     setLoading(true)
 
     try {
+      const payload = { ...form, amount: parseFloat(form.amount) }
+
+      if (!isOnline) {
+        await createOfflineTransfer(payload, user.id, user.companyId)
+        toast.success("Transaction saved offline. It will sync automatically when you're back online.")
+        router.push("/company/transfers")
+        return
+      }
+
       const res = await fetch("/api/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
