@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
   description: "Multi-company money transfer and remittance management platform for money transfer businesses, forex bureaus, remittance agencies, and financial institutions across Africa and globally.",
   keywords: ["money transfer", "remittance", "fintech", "forex", "banking", "South Sudan", "Africa"],
-  manifest: "/manifest.json",
+
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-         <link rel="manifest" href="/manifest.json" />
+         <link rel="manifest" href="/manifest.json?v=2" />
         <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
         <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/icon-192.png" />
         <meta name="theme-color" content="#0F4C81" />
