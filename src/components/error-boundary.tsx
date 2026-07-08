@@ -26,26 +26,53 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("App error:", error, errorInfo)
   }
 
+  componentDidMount() {
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", this.handleOnline)
+    }
+  }
+
+  componentWillUnmount() {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("online", this.handleOnline)
+    }
+  }
+
+  handleOnline = () => {
+    if (this.state.hasError) {
+      window.location.reload()
+    }
+  }
+
   render() {
     if (this.state.hasError) {
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine
       return (
         <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center p-4">
           <div className="text-center max-w-md space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-2">
-              <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-2 ${isOffline ? "bg-orange-100 dark:bg-orange-900/30" : "bg-amber-100 dark:bg-amber-900/30"}`}>
+              {isOffline ? (
+                <svg className="w-8 h-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728M12 8v4m0 4h.01" />
+                </svg>
+              ) : (
+                <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              )}
             </div>
-            <h1 className="text-xl font-bold">Something went wrong</h1>
+            <h1 className="text-xl font-bold">{isOffline ? "You're offline" : "Something went wrong"}</h1>
             <p className="text-muted-foreground text-sm">
-              An unexpected error occurred. Please try refreshing the page.
+              {isOffline
+                ? "It looks like you've lost your internet connection. Some features may be unavailable."
+                : "An unexpected error occurred. Please try refreshing the page."}
             </p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary-600 transition-colors text-sm"
               >
-                Refresh Page
+                {isOffline ? "Try Again" : "Refresh Page"}
               </button>
               <Link
                 href="/"
