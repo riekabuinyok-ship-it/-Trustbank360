@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, User, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
+import { roleHierarchy } from "@/lib/permissions"
 
-const roles = [
+const allRoles = [
   { value: "COMPANY_ADMIN", label: "Company Admin" },
   { value: "BRANCH_MANAGER", label: "Branch Manager" },
   { value: "TELLER", label: "Teller" },
@@ -38,7 +39,13 @@ export default function EditStaffPage() {
     password: "",
   })
 
-  const isBranchManager = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager"
+  const currentUserRole = user?.role?.toLowerCase() || ""
+  const isSupervisor = currentUserRole === "company_owner" || currentUserRole === "company_admin"
+  const isBranchManager = currentUserRole === "branch_manager"
+
+  const roles = isBranchManager
+    ? allRoles.filter((r) => r.value !== "COMPANY_ADMIN" && r.value !== "BRANCH_MANAGER")
+    : allRoles
 
   // Filter to own branch for Branch Manager
   const filteredBranches = isBranchManager
@@ -63,6 +70,17 @@ export default function EditStaffPage() {
           status: data.status || "ACTIVE",
           password: "",
         })
+
+        // Route guard: check permission to edit this staff member
+        const targetRole = data.role?.toLowerCase() || ""
+        const targetLevel = roleHierarchy[targetRole as keyof typeof roleHierarchy] ?? 0
+        const bmLevel = roleHierarchy["branch_manager"]
+        const hasAccess = isSupervisor || (isBranchManager && data.branchId === user?.branchId && targetLevel < bmLevel)
+        if (!hasAccess) {
+          toast.error("You do not have permission to edit this staff member.")
+          router.replace("/company/staff")
+          return
+        }
       }
       if (branchesRes.ok) {
         const data = await branchesRes.json()

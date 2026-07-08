@@ -49,6 +49,9 @@ export async function POST(request: Request) {
       if (body.branchId !== user.branchId) {
         return NextResponse.json({ error: "Branch Managers can only invite staff to their own branch." }, { status: 403 })
       }
+      if (body.role && (body.role === "COMPANY_ADMIN" || body.role === "company_admin")) {
+        return NextResponse.json({ error: "Branch Managers cannot invite Company Administrators." }, { status: 403 })
+      }
     }
 
     await ensureEnterprisePlan(user.companyId)

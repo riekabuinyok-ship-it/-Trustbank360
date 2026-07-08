@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { ColumnDef } from "@tanstack/react-table"
 import { Users, Plus, UserPlus, Pencil, Trash2 } from "lucide-react"
 import Link from "next/link"
-import { roleLabels, roleColors } from "@/lib/permissions"
+import { roleLabels, roleColors, roleHierarchy } from "@/lib/permissions"
 import toast from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import {
@@ -33,8 +33,9 @@ export default function StaffPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleteName, setDeleteName] = useState<string>("")
 
-  const isSupervisor = user?.role === "COMPANY_OWNER" || user?.role === "company_owner" ||
-    user?.role === "COMPANY_ADMIN" || user?.role === "company_admin"
+  const currentUserRole = user?.role?.toLowerCase() || ""
+  const isSupervisor = currentUserRole === "company_owner" || currentUserRole === "company_admin"
+  const isBranchManager = currentUserRole === "branch_manager"
 
   useEffect(() => {
     fetch("/api/staff").then((r) => r.json()).then(setStaff).finally(() => setLoading(false))
@@ -101,21 +102,36 @@ export default function StaffPage() {
     },
     {
       id: "actions",
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={() => router.push(`/company/staff/${row.original.id}/edit`)} title="Edit">
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => toggleStatus(row.original.id, row.original.status)}>
-            {row.original.status === "ACTIVE" ? "Suspend" : "Activate"}
-          </Button>
-          {isSupervisor && (
-            <Button size="sm" variant="destructive" onClick={() => { setDeleteId(row.original.id); setDeleteName(row.original.name) }} title="Delete">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const targetRole = row.original.role?.toLowerCase() || ""
+        const targetBranchId = row.original.branchId
+        const targetLevel = roleHierarchy[targetRole as keyof typeof roleHierarchy] ?? 0
+        const bmLevel = roleHierarchy["branch_manager"]
+        const canEdit = isSupervisor || (isBranchManager && targetBranchId === user?.branchId && targetLevel < bmLevel)
+        const canDelete = isSupervisor && row.original.id !== user?.id
+
+        if (!canEdit && !canDelete) return null
+
+        return (
+          <div className="flex gap-2">
+            {canEdit && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => router.push(`/company/staff/${row.original.id}/edit`)} title="Edit">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => toggleStatus(row.original.id, row.original.status)}>
+                  {row.original.status === "ACTIVE" ? "Suspend" : "Activate"}
+                </Button>
+              </>
+            )}
+            {canDelete && (
+              <Button size="sm" variant="destructive" onClick={() => { setDeleteId(row.original.id); setDeleteName(row.original.name) }} title="Delete">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )
+      },
     },
   ]
 

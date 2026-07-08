@@ -13,7 +13,7 @@ import { UserPlus, Loader2, ArrowLeft, Copy, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 import PlanLimitModal from "@/components/ui/plan-limit-modal"
 
-const roles = [
+const allRoles = [
   { value: "COMPANY_ADMIN", label: "Company Admin" },
   { value: "BRANCH_MANAGER", label: "Branch Manager" },
   { value: "TELLER", label: "Teller" },
@@ -45,7 +45,19 @@ export default function NewStaffPage() {
   } | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const isBranchManager = user?.role === "BRANCH_MANAGER" || user?.role === "branch_manager"
+  const currentUserRole = user?.role?.toLowerCase() || ""
+  const isSupervisor = currentUserRole === "company_owner" || currentUserRole === "company_admin"
+  const isBranchManager = currentUserRole === "branch_manager"
+
+  const roles = isBranchManager
+    ? allRoles.filter((r) => r.value !== "COMPANY_ADMIN" && r.value !== "BRANCH_MANAGER")
+    : allRoles
+
+  // Route guard: only supervisors and branch managers can invite
+  if (user && !isSupervisor && !isBranchManager) {
+    router.replace("/company/staff")
+    return null
+  }
 
   useEffect(() => {
     fetch("/api/branches").then((r) => r.json()).then((data) => {

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { roleHierarchy } from "@/lib/permissions"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
@@ -45,13 +46,24 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Staff member not found in your organization." }, { status: 404 })
     }
 
-    // Branch Manager can only edit staff in their own branch
+    // Cannot modify self
+    if (id === user.id) {
+      return NextResponse.json({ error: "You cannot modify your own account." }, { status: 403 })
+    }
+
+    // Branch Manager restrictions
     if (isBranchManager) {
       if (!user.branchId) {
         return NextResponse.json({ error: "You are not assigned to a branch. Contact your company owner." }, { status: 403 })
       }
       if (target.branchId !== user.branchId) {
         return NextResponse.json({ error: "You can only manage staff within your own branch." }, { status: 403 })
+      }
+      // Branch Manager cannot modify users with equal or higher role (OWNER, ADMIN, other BRANCH_MANAGER)
+      const targetLevel = roleHierarchy[target.role as keyof typeof roleHierarchy] ?? 0
+      const bmLevel = roleHierarchy["branch_manager"]
+      if (targetLevel >= bmLevel) {
+        return NextResponse.json({ error: "You do not have permission to modify this staff member." }, { status: 403 })
       }
     }
 
@@ -120,6 +132,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     })
     if (!target) {
       return NextResponse.json({ error: "Staff member not found in your organization." }, { status: 404 })
+    }
+    if (id === user.id) {
+      return NextResponse.json({ error: "You cannot delete your own account." }, { status: 403 })
     }
 
     await prisma.user.update({
