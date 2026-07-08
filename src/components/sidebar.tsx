@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/dialog"
 import { getNavItems } from "@/lib/permissions"
 import { useUnreadMessages } from "@/components/notifications/use-unread-messages"
+import { InstallPrompt } from "@/components/install-prompt"
 
 const iconMap: Record<string, any> = {
   LayoutDashboard,
@@ -167,6 +168,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
             </nav>
           </ScrollArea>
 
+          <InstallPrompt />
           <div className={cn("p-3 border-t border-surface-200 dark:border-surface-700", isCollapsed && "px-2")}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -313,6 +315,7 @@ export function MobileNav() {
                 )
               })}
             </nav>
+            <InstallPrompt />
             <div className="border-t border-surface-200 dark:border-surface-700 p-4 space-y-1">
               <button
                 onClick={toggleTheme}
