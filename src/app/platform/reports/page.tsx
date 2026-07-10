@@ -56,8 +56,8 @@ export default function PlatformReportsPage() {
     try {
       const params = new URLSearchParams()
       if (search) params.set("search", search)
-      if (statusFilter) params.set("status", statusFilter)
-      if (priorityFilter) params.set("priority", priorityFilter)
+      if (statusFilter && statusFilter !== "ALL") params.set("status", statusFilter)
+      if (priorityFilter && priorityFilter !== "ALL") params.set("priority", priorityFilter)
       const res = await fetch(`/api/support/reports?${params.toString()}`)
       const data = await res.json()
       setReports(data.reports || [])
@@ -126,7 +126,7 @@ export default function PlatformReportsPage() {
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value=" ">All Statuses</SelectItem>
+            <SelectItem value="ALL">All Statuses</SelectItem>
             <SelectItem value="OPEN">Open</SelectItem>
             <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
             <SelectItem value="RESOLVED">Resolved</SelectItem>
@@ -136,7 +136,7 @@ export default function PlatformReportsPage() {
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Priorities" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value=" ">All Priorities</SelectItem>
+            <SelectItem value="ALL">All Priorities</SelectItem>
             <SelectItem value="LOW">Low</SelectItem>
             <SelectItem value="MEDIUM">Medium</SelectItem>
             <SelectItem value="HIGH">High</SelectItem>

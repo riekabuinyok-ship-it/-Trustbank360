@@ -16,12 +16,12 @@ export async function GET(request: Request) {
     let reports
 
     if (role === "platform_owner") {
-      const status = searchParams.get("status")
-      const priority = searchParams.get("priority")
-      const search = searchParams.get("search")
+      const status = searchParams.get("status")?.trim()
+      const priority = searchParams.get("priority")?.trim()
+      const search = searchParams.get("search")?.trim()
       const where: any = {}
-      if (status) where.status = status
-      if (priority) where.priority = priority
+      if (status && ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"].includes(status)) where.status = status
+      if (priority && ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(priority)) where.priority = priority
       if (search) {
         where.OR = [
           { subject: { contains: search, mode: "insensitive" } },
