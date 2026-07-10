@@ -4,8 +4,9 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendSupportReplyEmail } from "@/lib/email"
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== "platform_owner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -23,7 +24,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     const report = await prisma.supportReport.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     })
 
@@ -38,15 +39,16 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const report = await prisma.supportReport.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: { select: { name: true, email: true } }, company: { select: { name: true } } },
     })
 
