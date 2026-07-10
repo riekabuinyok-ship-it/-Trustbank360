@@ -174,7 +174,6 @@ export default function NewStaffPage() {
                 <PhoneInput
                   value={form.phone}
                   onChange={(val) => updateField("phone", val)}
-                  placeholder="924 440 899"
                 />
               </div>
               <div className="space-y-2">

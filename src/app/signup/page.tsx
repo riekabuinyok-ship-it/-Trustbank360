@@ -285,7 +285,6 @@ export default function SignupPage() {
                     <PhoneInput
                       value={form.phone}
                       onChange={(val) => updateField("phone", val)}
-                      placeholder="924 440 899"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

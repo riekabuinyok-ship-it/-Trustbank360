@@ -129,6 +129,13 @@ export function PhoneInput({
   const country = PHONE_COUNTRY_LIST.find((c) => c.iso === selectedCountry)
   const codeDisplay = country ? country.code : "+211"
 
+  const countryPlaceholders: Record<string, string> = {
+    SS: "924 440 899",
+    UG: "703 675 890",
+    KE: "780 440 899",
+  }
+  const countryPlaceholder = countryPlaceholders[selectedCountry] || "XXXXXXXXX"
+
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex gap-2">
@@ -149,7 +156,7 @@ export function PhoneInput({
         <Input
           type="tel"
           inputMode="tel"
-          placeholder={placeholder || "XXXXXXXXX"}
+          placeholder={placeholder || countryPlaceholder}
           value={localNumber}
           onChange={handleNumberChange}
           onBlur={handleBlur}

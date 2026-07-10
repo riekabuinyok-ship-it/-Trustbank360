@@ -177,7 +177,6 @@ export default function NewTransferPage() {
                 <PhoneInput
                   value={form.senderPhone}
                   onChange={(val) => updateField("senderPhone", val)}
-                  placeholder="924 440 899"
                   required
                 />
               </div>
@@ -206,7 +205,6 @@ export default function NewTransferPage() {
                 <PhoneInput
                   value={form.receiverPhone}
                   onChange={(val) => updateField("receiverPhone", val)}
-                  placeholder="924 440 899"
                   required
                 />
               </div>

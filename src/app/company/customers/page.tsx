@@ -109,7 +109,6 @@ export default function CustomersPage() {
               <PhoneInput
                 value={newCustomer.phone}
                 onChange={(val) => setNewCustomer({ ...newCustomer, phone: val })}
-                placeholder="924 440 899"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

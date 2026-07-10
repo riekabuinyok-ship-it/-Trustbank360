@@ -99,7 +99,6 @@ export default function NewWithdrawalPage() {
               <PhoneInput
                 value={form.senderPhone}
                 onChange={(val) => updateField("senderPhone", val)}
-                placeholder="924 440 899"
                 required
               />
             </div>

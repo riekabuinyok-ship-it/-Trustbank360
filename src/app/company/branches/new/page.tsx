@@ -115,7 +115,6 @@ export default function NewBranchPage() {
                 <PhoneInput
                   value={form.contactPhone}
                   onChange={(val) => updateField("contactPhone", val)}
-                  placeholder="924 440 899"
                 />
               </div>
               <div className="space-y-2">

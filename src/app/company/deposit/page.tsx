@@ -99,7 +99,6 @@ export default function NewDepositPage() {
               <PhoneInput
                 value={form.phoneNumber}
                 onChange={(val) => updateField("phoneNumber", val)}
-                placeholder="924 440 899"
                 required
               />
             </div>

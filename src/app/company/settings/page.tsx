@@ -305,7 +305,6 @@ export default function SettingsPage() {
                     id="companyPhone"
                     value={phone}
                     onChange={setPhone}
-                    placeholder="924 440 899"
                   />
                 </div>
               </div>
@@ -578,7 +577,6 @@ export default function SettingsPage() {
                     id="profilePhone"
                     value={profilePhone}
                     onChange={setProfilePhone}
-                    placeholder="924 440 899"
                   />
                 </div>
               </div>
