@@ -27,12 +27,12 @@ export async function GET() {
       activeSubscriptions,
       monthlyData,
     ] = await Promise.all([
-      prisma.company.count(),
+      prisma.company.count({ where: { status: { not: "DELETED" } } }),
       prisma.company.count({ where: { isActive: true } }),
       prisma.company.count({ where: { isActive: false, status: { not: "DELETED" } } }),
       prisma.subscription.count({ where: { status: "TRIALING" } }),
       prisma.company.count({ where: { status: "DELETED" } }),
-      prisma.company.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prisma.company.count({ where: { status: { not: "DELETED" }, createdAt: { gte: startOfMonth } } }),
       prisma.user.count(),
       prisma.user.count({ where: { status: "ACTIVE" } }),
       prisma.payment.aggregate({

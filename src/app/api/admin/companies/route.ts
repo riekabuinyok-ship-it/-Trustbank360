@@ -13,6 +13,7 @@ export async function GET() {
   }
 
   const companies = await prisma.company.findMany({
+    where: { status: { not: "DELETED" } },
     include: {
       _count: { select: { users: true, branches: true } },
       users: {

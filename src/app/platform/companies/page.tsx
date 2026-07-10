@@ -5,8 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { ColumnDef } from "@tanstack/react-table"
-import { Building2 } from "lucide-react"
+import { Building2, AlertTriangle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
@@ -15,7 +23,6 @@ function getStatusInfo(status: string, onboardingComplete: boolean) {
   if (status === "ACTIVE" && !onboardingComplete) return { label: "Pending", variant: "secondary" as const }
   if (status === "SUSPENDED") return { label: "Suspended", variant: "warning" as const }
   if (status === "DEACTIVATED") return { label: "Deactivated", variant: "outline" as const }
-  if (status === "DELETED") return { label: "Deleted", variant: "destructive" as const }
   return { label: "Unknown", variant: "outline" as const }
 }
 
@@ -23,6 +30,7 @@ export default function AdminCompaniesPage() {
   const router = useRouter()
   const [companies, setCompanies] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     fetch("/api/admin/companies")
@@ -41,11 +49,13 @@ export default function AdminCompaniesPage() {
       })
       if (res.ok) {
         setCompanies(
-          companies.map((c) =>
-            c.id === companyId
-              ? { ...c, isActive: action === "activate" }
-              : c
-          )
+          action === "delete"
+            ? companies.filter((c) => c.id !== companyId)
+            : companies.map((c) =>
+                c.id === companyId
+                  ? { ...c, isActive: action === "activate" }
+                  : c
+              )
         )
         toast.success(`Company ${label}d`)
       } else {
@@ -55,6 +65,12 @@ export default function AdminCompaniesPage() {
     } catch {
       toast.error(`Failed to ${action} company`)
     }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return
+    await handleAction(deleteTarget.id, "delete")
+    setDeleteTarget(null)
   }
 
   const columns: ColumnDef<any>[] = [
@@ -142,7 +158,7 @@ export default function AdminCompaniesPage() {
                 Activate
               </Button>
             )}
-            <Button size="sm" variant="destructive" onClick={() => handleAction(row.original.id, "delete")}>
+            <Button size="sm" variant="destructive" onClick={() => setDeleteTarget({ id: row.original.id, name: row.original.name })}>
               Delete
             </Button>
           </div>
@@ -170,6 +186,24 @@ export default function AdminCompaniesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Company
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone. The company and all its data will be permanently removed from the platform.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
