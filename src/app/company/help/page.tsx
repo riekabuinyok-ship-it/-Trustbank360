@@ -45,7 +45,7 @@ export default function HelpPage() {
       const res = await fetch("/api/support/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: `[${form.type.toUpperCase()}] ${form.subject}`, message: form.message, priority: form.type === "bug" ? "HIGH" : form.type === "complaint" ? "URGENT" : "MEDIUM" }),
+        body: JSON.stringify({ subject: `[${form.type.toUpperCase()}] ${form.subject}`, message: form.message, category: form.type, priority: form.type === "bug" ? "HIGH" : form.type === "complaint" ? "URGENT" : "MEDIUM" }),
       })
       if (res.ok) {
         setSent(true)

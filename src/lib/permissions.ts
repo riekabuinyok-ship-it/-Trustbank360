@@ -118,6 +118,7 @@ export function getNavItems(role: UserRole): { href: string; label: string; icon
 
   // Help & Tutorials - all users
   items.push({ href: "/company/help", label: "Help", icon: "HelpCircle" })
+  items.push({ href: "/company/my-tickets", label: "My Tickets", icon: "Ticket" })
   items.push({ href: "/company/tutorials", label: "Tutorials", icon: "BookOpen" })
 
   // All roles see transactions list

@@ -54,13 +54,13 @@ export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onT
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()
 
-  const [reportStats, setReportStats] = useState({ open: 0, inProgress: 0 })
+  const [stats, setStats] = useState({ open: 0, inProgress: 0, recentSubscribers: 0 })
 
   useEffect(() => {
     fetch("/api/support/reports/stats")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setReportStats(data)
+        if (data) setStats(data)
       })
       .catch(() => {})
   }, [])
@@ -118,9 +118,14 @@ export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onT
                 >
                   <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary-500" : "")} />
                   {!isCollapsed && <span>{item.label}</span>}
-                  {!isCollapsed && item.href === "/platform/reports" && (reportStats.open + reportStats.inProgress) > 0 && (
+                  {!isCollapsed && item.href === "/platform/reports" && (stats.open + stats.inProgress) > 0 && (
                     <span className="ml-auto bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 text-xs font-bold px-2 py-0.5 rounded-full">
-                      {reportStats.open + reportStats.inProgress}
+                      {stats.open + stats.inProgress}
+                    </span>
+                  )}
+                  {!isCollapsed && item.href === "/platform/newsletter" && stats.recentSubscribers > 0 && (
+                    <span className="ml-auto bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                      {stats.recentSubscribers}
                     </span>
                   )}
                 </Link>

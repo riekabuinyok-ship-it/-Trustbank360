@@ -15,6 +15,7 @@ export default function ReportProblemPage() {
   const router = useRouter()
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
+  const [category, setCategory] = useState("bug")
   const [priority, setPriority] = useState("MEDIUM")
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -26,7 +27,7 @@ export default function ReportProblemPage() {
       const res = await fetch("/api/support/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, message, priority }),
+        body: JSON.stringify({ subject, message, category, priority }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -80,6 +81,18 @@ export default function ReportProblemPage() {
             <div className="space-y-2">
               <Label htmlFor="subject">Subject</Label>
               <Input id="subject" placeholder="Brief description of the issue" value={subject} onChange={(e) => setSubject(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bug">Bug Report</SelectItem>
+                  <SelectItem value="feature">Feature Request</SelectItem>
+                  <SelectItem value="complaint">Complaint</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>

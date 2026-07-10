@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Sun,
   Moon,
+  Ticket,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -56,6 +57,7 @@ import {
 } from "@/components/ui/dialog"
 import { getNavItems } from "@/lib/permissions"
 import { useUnreadMessages } from "@/components/notifications/use-unread-messages"
+import { useUnreadTicketReplies } from "@/components/notifications/use-unread-ticket-replies"
 import { InstallPrompt } from "@/components/install-prompt"
 
 const iconMap: Record<string, any> = {
@@ -76,6 +78,7 @@ const iconMap: Record<string, any> = {
   Plus,
   ScrollText,
   RefreshCw,
+  Ticket,
 }
 
 export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
@@ -94,6 +97,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
   const role = user?.role as string
 
   const unreadMessages = useUnreadMessages()
+  const unreadTicketReplies = useUnreadTicketReplies()
 
   const navItems = useMemo(() => {
     if (!role) return []
@@ -155,9 +159,14 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
                   >
                     <div className="relative">
                       <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary-500" : "")} />
-                      {item.href === "/messages" && unreadMessages > 0 && (
+                      {(item.href === "/messages" && unreadMessages > 0) && (
                         <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                           {unreadMessages > 9 ? "9+" : unreadMessages}
+                        </span>
+                      )}
+                      {(item.href === "/company/my-tickets" && unreadTicketReplies > 0) && (
+                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                          {unreadTicketReplies > 9 ? "9+" : unreadTicketReplies}
                         </span>
                       )}
                     </div>
@@ -240,6 +249,7 @@ export function MobileNav() {
   const user = session?.user as any
   const role = user?.role as string
   const unreadMessages = useUnreadMessages()
+  const unreadTicketReplies = useUnreadTicketReplies()
 
   useEffect(() => setMounted(true), [])
 
@@ -304,9 +314,14 @@ export function MobileNav() {
                   >
                     <div className="relative">
                       <item.icon className={cn("h-5 w-5", isActive && "text-primary-500")} />
-                      {item.href === "/messages" && unreadMessages > 0 && (
+                      {(item.href === "/messages" && unreadMessages > 0) && (
                         <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">
                           {unreadMessages > 9 ? "9+" : unreadMessages}
+                        </span>
+                      )}
+                      {(item.href === "/company/my-tickets" && unreadTicketReplies > 0) && (
+                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">
+                          {unreadTicketReplies > 9 ? "9+" : unreadTicketReplies}
                         </span>
                       )}
                     </div>
@@ -365,6 +380,7 @@ export function MobileBottomNav() {
   const { data: session } = useSession()
   const user = session?.user as any
   const unreadMessages = useUnreadMessages()
+  const unreadTicketReplies = useUnreadTicketReplies()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()

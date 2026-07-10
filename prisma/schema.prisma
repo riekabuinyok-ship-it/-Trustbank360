@@ -100,6 +100,7 @@ enum ReportPriority {
 enum ReportStatus {
   OPEN
   IN_PROGRESS
+  WAITING_FOR_USER
   RESOLVED
   CLOSED
 }
@@ -223,7 +224,7 @@ model User {
   violationLogs    ViolationLog[]
   verifiedPayments Payment[]          @relation("VerifiedByUser")
   supportReports   SupportReport[]
-  repliedReports   SupportReport[]    @relation("ReportReplier")
+  ticketReplies    TicketReply[]
 
   @@map("users")
 }
@@ -697,25 +698,39 @@ model PasswordResetToken {
 }
 
 model SupportReport {
-  id          String         @id @default(cuid())
-  userId      String?
-  companyId   String?
-  email       String
-  subject     String
-  message     String
-  priority    ReportPriority @default(MEDIUM)
-  status      ReportStatus   @default(OPEN)
-  adminReply  String?
-  repliedAt   DateTime?
-  repliedById String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  ticketNumber  String?        @unique
+  userId        String?
+  companyId     String?
+  email         String
+  subject       String
+  message       String
+  category      String         @default("other")
+  priority      ReportPriority @default(MEDIUM)
+  status        ReportStatus   @default(OPEN)
+  lastRepliedAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  user      User?    @relation(fields: [userId], references: [id])
-  company   Company? @relation(fields: [companyId], references: [id])
-  repliedBy User?    @relation("ReportReplier", fields: [repliedById], references: [id])
+  user    User?         @relation(fields: [userId], references: [id])
+  company Company?      @relation(fields: [companyId], references: [id])
+  replies TicketReply[]
 
   @@map("support_reports")
+}
+
+model TicketReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket SupportReport @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_replies")
 }
 
 model NewsletterSubscriber {
