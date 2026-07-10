@@ -15,7 +15,7 @@ export async function GET() {
   const [company, violations, adminMessages, notifications] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
-      select: { isActive: true, name: true },
+      select: { isActive: true, status: true, name: true },
     }),
     prisma.violationLog.findMany({
       where: { companyId },

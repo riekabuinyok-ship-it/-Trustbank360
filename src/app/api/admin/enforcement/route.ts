@@ -21,11 +21,12 @@ export async function GET() {
     },
   })
 
-  const companies = await prisma.company.findMany({
+    const companies = await prisma.company.findMany({
     select: {
       id: true,
       name: true,
       isActive: true,
+      status: true,
       _count: { select: { violationLogs: true } },
     },
     orderBy: { name: "asc" },
@@ -35,6 +36,7 @@ export async function GET() {
     id: c.id,
     name: c.name,
     isActive: c.isActive,
+    status: c.status,
     violationCount: c._count.violationLogs,
   }))
 
@@ -69,12 +71,12 @@ export async function POST(request: Request) {
   if (action === "suspend") {
     await prisma.company.update({
       where: { id: companyId },
-      data: { isActive: false },
+      data: { isActive: false, status: "SUSPENDED" },
     })
   } else if (action === "reactivate") {
     await prisma.company.update({
       where: { id: companyId },
-      data: { isActive: true },
+      data: { isActive: true, status: "ACTIVE" },
     })
   }
 

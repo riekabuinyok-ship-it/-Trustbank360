@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const res = await fetch("/api/company")
         if (res.ok) {
           const data = await res.json()
-          setCompanySuspended(!data.isActive)
+          setCompanySuspended(data.status !== "ACTIVE" && data.status !== undefined)
         }
       } catch {
         // Silently fail - don't block user on network errors

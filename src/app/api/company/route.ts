@@ -27,6 +27,7 @@ export async function GET(request: Request) {
       primaryColor: true,
       secondaryColor: true,
       isActive: true,
+      status: true,
     },
   })
 

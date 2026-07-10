@@ -9,10 +9,13 @@ import {
   CreditCard, ArrowLeftRight, Crown, Banknote,
 } from "lucide-react"
 
-function getStatusBadge(isActive: boolean, onboardingComplete: boolean) {
-  if (isActive && onboardingComplete) return { label: "Active", variant: "success" as const }
-  if (isActive && !onboardingComplete) return { label: "Pending", variant: "secondary" as const }
-  return { label: "Suspended", variant: "warning" as const }
+function getStatusBadge(status: string, onboardingComplete: boolean) {
+  if (status === "ACTIVE" && onboardingComplete) return { label: "Active", variant: "success" as const }
+  if (status === "ACTIVE" && !onboardingComplete) return { label: "Pending", variant: "secondary" as const }
+  if (status === "SUSPENDED") return { label: "Suspended", variant: "warning" as const }
+  if (status === "DEACTIVATED") return { label: "Deactivated", variant: "outline" as const }
+  if (status === "DELETED") return { label: "Deleted", variant: "destructive" as const }
+  return { label: "Unknown", variant: "outline" as const }
 }
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null | undefined }) {
@@ -72,7 +75,7 @@ export default function AdminCompanyDetailClient({ id }: { id: string }) {
   }
 
   const owner = company.users?.[0]
-  const { label: statusLabel, variant: statusVariant } = getStatusBadge(company.isActive, company.onboardingComplete)
+  const { label: statusLabel, variant: statusVariant } = getStatusBadge(company.status || (company.isActive ? "ACTIVE" : "DEACTIVATED"), company.onboardingComplete)
   const sub = company.subscription
   const fin = company.financials
   const formatCurrency = (val: number) =>

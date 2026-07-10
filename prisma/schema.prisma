@@ -131,6 +131,7 @@ model Company {
   accentColor          String         @default("#F4B400")
   customDomain         String?
   isActive             Boolean        @default(true)
+  status               CompanyStatus  @default(ACTIVE)
   onboardingComplete   Boolean        @default(false)
   overLimit            Boolean        @default(false)
   createdAt            DateTime       @default(now())
@@ -503,6 +504,13 @@ enum SubscriptionStatus {
   EXPIRED
   PENDING
   TRIALING
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  DELETED
 }
 
 enum PaymentMethod {

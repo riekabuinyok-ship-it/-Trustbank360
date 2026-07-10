@@ -39,6 +39,7 @@ interface CompanyStatus {
   id: string
   name: string
   isActive: boolean
+  status: string
   violationCount: number
 }
 
@@ -236,14 +237,15 @@ export default function AdminEnforcementPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {companyStatuses.map((company) => {
-                const ActionIcon = actionConfig[company.isActive ? "warn" : "reactivate"].icon
+                const isActive = company.status === "ACTIVE"
+                const ActionIcon = actionConfig[isActive ? "warn" : "reactivate"].icon
                 return (
-                  <Card key={company.id} className="border-l-4" style={{ borderLeftColor: company.isActive ? "#00A86B" : "#EF4444" }}>
+                  <Card key={company.id} className="border-l-4" style={{ borderLeftColor: isActive ? "#00A86B" : "#EF4444" }}>
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                         <h3 className="font-semibold break-anywhere min-w-0">{company.name}</h3>
-                        <Badge variant={company.isActive ? "success" : "destructive"} className="self-start sm:self-auto">
-                          {company.isActive ? "Active" : "Suspended"}
+                        <Badge variant={isActive ? "success" : "destructive"} className="self-start sm:self-auto">
+                          {isActive ? "Active" : company.status === "DELETED" ? "Deleted" : company.status === "DEACTIVATED" ? "Deactivated" : "Suspended"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
@@ -251,7 +253,7 @@ export default function AdminEnforcementPage() {
                         <span>{company.violationCount} violation{company.violationCount !== 1 ? "s" : ""}</span>
                       </div>
                       <div className="flex gap-2">
-                        {company.isActive ? (
+                        {isActive ? (
                           <>
                             <Button size="sm" variant="destructive" onClick={() => openActionDialog(company, "suspend")}>
                               <XCircle className="h-4 w-4 mr-1" />

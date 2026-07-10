@@ -36,6 +36,7 @@ export async function GET() {
     businessTypes: c.businessTypes,
     country: c.country,
     isActive: c.isActive,
+    status: c.status,
     onboardingComplete: c.onboardingComplete,
     userCount: c._count.users,
     branchCount: c._count.branches,

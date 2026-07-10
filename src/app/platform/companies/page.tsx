@@ -10,10 +10,13 @@ import { Building2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
-function getStatusInfo(isActive: boolean, onboardingComplete: boolean) {
-  if (isActive && onboardingComplete) return { label: "Active", variant: "success" as const }
-  if (isActive && !onboardingComplete) return { label: "Pending", variant: "secondary" as const }
-  return { label: "Suspended", variant: "warning" as const }
+function getStatusInfo(status: string, onboardingComplete: boolean) {
+  if (status === "ACTIVE" && onboardingComplete) return { label: "Active", variant: "success" as const }
+  if (status === "ACTIVE" && !onboardingComplete) return { label: "Pending", variant: "secondary" as const }
+  if (status === "SUSPENDED") return { label: "Suspended", variant: "warning" as const }
+  if (status === "DEACTIVATED") return { label: "Deactivated", variant: "outline" as const }
+  if (status === "DELETED") return { label: "Deleted", variant: "destructive" as const }
+  return { label: "Unknown", variant: "outline" as const }
 }
 
 export default function AdminCompaniesPage() {
@@ -89,7 +92,7 @@ export default function AdminCompaniesPage() {
       id: "status",
       header: "Status",
       cell: ({ row }) => {
-        const { label, variant } = getStatusInfo(row.original.isActive, row.original.onboardingComplete)
+        const { label, variant } = getStatusInfo(row.original.status || (row.original.isActive ? "ACTIVE" : "DEACTIVATED"), row.original.onboardingComplete)
         return <Badge variant={variant}>{label}</Badge>
       },
     },
@@ -121,7 +124,8 @@ export default function AdminCompaniesPage() {
     {
       id: "actions",
       cell: ({ row }) => {
-        const isActive = row.original.isActive
+        const status = row.original.status || (row.original.isActive ? "ACTIVE" : "DEACTIVATED")
+        const isActive = status === "ACTIVE"
         return (
           <div className="flex gap-2">
             {isActive ? (

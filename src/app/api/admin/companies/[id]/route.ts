@@ -103,22 +103,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     switch (action) {
       case "activate":
-        data = { isActive: true }
+        data = { isActive: true, status: "ACTIVE" }
         auditAction = "ACTIVATE_COMPANY"
         auditDetails = `Company ${company.name} activated`
         break
       case "suspend":
-        data = { isActive: false }
+        data = { isActive: false, status: "SUSPENDED" }
         auditAction = "SUSPEND_COMPANY"
         auditDetails = `Company ${company.name} suspended`
         break
       case "deactivate":
-        data = { isActive: false }
+        data = { isActive: false, status: "DEACTIVATED" }
         auditAction = "DEACTIVATE_COMPANY"
         auditDetails = `Company ${company.name} deactivated`
         break
       case "delete":
-        data = { isActive: false }
+        data = { isActive: false, status: "DELETED" }
         auditAction = "DELETE_COMPANY"
         auditDetails = `Company ${company.name} deleted`
         break
@@ -166,7 +166,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   await prisma.company.update({
     where: { id },
-    data: { isActive: false },
+    data: { isActive: false, status: "DELETED" },
   })
 
   await createAuditLog({
