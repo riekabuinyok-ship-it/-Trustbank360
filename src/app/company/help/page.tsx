@@ -45,13 +45,14 @@ export default function HelpPage() {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: form.subject, type: form.type, message: form.message }),
+        body: JSON.stringify({ subject: form.subject, type: form.type, content: form.message }),
       })
       if (res.ok) {
         setSent(true)
         setForm({ subject: "", type: "bug", message: "" })
       } else {
-        toast.error("Unable to send your message. Please check your connection and try again.")
+        const errorData = await res.json().catch(() => null)
+        toast.error(errorData?.error || "Unable to send your message. Please try again.")
       }
     } catch {
       toast.error("An unexpected error occurred. Please try again.")

@@ -70,7 +70,8 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(message)
-  } catch {
+  } catch (error: any) {
+    console.error("[messages] POST error:", error?.message || error)
     return NextResponse.json({ error: "Failed to send message" }, { status: 500 })
   }
 }
