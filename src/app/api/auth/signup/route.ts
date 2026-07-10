@@ -108,28 +108,38 @@ export async function POST(request: Request) {
         message: "Company created. Subscription is in trial period.",
       })
     } catch (stripeErr: any) {
-      console.error("Stripe subscription creation failed:", stripeErr)
+      console.error("Stripe subscription creation failed:", stripeErr?.message || stripeErr)
       // Company was created but Stripe failed — create a local trial subscription instead
-      const trialEndsAt = new Date(Date.now() + plan.trialDays * 86400000)
-      await prisma.subscription.create({
-        data: {
-          companyId: company.id,
-          planId: plan.id,
-          status: "TRIALING",
-          startDate: new Date(),
-          trialEndsAt,
-          endDate: trialEndsAt,
-        },
-      })
+      try {
+        const trialEndsAt = new Date(Date.now() + plan.trialDays * 86400000)
+        await prisma.subscription.create({
+          data: {
+            companyId: company.id,
+            planId: plan.id,
+            status: "TRIALING",
+            startDate: new Date(),
+            trialEndsAt,
+            endDate: trialEndsAt,
+          },
+        })
 
-      return NextResponse.json({
-        success: true,
-        companyId: company.id,
-        message: "Company created with trial subscription.",
-      })
+        return NextResponse.json({
+          success: true,
+          companyId: company.id,
+          message: "Company created with trial subscription.",
+        })
+      } catch (fallbackErr: any) {
+        console.error("Fallback subscription creation also failed:", fallbackErr?.message || fallbackErr)
+        return NextResponse.json({
+          error: "Company created but subscription setup failed: " + (fallbackErr?.message || "unknown error"),
+        }, { status: 500 })
+      }
     }
-  } catch (error) {
-    console.error("Signup error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (error: any) {
+    console.error("Signup error:", error?.message || error, error?.stack || "")
+    return NextResponse.json({
+      error: error?.message || "Internal server error",
+      ...(process.env.NODE_ENV === "development" && { stack: error?.stack }),
+    }, { status: 500 })
   }
 }
