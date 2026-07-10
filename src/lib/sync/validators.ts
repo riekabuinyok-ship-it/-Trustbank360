@@ -1,6 +1,8 @@
 // TrustBank360 Sync Validators
 // Server-side validation logic for incoming offline sync items
 
+import { normalizePhone } from "@/lib/phone-validation"
+
 export interface ValidationResult {
   valid: boolean
   conflict?: {
@@ -25,10 +27,10 @@ export function validateCustomerForSync(
       return { valid: true }
     }
 
-    // Check for duplicate phone
-    const incomingPhone = incomingCustomer.phone?.replace(/[^0-9]/g, "")
-    const existingPhone = existingCustomer.phone?.replace(/[^0-9]/g, "")
-    if (incomingPhone && existingPhone && incomingPhone === existingPhone) {
+    // Check for duplicate phone (using normalized comparison)
+    const incomingNormalized = incomingCustomer.phone ? normalizePhone(incomingCustomer.phone) : null
+    const existingNormalized = existingCustomer.phone ? normalizePhone(existingCustomer.phone) : null
+    if (incomingNormalized && existingNormalized && incomingNormalized === existingNormalized) {
       return {
         valid: false,
         conflict: {

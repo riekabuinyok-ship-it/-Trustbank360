@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeftRight, Loader2, ArrowLeft } from "lucide-react"
 import { filterTransactionTypes } from "@/lib/utils"
@@ -173,7 +174,12 @@ export default function NewTransferPage() {
               </div>
               <div className="space-y-2">
                 <Label>Phone *</Label>
-                <Input placeholder="+211 123 456 789" value={form.senderPhone} onChange={(e) => updateField("senderPhone", e.target.value)} required />
+                <PhoneInput
+                  value={form.senderPhone}
+                  onChange={(val) => updateField("senderPhone", val)}
+                  placeholder="924 440 899"
+                  required
+                />
               </div>
               {(form.transactionType === "MOBILE_TO_CASH" || form.transactionType === "MOBILE_TO_MOBILE") && (
                 <div className="space-y-2">
@@ -197,7 +203,12 @@ export default function NewTransferPage() {
               </div>
               <div className="space-y-2">
                 <Label>Phone *</Label>
-                <Input placeholder="+211 987 654 321" value={form.receiverPhone} onChange={(e) => updateField("receiverPhone", e.target.value)} required />
+                <PhoneInput
+                  value={form.receiverPhone}
+                  onChange={(val) => updateField("receiverPhone", val)}
+                  placeholder="924 440 899"
+                  required
+                />
               </div>
               {(form.transactionType === "CASH_TO_MOBILE" || form.transactionType === "MOBILE_TO_MOBILE") && (
                 <div className="space-y-2">

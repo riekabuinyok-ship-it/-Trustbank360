@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateTransactionNumber } from "@/lib/utils"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -17,12 +18,20 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { customerName, phoneNumber, mobileProviderId, walletNumber, amount, currency, branchId, notes } = body
 
+    if (phoneNumber) {
+      const phoneResult = validatePhone(phoneNumber)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      body.phoneNumber = phoneResult.normalized!
+    }
+
     let customer = await prisma.customer.findFirst({
-      where: { phone: phoneNumber, companyId: user.companyId },
+      where: { phone: body.phoneNumber, companyId: user.companyId },
     })
     if (!customer) {
       customer = await prisma.customer.create({
-        data: { fullName: customerName, phone: phoneNumber, companyId: user.companyId },
+        data: { fullName: customerName, phone: body.phoneNumber, companyId: user.companyId },
       })
     }
 

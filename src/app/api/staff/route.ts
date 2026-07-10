@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs"
 import { ensureEnterprisePlan } from "@/lib/migrate-to-enterprise"
 import { formatApiError } from "@/lib/api-error"
 import { sendWelcomeEmail } from "@/lib/email"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -57,6 +58,15 @@ export async function POST(request: Request) {
 
     await ensureEnterprisePlan(user.companyId)
 
+    let normalizedPhone = body.phone
+    if (body.phone) {
+      const phoneResult = validatePhone(body.phone)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      normalizedPhone = phoneResult.normalized!
+    }
+
     const tempPassword = Math.random().toString(36).slice(-10)
     const hashedPassword = await bcrypt.hash(tempPassword, 12)
 
@@ -64,7 +74,7 @@ export async function POST(request: Request) {
       data: {
         name: body.name,
         email: body.email,
-        phone: body.phone,
+        phone: normalizedPhone,
         position: body.position,
         role: body.role,
         branchId: body.branchId,

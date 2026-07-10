@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { ArrowLeftRight, Loader2, ArrowLeft } from "lucide-react"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
@@ -95,7 +96,12 @@ export default function NewDepositPage() {
             </div>
             <div className="space-y-2">
               <Label>Phone Number *</Label>
-              <Input placeholder="+211 123 456 789" value={form.phoneNumber} onChange={(e) => updateField("phoneNumber", e.target.value)} required />
+              <PhoneInput
+                value={form.phoneNumber}
+                onChange={(val) => updateField("phoneNumber", val)}
+                placeholder="924 440 899"
+                required
+              />
             </div>
           </CardContent>
         </Card>

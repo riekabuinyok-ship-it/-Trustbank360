@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { ensureEnterprisePlan } from "@/lib/migrate-to-enterprise"
 import { formatApiError } from "@/lib/api-error"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -36,6 +37,15 @@ export async function POST(request: Request) {
 
     await ensureEnterprisePlan(user.companyId)
 
+    let normalizedPhone = body.contactPhone
+    if (body.contactPhone) {
+      const phoneResult = validatePhone(body.contactPhone)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      normalizedPhone = phoneResult.normalized!
+    }
+
     const existingBranches = await prisma.branch.findMany({
       where: { companyId: user.companyId },
       select: { id: true },
@@ -49,7 +59,7 @@ export async function POST(request: Request) {
         state: body.state,
         city: body.city,
         address: body.address,
-        contactPhone: body.contactPhone,
+        contactPhone: normalizedPhone,
         contactEmail: body.contactEmail,
         companyId: user.companyId,
       },

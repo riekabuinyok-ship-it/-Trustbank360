@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ensureEnterprisePlan } from "@/lib/migrate-to-enterprise"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -16,6 +17,15 @@ export async function POST(request: Request) {
     const requestedStaff = parseInt(body.numberOfStaff) || 1
     const allCurrencies = [body.mainCurrency, ...(body.additionalCurrencies || [])].filter(Boolean)
 
+    let normalizedPhone = body.phone
+    if (body.phone) {
+      const phoneResult = validatePhone(body.phone)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      normalizedPhone = phoneResult.normalized!
+    }
+
     await ensureEnterprisePlan(user.companyId)
 
     const updateData: any = {
@@ -24,7 +34,7 @@ export async function POST(request: Request) {
       mainCurrency: body.mainCurrency,
       additionalCurrencies: body.additionalCurrencies,
       address: body.address,
-      phone: body.phone,
+      phone: normalizedPhone,
       website: body.website,
       onboardingComplete: true,
     }

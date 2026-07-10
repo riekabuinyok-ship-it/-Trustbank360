@@ -1,4 +1,23 @@
 import { z } from "zod"
+import { validatePhone } from "./phone-validation"
+
+function phoneField(required = true) {
+  return z.string().transform((val, ctx) => {
+    if (!required && (!val || val.trim() === "")) {
+      return ""
+    }
+    if (required && (!val || val.trim() === "")) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Phone number is required" })
+      return z.NEVER
+    }
+    const result = validatePhone(val)
+    if (!result.valid) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.error! })
+      return z.NEVER
+    }
+    return result.normalized!
+  })
+}
 
 export const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -9,7 +28,7 @@ export const signupSchema = z.object({
   country: z.string().min(1, "Country is required"),
   registrationNumber: z.string().optional(),
   taxId: z.string().optional(),
-  phone: z.string().min(6, "Phone number is required"),
+  phone: phoneField(true),
 })
 
 export const loginSchema = z.object({
@@ -19,12 +38,12 @@ export const loginSchema = z.object({
 
 export const transferSchema = z.object({
   senderName: z.string().min(2),
-  senderPhone: z.string().min(6),
+  senderPhone: phoneField(true),
   senderNationality: z.string().optional(),
   senderIdType: z.string().optional(),
   senderIdNumber: z.string().optional(),
   receiverName: z.string().min(2),
-  receiverPhone: z.string().min(6),
+  receiverPhone: phoneField(true),
   destinationBranchId: z.string().min(1),
   amount: z.number().positive(),
   currency: z.enum(["SSP", "USD", "KES", "UGX", "EUR", "GBP"]),
@@ -38,14 +57,14 @@ export const branchSchema = z.object({
   state: z.string().optional(),
   city: z.string().min(1),
   address: z.string().optional(),
-  contactPhone: z.string().optional(),
+  contactPhone: phoneField(false),
   contactEmail: z.string().email().optional(),
 })
 
 export const staffSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  phone: z.string().optional(),
+  phone: phoneField(false),
   position: z.string().optional(),
   branchId: z.string().min(1),
   role: z.enum(["COMPANY_ADMIN", "BRANCH_MANAGER", "TELLER", "COMPLIANCE_OFFICER", "AUDITOR"]),
@@ -60,7 +79,7 @@ export const exchangeRateSchema = z.object({
 
 export const customerSchema = z.object({
   fullName: z.string().min(2),
-  phone: z.string().min(6),
+  phone: phoneField(true),
   nationality: z.string().optional(),
   idType: z.string().optional(),
   idNumber: z.string().optional(),
@@ -69,5 +88,5 @@ export const customerSchema = z.object({
 
 export const trackTransferSchema = z.object({
   transferCode: z.string().min(1),
-  phone: z.string().min(1),
+  phone: phoneField(true),
 })

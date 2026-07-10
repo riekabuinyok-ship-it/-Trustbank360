@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { ArrowLeft, User, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 import { roleHierarchy } from "@/lib/permissions"
@@ -172,7 +173,10 @@ export default function EditStaffPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Phone</Label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <PhoneInput
+                  value={form.phone}
+                  onChange={(val) => setForm({ ...form, phone: val })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Position</Label>

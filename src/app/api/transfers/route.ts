@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateTransactionNumber, generateSecretCode, MOBILE_MONEY_TYPES } from "@/lib/utils"
 import { getCommissionSetting, calculateCommission } from "@/lib/commission"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -82,11 +83,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { senderName, senderPhone, receiverName, receiverPhone, destinationBranchId, amount, currency, transactionType, commissionType, notes, mobileProviderId, receiverMobile } = body
+    const { senderName, senderPhone: rawSenderPhone, receiverName, receiverPhone: rawReceiverPhone, destinationBranchId, amount, currency, transactionType, commissionType, notes, mobileProviderId, receiverMobile } = body
 
-    if (!senderName || !senderPhone || !receiverName || !receiverPhone || !destinationBranchId || !amount || !currency) {
+    if (!senderName || !rawSenderPhone || !receiverName || !rawReceiverPhone || !destinationBranchId || !amount || !currency) {
       return NextResponse.json({ error: "Missing required fields: sender name, sender phone, receiver name, receiver phone, destination branch, amount, and currency are required." }, { status: 400 })
     }
+
+    const senderPhoneResult = validatePhone(rawSenderPhone)
+    if (!senderPhoneResult.valid) {
+      return NextResponse.json({ error: `Sender phone: ${senderPhoneResult.error}` }, { status: 400 })
+    }
+    const receiverPhoneResult = validatePhone(rawReceiverPhone)
+    if (!receiverPhoneResult.valid) {
+      return NextResponse.json({ error: `Receiver phone: ${receiverPhoneResult.error}` }, { status: 400 })
+    }
+    const senderPhone = senderPhoneResult.normalized!
+    const receiverPhone = receiverPhoneResult.normalized!
 
     if (isNaN(amount) || amount <= 0) {
       return NextResponse.json({ error: "Amount must be a positive number." }, { status: 400 })

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { createStripeCustomer, createStripeSubscription } from "@/lib/subscription"
 import { sendWelcomeEmail } from "@/lib/email"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,15 @@ export async function POST(request: Request) {
 
     if (!password || password.length < 8) {
       return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
+    }
+
+    let normalizedPhone = phone
+    if (phone) {
+      const phoneResult = validatePhone(phone)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      normalizedPhone = phoneResult.normalized!
     }
 
     const plan = await prisma.subscriptionPlan.findFirst({ where: { name: "Enterprise" } })
@@ -49,7 +59,7 @@ export async function POST(request: Request) {
         country,
         registrationNumber,
         taxId,
-        phone,
+        phone: normalizedPhone,
         email,
         numberOfBranches: branchCount,
         numberOfStaff: staffCount,
@@ -57,7 +67,7 @@ export async function POST(request: Request) {
           create: {
             name,
             email,
-            phone,
+            phone: normalizedPhone,
             password: hashedPassword,
             role: "company_owner",
             status: "ACTIVE",

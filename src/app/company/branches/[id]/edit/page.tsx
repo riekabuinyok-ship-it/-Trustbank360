@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { ArrowLeft, Building2, Loader2, Trash2 } from "lucide-react"
 import Link from "next/link"
 import toast from "react-hot-toast"
@@ -206,7 +207,11 @@ export default function EditBranchPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Phone Number</Label>
-                <Input placeholder="+211 123 456 789" value={form.contactPhone} onChange={(e) => updateField("contactPhone", e.target.value)} />
+                <PhoneInput
+                  value={form.contactPhone}
+                  onChange={(val) => updateField("contactPhone", val)}
+                  placeholder="924 440 899"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Branch Manager</Label>

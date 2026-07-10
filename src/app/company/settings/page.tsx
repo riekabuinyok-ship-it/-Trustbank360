@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { Building2, Palette, Shield, User, Camera, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -300,11 +301,11 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="companyPhone">Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="companyPhone"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+211 123 456 789"
+                    onChange={setPhone}
+                    placeholder="924 440 899"
                   />
                 </div>
               </div>
@@ -573,11 +574,11 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="profilePhone">Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="profilePhone"
                     value={profilePhone}
-                    onChange={(e) => setProfilePhone(e.target.value)}
-                    placeholder="+211 123 456 789"
+                    onChange={setProfilePhone}
+                    placeholder="924 440 899"
                   />
                 </div>
               </div>

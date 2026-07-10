@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { roleHierarchy } from "@/lib/permissions"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
@@ -72,7 +73,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (body.role) { updateData.role = body.role; auditDetails.push(`role changed to ${body.role}`) }
     if (body.branchId !== undefined) { updateData.branchId = body.branchId || null; auditDetails.push(`branch changed`) }
-    if (body.phone !== undefined) { updateData.phone = body.phone; auditDetails.push(`phone updated`) }
+    if (body.phone !== undefined) {
+      if (body.phone) {
+        const phoneResult = validatePhone(body.phone)
+        if (!phoneResult.valid) {
+          return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+        }
+        updateData.phone = phoneResult.normalized!
+      } else {
+        updateData.phone = ""
+      }
+      auditDetails.push(`phone updated`)
+    }
     if (body.email !== undefined) { updateData.email = body.email; auditDetails.push(`email updated`) }
     if (body.name !== undefined) { updateData.name = body.name; auditDetails.push(`name updated`) }
     if (body.position !== undefined) { updateData.position = body.position; auditDetails.push(`position updated`) }

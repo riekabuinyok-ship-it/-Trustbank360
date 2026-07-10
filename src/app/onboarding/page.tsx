@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { Check, Loader2, Upload } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -33,7 +34,7 @@ export default function OnboardingPage() {
     mainCurrency: "SSP",
     additionalCurrencies: [] as string[],
     address: "",
-    phone: user?.email || "",
+    phone: "",
     email: user?.email || "",
     website: "",
   })
@@ -197,7 +198,11 @@ export default function OnboardingPage() {
               <>
                 <div className="space-y-2">
                   <Label>Phone Number</Label>
-                  <Input type="tel" placeholder="+211 123 456 789" value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
+                  <PhoneInput
+                    value={form.phone}
+                    onChange={(val) => updateField("phone", val)}
+                    placeholder="924 440 899"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>

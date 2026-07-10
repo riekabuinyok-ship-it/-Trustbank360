@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkPlanLimit, PlanEnforcementError } from "@/lib/plan-enforcement"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -43,6 +44,14 @@ export async function PATCH(request: Request) {
 
   const body = await request.json()
   const { name, email, phone, address, website, primaryColor, secondaryColor, logo } = body
+
+  if (phone) {
+    const phoneResult = validatePhone(phone)
+    if (!phoneResult.valid) {
+      return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+    }
+    body.phone = phoneResult.normalized!
+  }
 
   if (primaryColor !== undefined || secondaryColor !== undefined || logo !== undefined) {
     try {

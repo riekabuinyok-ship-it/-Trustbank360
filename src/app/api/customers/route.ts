@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
@@ -36,10 +37,19 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
+    let normalizedPhone = body.phone
+    if (body.phone) {
+      const phoneResult = validatePhone(body.phone)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      normalizedPhone = phoneResult.normalized!
+    }
+
     const customer = await prisma.customer.create({
       data: {
         fullName: body.fullName,
-        phone: body.phone,
+        phone: normalizedPhone,
         nationality: body.nationality,
         idType: body.idType,
         idNumber: body.idNumber,

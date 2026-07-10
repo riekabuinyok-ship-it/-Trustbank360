@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { validatePhone } from "@/lib/phone-validation"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
@@ -35,6 +36,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const body = await request.json()
+
+    if (body.contactPhone) {
+      const phoneResult = validatePhone(body.contactPhone)
+      if (!phoneResult.valid) {
+        return NextResponse.json({ error: phoneResult.error }, { status: 400 })
+      }
+      body.contactPhone = phoneResult.normalized!
+    }
+
     const branch = await prisma.branch.update({
       where: { id },
       data: {

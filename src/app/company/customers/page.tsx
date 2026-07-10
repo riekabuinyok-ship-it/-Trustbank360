@@ -13,6 +13,7 @@ import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import toast from "react-hot-toast"
 
 export default function CustomersPage() {
@@ -105,7 +106,11 @@ export default function CustomersPage() {
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+              <PhoneInput
+                value={newCustomer.phone}
+                onChange={(val) => setNewCustomer({ ...newCustomer, phone: val })}
+                placeholder="924 440 899"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

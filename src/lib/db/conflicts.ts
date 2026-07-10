@@ -2,6 +2,7 @@
 // Handles conflict detection and resolution for offline sync
 
 import { storeRecord, getRecord, getAllRecords, getByIndex, countByIndex } from "./client"
+import { normalizePhone } from "@/lib/phone-validation"
 
 export interface SyncConflict {
   id: string
@@ -106,11 +107,11 @@ export function detectDuplicateCustomer(
 ): any | null {
   if (!newCustomer) return null
 
-  const phone = newCustomer.phone?.replace(/[^0-9]/g, "")
+  const phone = newCustomer.phone ? normalizePhone(newCustomer.phone) : null
   const idNumber = newCustomer.idNumber?.toLowerCase().trim()
 
   for (const existing of existingCustomers) {
-    const existingPhone = existing.phone?.replace(/[^0-9]/g, "")
+    const existingPhone = existing.phone ? normalizePhone(existing.phone) : null
     const existingIdNumber = existing.idNumber?.toLowerCase().trim()
 
     if (phone && existingPhone && phone === existingPhone) {

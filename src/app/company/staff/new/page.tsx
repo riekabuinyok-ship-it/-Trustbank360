@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { UserPlus, Loader2, ArrowLeft, Copy, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
@@ -170,7 +171,11 @@ export default function NewStaffPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Phone</Label>
-                <Input placeholder="+211 123 456 789" value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
+                <PhoneInput
+                  value={form.phone}
+                  onChange={(val) => updateField("phone", val)}
+                  placeholder="924 440 899"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Position</Label>
