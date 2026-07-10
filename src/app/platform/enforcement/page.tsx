@@ -35,7 +35,7 @@ interface Violation {
   createdAt: string
 }
 
-interface CompanyStatus {
+interface CompanyStatusItem {
   id: string
   name: string
   isActive: boolean
@@ -58,7 +58,7 @@ const actionConfig = {
 
 export default function AdminEnforcementPage() {
   const [violations, setViolations] = useState<Violation[]>([])
-  const [companyStatuses, setCompanyStatuses] = useState<CompanyStatus[]>([])
+  const [companyStatuses, setCompanyStatuses] = useState<CompanyStatusItem[]>([])
   const [loading, setLoading] = useState(true)
   const [dialog, setDialog] = useState<ActionDialogState>({ open: false, companyId: "", companyName: "", action: "warn" })
   const [reason, setReason] = useState("")
@@ -86,7 +86,7 @@ export default function AdminEnforcementPage() {
     }
   }
 
-  function openActionDialog(company: CompanyStatus, action: "suspend" | "reactivate" | "warn") {
+  function openActionDialog(company: CompanyStatusItem, action: "suspend" | "reactivate" | "warn") {
     setDialog({ open: true, companyId: company.id, companyName: company.name, action })
     setReason("")
   }

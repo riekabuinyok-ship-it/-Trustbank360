@@ -255,7 +255,7 @@ export default function MyTicketsPage() {
                   </div>
                 ) : (
                   detail.replies.map((reply, i) => {
-                    const isUser = reply.user.role !== "platform_owner"
+                    const isUser = reply.user?.role !== "platform_owner"
                     const showAvatar = i === 0 || detail.replies[i - 1]?.userId !== reply.userId
                     return (
                       <div key={reply.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -263,7 +263,7 @@ export default function MyTicketsPage() {
                           {showAvatar && (
                             <Avatar className="w-8 h-8 mt-1 shrink-0">
                               <AvatarFallback className={`text-xs ${isUser ? "bg-primary-100 text-primary-700" : "bg-surface-200 text-surface-600"}`}>
-                                {getInitials(reply.user.name)}
+                                {getInitials(reply.user?.name || "U")}
                               </AvatarFallback>
                             </Avatar>
                           )}
@@ -279,7 +279,7 @@ export default function MyTicketsPage() {
                             </div>
                             <div className={`flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground ${isUser ? "justify-end" : "justify-start"}`}>
                               <span>{formatTime(reply.createdAt)}</span>
-                              {showAvatar && <span>&middot; {reply.user.name}</span>}
+                              {showAvatar && <span>&middot; {reply.user?.name || "Unknown"}</span>}
                             </div>
                           </div>
                         </div>

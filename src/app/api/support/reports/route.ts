@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         include: {
           user: { select: { name: true, email: true } },
           company: { select: { name: true } },
-          replies: { take: 1, orderBy: { createdAt: "desc" }, select: { message: true, createdAt: true, userId: true } },
+          replies: { take: 1, orderBy: { createdAt: "desc" }, select: { message: true, createdAt: true, userId: true, user: { select: { name: true, role: true } } } },
           _count: { select: { replies: true } },
         },
         orderBy: { createdAt: "desc" },

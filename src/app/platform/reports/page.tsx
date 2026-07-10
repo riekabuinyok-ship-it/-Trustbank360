@@ -210,7 +210,7 @@ export default function PlatformReportsPage() {
                     <div className="mt-3 space-y-2 pl-3 border-l-2 border-primary-200 dark:border-primary-800">
                       {report.replies.slice(-2).map((reply) => (
                         <div key={reply.id} className="text-sm">
-                          <span className="font-medium text-primary text-xs">{reply.user.name}: </span>
+                          <span className="font-medium text-primary text-xs">{reply.user?.name || "Unknown"}: </span>
                           {reply.message.substring(0, 120)}{reply.message.length > 120 ? "..." : ""}
                         </div>
                       ))}
@@ -247,11 +247,11 @@ export default function PlatformReportsPage() {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Conversation</p>
                 {selectedReport.replies.map((reply) => {
-                  const isStaff = reply.user.role === "platform_owner"
+                  const isStaff = reply.user?.role === "platform_owner"
                   return (
                     <div key={reply.id} className={`p-3 rounded-lg text-sm ${isStaff ? "bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900" : "bg-surface-50 dark:bg-surface-900"}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium">{reply.user.name}</span>
+                        <span className="text-xs font-medium">{reply.user?.name || "Unknown"}</span>
                         <span className="text-[10px] text-muted-foreground">{new Date(reply.createdAt).toLocaleString()}</span>
                       </div>
                       <p>{reply.message}</p>
