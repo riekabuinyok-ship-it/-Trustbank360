@@ -1,18 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building2, Palette, Shield, User } from "lucide-react"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Building2, Palette, Shield, User, Camera, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
   const user = session?.user as any
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const [companyName, setCompanyName] = useState("")
   const [registrationNumber, setRegistrationNumber] = useState("")
@@ -33,6 +35,9 @@ export default function SettingsPage() {
   const [profileName, setProfileName] = useState("")
   const [profileEmail, setProfileEmail] = useState("")
   const [profilePhone, setProfilePhone] = useState("")
+  const [profilePosition, setProfilePosition] = useState("")
+  const [profileImage, setProfileImage] = useState("")
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [savingGeneral, setSavingGeneral] = useState(false)
@@ -67,6 +72,8 @@ export default function SettingsPage() {
       setProfileName(user.name || "")
       setProfileEmail(user.email || "")
       setProfilePhone(user.phone || "")
+      setProfilePosition(user.position || "")
+      setProfileImage(user.image || "")
     }
   }, [user])
 
@@ -78,6 +85,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: companyName,
+          registrationNumber,
           email,
           phone,
           address,
@@ -99,20 +107,28 @@ export default function SettingsPage() {
   async function handleSaveBranding() {
     setSavingBranding(true)
     try {
-      const body: Record<string, string> = { primaryColor, secondaryColor }
+      let logoUrl = logo
+
       if (logoFile) {
-        const reader = new FileReader()
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(logoFile)
+        const formData = new FormData()
+        formData.append("file", logoFile)
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
         })
-        body.logo = dataUrl
+        if (!uploadRes.ok) throw new Error("Failed to upload logo")
+        const uploadData = await uploadRes.json()
+        logoUrl = uploadData.url
       }
+
       const res = await fetch("/api/company", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          primaryColor,
+          secondaryColor,
+          logo: logoUrl,
+        }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -134,8 +150,8 @@ export default function SettingsPage() {
       toast.error("Passwords do not match")
       return
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters")
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters")
       return
     }
     setChangingPassword(true)
@@ -161,8 +177,26 @@ export default function SettingsPage() {
   }
 
   async function handleSaveProfile() {
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
     setSavingProfile(true)
     try {
+      let imageUrl = profileImage
+
+      if (avatarFile) {
+        const formData = new FormData()
+        formData.append("file", avatarFile)
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+        if (!uploadRes.ok) throw new Error("Failed to upload avatar")
+        const uploadData = await uploadRes.json()
+        imageUrl = uploadData.url
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -170,6 +204,8 @@ export default function SettingsPage() {
           name: profileName,
           email: profileEmail,
           phone: profilePhone,
+          position: profilePosition,
+          image: imageUrl,
         }),
       })
       if (!res.ok) {
@@ -177,6 +213,8 @@ export default function SettingsPage() {
         throw new Error(err.error || "Failed to save")
       }
       await update()
+      setAvatarFile(null)
+      setProfileImage(imageUrl)
       toast.success("Profile updated")
     } catch (err: any) {
       toast.error(err.message || "Failed to save profile")
@@ -184,6 +222,16 @@ export default function SettingsPage() {
       setSavingProfile(false)
     }
   }
+
+  const checks = newPassword ? [
+    { label: "Min 8 characters", met: newPassword.length >= 8 },
+    { label: "Has uppercase letter", met: /[A-Z]/.test(newPassword) },
+    { label: "Has lowercase letter", met: /[a-z]/.test(newPassword) },
+    { label: "Has number", met: /\d/.test(newPassword) },
+    { label: "Has special character", met: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) },
+  ] : []
+
+  const strengthScore = checks.filter((c) => c.met).length
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
@@ -279,6 +327,7 @@ export default function SettingsPage() {
                 />
               </div>
               <Button onClick={handleSaveGeneral} disabled={savingGeneral}>
+                {savingGeneral && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {savingGeneral ? "Saving..." : "Save Changes"}
               </Button>
             </CardContent>
@@ -347,6 +396,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <Button onClick={handleSaveBranding} disabled={savingBranding}>
+                {savingBranding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {savingBranding ? "Saving..." : "Save Branding"}
               </Button>
             </CardContent>
@@ -392,7 +442,46 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+              {newPassword && (
+                <div className="space-y-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div
+                        key={level}
+                        className={`h-2 flex-1 rounded-full transition-colors ${
+                          strengthScore >= level
+                            ? strengthScore <= 2
+                              ? "bg-red-500"
+                              : strengthScore <= 3
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                            : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="space-y-1">
+                    {checks.map((check, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <div
+                          className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                            check.met
+                              ? "bg-green-500/20 text-green-500"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {check.met ? "✓" : "✕"}
+                        </div>
+                        <span className={check.met ? "text-green-500" : "text-muted-foreground"}>
+                          {check.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <Button onClick={handleChangePassword} disabled={changingPassword}>
+                {changingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {changingPassword ? "Changing..." : "Change Password"}
               </Button>
             </CardContent>
@@ -406,14 +495,70 @@ export default function SettingsPage() {
               <CardDescription>Update your personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="profileName">Name</Label>
-                <Input
-                  id="profileName"
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  placeholder="Your name"
-                />
+              <div className="flex items-center gap-6">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={profileImage || undefined} />
+                  <AvatarFallback className="bg-muted">
+                    <User className="h-10 w-10 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    ref={avatarInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        setAvatarFile(file)
+                        setProfileImage(URL.createObjectURL(file))
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    Change Photo
+                  </Button>
+                  {profileImage && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAvatarFile(null)
+                        setProfileImage("")
+                      }}
+                    >
+                      Remove Photo
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profileName">Name</Label>
+                  <Input
+                    id="profileName"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profilePosition">Job Title</Label>
+                  <Input
+                    id="profilePosition"
+                    value={profilePosition}
+                    onChange={(e) => setProfilePosition(e.target.value)}
+                    placeholder="Your job title"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -437,6 +582,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {savingProfile ? "Saving..." : "Save Profile"}
               </Button>
             </CardContent>

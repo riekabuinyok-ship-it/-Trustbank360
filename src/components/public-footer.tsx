@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import toast from "react-hot-toast"
 import {
   Banknote, Mail, Phone, MapPin, ArrowRight, Send, Loader2,
   CheckCircle2, Shield, Lock,
@@ -56,9 +57,24 @@ export function PublicFooter() {
     e.preventDefault()
     if (!email) return
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    setSubscribed(true)
-    setLoading(false)
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || "Failed to subscribe")
+        return
+      }
+      setSubscribed(true)
+      toast.success("Successfully subscribed to newsletter!")
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

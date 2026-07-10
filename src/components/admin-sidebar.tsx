@@ -7,6 +7,7 @@ import {
   Building2,
   CreditCard,
   MessageSquare,
+  Mail,
   ShieldAlert,
   BarChart3,
   ScrollText,
@@ -43,6 +44,8 @@ const navItems = [
   { href: "/platform/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/platform/audit-logs", label: "Audit Logs", icon: ScrollText },
   { href: "/platform/settings", label: "Settings", icon: Settings },
+  { href: "/platform/reports", label: "Reports", icon: MessageSquare },
+  { href: "/platform/newsletter", label: "Newsletter", icon: Mail },
 ]
 
 export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
@@ -50,6 +53,17 @@ export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onT
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()
+
+  const [reportStats, setReportStats] = useState({ open: 0, inProgress: 0 })
+
+  useEffect(() => {
+    fetch("/api/support/reports/stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setReportStats(data)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => setMounted(true), [])
 
@@ -104,6 +118,11 @@ export function AdminSidebar({ collapsed, onToggle }: { collapsed?: boolean; onT
                 >
                   <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary-500" : "")} />
                   {!isCollapsed && <span>{item.label}</span>}
+                  {!isCollapsed && item.href === "/platform/reports" && (reportStats.open + reportStats.inProgress) > 0 && (
+                    <span className="ml-auto bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                      {reportStats.open + reportStats.inProgress}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -279,6 +298,8 @@ export function AdminMobileBottomNav() {
     { href: "/platform", label: "Overview", icon: LayoutDashboard },
     { href: "/platform/companies", label: "Companies", icon: Building2 },
     { href: "/platform/subscriptions", label: "Revenue", icon: CreditCard },
+    { href: "/platform/reports", label: "Reports", icon: MessageSquare },
+    { href: "/platform/newsletter", label: "Newsletter", icon: Mail },
     { href: "/platform/settings", label: "Settings", icon: Settings },
   ]
 

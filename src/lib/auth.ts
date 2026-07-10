@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
+import { checkRateLimit } from "./rate-limit"
 
 function mapRole(role: string): string {
   const roleMap: Record<string, string> = {
@@ -35,8 +36,12 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null
+
+        const ip = (req?.headers as any)?.["x-forwarded-for"] || "unknown"
+        const rl = await checkRateLimit(`login:${ip}`, "login")
+        if (!rl.allowed) return null
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },

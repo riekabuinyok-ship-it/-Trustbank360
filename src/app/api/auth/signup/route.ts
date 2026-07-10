@@ -3,11 +3,12 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { createStripeCustomer, createStripeSubscription } from "@/lib/subscription"
+import { sendWelcomeEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password, companyName, businessTypes, country, registrationNumber, taxId, phone, mobileProviders } = body
+    const { name, email, password, companyName, businessTypes, country, registrationNumber, taxId, phone, mobileProviders, numberOfBranches, numberOfStaff } = body
 
     if (!password || password.length < 8) {
       return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
@@ -25,6 +26,16 @@ export async function POST(request: Request) {
 
     const types = businessTypes || ["MONEY_TRANSFER_COMPANY"]
 
+    const branchCount = numberOfBranches !== undefined ? Number(numberOfBranches) : 1
+    const staffCount = numberOfStaff !== undefined ? Number(numberOfStaff) : 1
+
+    if (branchCount < 1 || branchCount > 1000) {
+      return NextResponse.json({ error: "Number of Branches must be between 1 and 1000" }, { status: 400 })
+    }
+    if (staffCount < 1 || staffCount > 2500) {
+      return NextResponse.json({ error: "Number of Staff must be between 1 and 2500" }, { status: 400 })
+    }
+
     if (types.includes("MOBILE_MONEY_AGENT") && (!mobileProviders || mobileProviders.length === 0)) {
       return NextResponse.json({ error: "Mobile Money Agents must select at least one provider" }, { status: 400 })
     }
@@ -40,8 +51,8 @@ export async function POST(request: Request) {
         taxId,
         phone,
         email,
-        numberOfBranches: 1,
-        numberOfStaff: 1,
+        numberOfBranches: branchCount,
+        numberOfStaff: staffCount,
         users: {
           create: {
             name,
@@ -50,6 +61,7 @@ export async function POST(request: Request) {
             password: hashedPassword,
             role: "company_owner",
             status: "ACTIVE",
+            mustChangePassword: true,
           },
         },
         branches: {
@@ -102,6 +114,12 @@ export async function POST(request: Request) {
         },
       })
 
+      try {
+        await sendWelcomeEmail(email, name, password)
+      } catch (emailErr) {
+        console.error("[signup] Welcome email failed:", emailErr)
+      }
+
       return NextResponse.json({
         success: true,
         companyId: company.id,
@@ -122,6 +140,12 @@ export async function POST(request: Request) {
             endDate: trialEndsAt,
           },
         })
+
+        try {
+          await sendWelcomeEmail(email, name, password)
+        } catch (emailErr) {
+          console.error("[signup] Welcome email failed:", emailErr)
+        }
 
         return NextResponse.json({
           success: true,

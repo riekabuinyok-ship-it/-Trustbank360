@@ -94,6 +94,8 @@ export default function SignupPage() {
     phone: "",
     mobileProviders: [] as string[],
     planId: "",
+    numberOfBranches: 1,
+    numberOfStaff: 1,
   })
 
   useEffect(() => {
@@ -161,6 +163,14 @@ export default function SignupPage() {
       }
       if (!form.country) {
         toast.error("Select your country")
+        return
+      }
+      if (form.numberOfBranches < 1 || form.numberOfBranches > 1000) {
+        toast.error("Number of Branches must be between 1 and 1000")
+        return
+      }
+      if (form.numberOfStaff < 1 || form.numberOfStaff > 2500) {
+        toast.error("Number of Staff must be between 1 and 2500")
         return
       }
       setStep(3)
@@ -355,6 +365,16 @@ export default function SignupPage() {
                     <div className="space-y-2">
                       <Label>Tax ID</Label>
                       <Input placeholder="TIN-12345" value={form.taxId} onChange={(e) => updateField("taxId", e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Number of Branches</Label>
+                      <Input type="number" min={1} max={1000} value={form.numberOfBranches} onChange={(e) => updateField("numberOfBranches", parseInt(e.target.value) || 1)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Number of Staff</Label>
+                      <Input type="number" min={1} max={2500} value={form.numberOfStaff} onChange={(e) => updateField("numberOfStaff", parseInt(e.target.value) || 1)} />
                     </div>
                   </div>
                   <div className="flex gap-4 pt-2">

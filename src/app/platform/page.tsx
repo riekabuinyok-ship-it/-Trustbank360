@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, CheckCircle2, XCircle, AlertTriangle, TrendingUp, DollarSign, Activity, Clock } from "lucide-react"
+import { Building2, CheckCircle2, XCircle, AlertTriangle, TrendingUp, DollarSign, Activity, Clock, MessageSquare, Mail } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
 interface ActivityItem {
@@ -28,14 +28,25 @@ interface AnalyticsData {
 export default function AdminPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [supportStats, setSupportStats] = useState({ open: 0, inProgress: 0 })
+  const [subscriberCount, setSubscriberCount] = useState(0)
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/admin/analytics")
-        if (res.ok) setData(await res.json())
+        const [analyticsRes, supportRes, subRes] = await Promise.all([
+          fetch("/api/admin/analytics"),
+          fetch("/api/support/reports/stats"),
+          fetch("/api/newsletter/stats"),
+        ])
+        if (analyticsRes.ok) setData(await analyticsRes.json())
+        if (supportRes.ok) setSupportStats(await supportRes.json())
+        if (subRes.ok) {
+          const subData = await subRes.json()
+          setSubscriberCount(subData.last7days ?? subData.total ?? 0)
+        }
       } catch {
-        console.error("Failed to load admin analytics")
+        console.error("Failed to load admin data")
       } finally {
         setLoading(false)
       }
@@ -63,6 +74,8 @@ export default function AdminPage() {
     { label: "Deleted", value: data?.deletedCompanies ?? 0, icon: AlertTriangle, color: "text-orange-600 bg-orange-100 dark:bg-orange-900/20" },
     { label: "New This Month", value: data?.newThisMonth ?? 0, icon: TrendingUp, color: "text-purple-600 bg-purple-100 dark:bg-purple-900/20" },
     { label: "Total Revenue", value: data?.totalRevenue ?? 0, icon: DollarSign, color: "text-primary-600 bg-primary-100 dark:bg-primary-900/20", isCurrency: true },
+    { label: "Open Reports", value: (supportStats.open + supportStats.inProgress) || 0, icon: MessageSquare, color: "text-rose-600 bg-rose-100 dark:bg-rose-900/20" },
+    { label: "New Subscribers (7d)", value: subscriberCount || 0, icon: Mail, color: "text-sky-600 bg-sky-100 dark:bg-sky-900/20" },
   ]
 
   const activity = data?.recentActivity ?? []

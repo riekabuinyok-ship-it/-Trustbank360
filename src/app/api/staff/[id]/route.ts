@@ -77,8 +77,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (body.name !== undefined) { updateData.name = body.name; auditDetails.push(`name updated`) }
     if (body.position !== undefined) { updateData.position = body.position; auditDetails.push(`position updated`) }
     if (body.status) { updateData.status = body.status; auditDetails.push(`status changed to ${body.status}`) }
+    if (body.image !== undefined) { updateData.image = body.image; auditDetails.push(`image updated`) }
     if (body.password) {
       updateData.password = await bcrypt.hash(body.password, 12)
+      updateData.mustChangePassword = true
       auditDetails.push(`password reset`)
     }
 

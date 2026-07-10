@@ -90,6 +90,25 @@ enum RiskLevel {
   CRITICAL
 }
 
+enum ReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SENT
+}
+
 model Company {
   id                   String         @id @default(cuid())
   name                 String
@@ -132,6 +151,7 @@ model Company {
   syncQueueItems     SyncQueueItem[]
   syncConflicts      SyncConflict[]
   planAuditLogs      PlanAuditLog[]
+  supportReports     SupportReport[]
 
   @@map("companies")
 }
@@ -202,6 +222,8 @@ model User {
   adminMessages    AdminMessage[]
   violationLogs    ViolationLog[]
   verifiedPayments Payment[]          @relation("VerifiedByUser")
+  supportReports   SupportReport[]
+  repliedReports   SupportReport[]    @relation("ReportReplier")
 
   @@map("users")
 }
@@ -659,4 +681,75 @@ model PlatformSetting {
   updatedAt           DateTime @updatedAt
 
   @@map("platform_settings")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+model SupportReport {
+  id          String         @id @default(cuid())
+  userId      String?
+  companyId   String?
+  email       String
+  subject     String
+  message     String
+  priority    ReportPriority @default(MEDIUM)
+  status      ReportStatus   @default(OPEN)
+  adminReply  String?
+  repliedAt   DateTime?
+  repliedById String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user      User?    @relation(fields: [userId], references: [id])
+  company   Company? @relation(fields: [companyId], references: [id])
+  repliedBy User?    @relation("ReportReplier", fields: [repliedById], references: [id])
+
+  @@map("support_reports")
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+  isActive       Boolean   @default(true)
+
+  @@map("newsletter_subscribers")
+}
+
+model NewsletterCampaign {
+  id        String         @id @default(cuid())
+  subject   String
+  content   String
+  status    CampaignStatus @default(DRAFT)
+  sentCount Int            @default(0)
+  sentAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  @@map("newsletter_campaigns")
+}
+
+model RateLimit {
+  id        String   @id @default(cuid())
+  identifier String
+  action    String
+  attempts  Int      @default(1)
+  windowStart DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([identifier, action, windowStart])
+  @@index([identifier, action])
+  @@map("rate_limits")
 }

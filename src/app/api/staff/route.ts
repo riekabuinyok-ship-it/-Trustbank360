@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { ensureEnterprisePlan } from "@/lib/migrate-to-enterprise"
 import { formatApiError } from "@/lib/api-error"
+import { sendWelcomeEmail } from "@/lib/email"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -84,6 +85,12 @@ export async function POST(request: Request) {
         companyId: user.companyId,
       },
     })
+
+    try {
+      await sendWelcomeEmail(staff.email, staff.name, tempPassword)
+    } catch (emailErr) {
+      console.error("[POST /api/staff] Welcome email failed:", emailErr)
+    }
 
     return NextResponse.json({ ...staff, tempPassword })
   } catch (error) {

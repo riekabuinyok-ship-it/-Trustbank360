@@ -8,7 +8,7 @@ export async function PATCH(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const user = session.user as any
 
-  const { name, email, phone } = await request.json()
+  const { name, email, phone, position, image } = await request.json()
 
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 })
@@ -23,8 +23,14 @@ export async function PATCH(request: Request) {
 
   const updated = await prisma.user.update({
     where: { id: user.id },
-    data: { name, ...(email !== undefined && { email }), ...(phone !== undefined && { phone }) },
-    select: { id: true, name: true, email: true, phone: true },
+    data: {
+      name,
+      ...(email !== undefined && { email }),
+      ...(phone !== undefined && { phone }),
+      ...(position !== undefined && { position }),
+      ...(image !== undefined && { image }),
+    },
+    select: { id: true, name: true, email: true, phone: true, position: true, image: true },
   })
 
   return NextResponse.json(updated)

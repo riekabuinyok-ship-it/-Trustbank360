@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
 
-const publicRoutes = ["/login", "/signup", "/track", "/forgot-password", "/api/auth", "/api/public", "/", "/features", "/pricing", "/about", "/contact", "/tutorials", "/exchange-rates", "/help", "/privacy", "/terms", "/api/public/stats", "/offline", "/sw.js", "/manifest.json", "/images"]
+const publicRoutes = ["/login", "/signup", "/track", "/forgot-password", "/reset-password", "/reset-password/", "/api/auth", "/api/public", "/", "/features", "/pricing", "/about", "/contact", "/tutorials", "/exchange-rates", "/help", "/privacy", "/terms", "/api/public/stats", "/offline", "/sw.js", "/manifest.json", "/images"]
 
 function isCompanyRole(role: string): boolean {
   return ["company_owner", "company_admin", "branch_manager", "teller", "compliance_officer", "auditor"].includes(role)

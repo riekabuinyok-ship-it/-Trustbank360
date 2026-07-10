@@ -16,10 +16,24 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 2000))
-    setSent(true)
-    setLoading(false)
-    toast.success("Reset link sent! Check your email.")
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || "Failed to send reset link")
+        return
+      }
+      setSent(true)
+      toast.success("Reset link sent! Check your email.")
+    } catch {
+      toast.error("Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

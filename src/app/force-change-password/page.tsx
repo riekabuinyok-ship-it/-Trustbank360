@@ -25,8 +25,8 @@ export default function ForceChangePasswordPage() {
       toast.error("Passwords do not match")
       return
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters")
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters")
       return
     }
     setLoading(true)
@@ -97,7 +97,7 @@ export default function ForceChangePasswordPage() {
                   <Input
                     id="newPassword"
                     type={showNew ? "text" : "password"}
-                    placeholder="Enter new password (min 6 characters)"
+                    placeholder="Enter new password (min 8 characters)"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
