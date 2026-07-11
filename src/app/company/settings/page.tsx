@@ -117,7 +117,10 @@ export default function SettingsPage() {
           method: "POST",
           body: formData,
         })
-        if (!uploadRes.ok) throw new Error("Failed to upload logo")
+        if (!uploadRes.ok) {
+          const uploadErr = await uploadRes.json().catch(() => ({}))
+          throw new Error(uploadErr.error || "Failed to upload logo")
+        }
         const uploadData = await uploadRes.json()
         logoUrl = uploadData.url
       }
