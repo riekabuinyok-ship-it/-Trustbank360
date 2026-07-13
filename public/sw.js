@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v3.1.0
+// TrustBank360 Service Worker v3.2.0
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -19,12 +19,30 @@ const PRECACHE_URLS = [
   "/",
   "/offline",
   "/login",
+  "/signup",
+  "/features",
+  "/pricing",
+  "/about",
+  "/contact",
+  "/help",
+  "/track",
+  "/privacy",
+  "/terms",
+  "/forgot-password",
   "/manifest.json",
   "/images/icons/icon-192.png",
   "/images/icons/icon-512.png",
   "/images/logo.svg",
   "/images/logo-white.svg",
 ]
+
+// Public static pages that are identical for all users (SSG).
+// These use cache-first so they load instantly offline.
+const PUBLIC_PAGES = new Set([
+  "/", "/offline", "/login", "/signup", "/features",
+  "/pricing", "/about", "/contact", "/help", "/track",
+  "/privacy", "/terms", "/forgot-password", "/exchange-rates", "/tutorials",
+])
 
 // ---- INSTALL ----
 // Precache the shell. skipWaiting() activates the new SW immediately.
@@ -142,8 +160,14 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 4. HTML PAGES (navigation requests) — network-first with offline fallback
+  // 4. HTML PAGES (navigation requests)
   if (request.mode === "navigate") {
+    // Public SSG pages → cache-first (load instantly, always fresh from precache)
+    if (PUBLIC_PAGES.has(url.pathname)) {
+      event.respondWith(cacheFirst(request, STATIC_CACHE))
+      return
+    }
+    // Authenticated/dynamic pages → network-first with offline fallback
     event.respondWith(networkFirst(request, DYNAMIC_CACHE))
     return
   }
