@@ -68,9 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="TrustBank360" />
       </head>
       <body className="min-h-screen bg-white dark:bg-surface-950">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Warmup />
+        </Providers>
         <ServiceWorkerRegister />
-        <Warmup />
       </body>
     </html>
   )

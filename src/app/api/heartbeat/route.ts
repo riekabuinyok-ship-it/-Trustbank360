@@ -4,14 +4,24 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function POST() {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const user = session.user as any
+  try {
+    const session = await getServerSession(authOptions)
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastActiveAt: new Date() },
-  })
+    if (session?.user) {
+      const user = session.user as any
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastActiveAt: new Date() },
+      }).catch((err: any) => {
+        console.error("[heartbeat] DB update error:", err?.message || err)
+      })
+      return NextResponse.json({ ok: true, authenticated: true, userId: user.id })
+    }
 
-  return NextResponse.json({ ok: true })
+    // Unauthenticated requests are allowed (for serverless warmup)
+    return NextResponse.json({ ok: true, authenticated: false })
+  } catch (error: any) {
+    console.error("[heartbeat] Error:", error?.message || error)
+    return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 })
+  }
 }
