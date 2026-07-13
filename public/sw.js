@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v3.0.0
+// TrustBank360 Service Worker v3.1.0
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -18,6 +18,7 @@ const API_CACHE = `tb360-api-${CACHE_VERSION}`
 const PRECACHE_URLS = [
   "/",
   "/offline",
+  "/login",
   "/manifest.json",
   "/images/icons/icon-192.png",
   "/images/icons/icon-512.png",
@@ -111,9 +112,8 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return
   if (url.origin !== self.location.origin) return
 
-  // Skip browser-internal requests
+  // Skip HMR only
   if (url.pathname.startsWith("/_next/webpack-hmr")) return
-  if (url.pathname.startsWith("/_next/data")) return
 
   // 1. STATIC ASSETS — cache-first
   //   Includes Next.js static chunks, public images, manifest, fonts
@@ -130,21 +130,25 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 2. API/DYNAMIC CONTENT — network-first
-  //   Includes all /api/* routes and Next.js server-rendered pages
-  const isApi = url.pathname.startsWith("/api/")
-  if (isApi) {
+  // 2. NEXT.JS DATA FETCHES (client-side navigation) — network-first with cache
+  if (url.pathname.startsWith("/_next/data")) {
+    event.respondWith(networkFirst(request, DYNAMIC_CACHE))
+    return
+  }
+
+  // 3. API/DYNAMIC CONTENT — network-first
+  if (url.pathname.startsWith("/api/")) {
     event.respondWith(networkFirst(request, API_CACHE))
     return
   }
 
-  // 3. HTML PAGES (navigation requests) — network-first with offline fallback
+  // 4. HTML PAGES (navigation requests) — network-first with offline fallback
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, DYNAMIC_CACHE))
     return
   }
 
-  // 4. Everything else (images loaded via Next/Image, etc.) — cache-first
+  // 5. Everything else (images loaded via Next/Image, etc.) — cache-first
   event.respondWith(cacheFirst(request, DYNAMIC_CACHE))
 })
 
