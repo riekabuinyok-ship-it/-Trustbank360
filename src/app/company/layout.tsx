@@ -9,16 +9,6 @@ import { NetworkStatusIndicator } from "@/components/network-status"
 import { useBackgroundSync } from "@/lib/sync/use-background-sync"
 import { initConnectionMonitoring } from "@/store/network-store"
 
-function Heartbeat() {
-  useEffect(() => {
-    const beat = () => fetch("/api/heartbeat", { method: "POST" }).catch(() => {})
-    beat()
-    const interval = setInterval(beat, 60000)
-    return () => clearInterval(interval)
-  }, [])
-  return null
-}
-
 function LoadingSpinner() {
   return (
     <div className="h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
@@ -120,7 +110,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 overflow-x-hidden w-full max-w-full">
-      <Heartbeat />
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <MobileNav />
       <main className={`${sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"} pt-16 lg:pt-0 pb-20 lg:pb-0 transition-all duration-300 min-w-0 overflow-x-hidden w-full max-w-full`}>

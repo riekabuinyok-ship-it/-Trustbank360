@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Providers } from "./providers"
 import { ServiceWorkerRegister } from "@/components/sw-register"
+import { Warmup } from "@/components/warmup"
 import "./globals.css"
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://trustbank360.com"
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-white dark:bg-surface-950">
         <Providers>{children}</Providers>
         <ServiceWorkerRegister />
+        <Warmup />
       </body>
     </html>
   )
