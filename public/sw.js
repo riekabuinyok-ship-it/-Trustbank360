@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v3.2.0
+// TrustBank360 Service Worker v3.3.0
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -80,6 +80,7 @@ self.addEventListener("activate", (event) => {
 
 // Cache-first: try cache, fall back to network, fall back to offline page.
 // Best for static assets that don't change often (HTML, CSS, JS, images, fonts).
+// Never throws — returns 503 for uncached resources when offline.
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request)
   if (cached) return cached
@@ -90,18 +91,18 @@ async function cacheFirst(request, cacheName) {
       cache.put(request, response.clone())
     }
     return response
-  } catch (err) {
-    // For navigation requests, serve the offline page
+  } catch {
     if (request.mode === "navigate") {
       const offline = await caches.match("/offline")
       if (offline) return offline
     }
-    throw err
+    return new Response("", { status: 503, statusText: "Offline" })
   }
 }
 
 // Network-first: try network, fall back to cache, fall back to offline page.
 // Best for dynamic/API content where freshness matters more than speed.
+// Never throws — returns 503 for uncached resources when offline.
 async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request)
@@ -110,14 +111,14 @@ async function networkFirst(request, cacheName) {
       cache.put(request, response.clone())
     }
     return response
-  } catch (err) {
+  } catch {
     const cached = await caches.match(request)
     if (cached) return cached
     if (request.mode === "navigate") {
       const offline = await caches.match("/offline")
       if (offline) return offline
     }
-    throw err
+    return new Response("", { status: 503, statusText: "Offline" })
   }
 }
 
