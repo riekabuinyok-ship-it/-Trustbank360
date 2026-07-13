@@ -94,8 +94,10 @@ function buildPerCurrencyData(allTransfers: any[], planCurrencies: string[]) {
 }
 
 async function getBasicDashboard(user: any, whereBase: any, isOperational: boolean) {
-  const [customerCount, allTransfers] = await Promise.all([
+  const [customerCount, branchCount, staffCount, allTransfers] = await Promise.all([
     prisma.customer.count({ where: { companyId: user.companyId } }),
+    prisma.branch.count({ where: { companyId: user.companyId } }),
+    prisma.user.count({ where: { companyId: user.companyId } }),
     prisma.transfer.findMany({
       where: whereBase,
       select: {
@@ -129,6 +131,9 @@ async function getBasicDashboard(user: any, whereBase: any, isOperational: boole
     basic: true,
     transferCount: totalAll,
     customerCount,
+    totalBranches: branchCount,
+    totalStaff: staffCount,
+    totalCurrencies: planCurrencies.length,
     recentTransactions,
     counts: { total: totalAll, ...statusCounts },
     moneyFlow: {
@@ -217,7 +222,12 @@ export async function GET() {
       // fall back to company currencies
     }
 
-    // Fetch all transfers once — compute aggregates in memory
+    // Fetch resource counts and all transfers
+    const [branchCount, staffCount] = await Promise.all([
+      prisma.branch.count({ where: { companyId: user.companyId } }),
+      prisma.user.count({ where: { companyId: user.companyId } }),
+    ])
+
     const allTransfers = await prisma.transfer.findMany({
       where: whereBase,
       select: {
@@ -335,6 +345,9 @@ export async function GET() {
         cancelled: countsMap["CANCELLED"] || 0,
         reversed: countsMap["REVERSED"] || 0,
       },
+      totalBranches: branchCount,
+      totalStaff: staffCount,
+      totalCurrencies: planCurrencies.length,
       byCurrency,
       companyCurrencies: planCurrencies,
       topBranches,
