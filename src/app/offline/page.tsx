@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { WifiOff, RefreshCw, Clock, Home, DollarSign, HelpCircle, BookOpen, Shield, FileText, Activity, MapPin, LogIn } from "lucide-react"
+import { WifiOff, RefreshCw, Clock, Home, DollarSign, HelpCircle, BookOpen, Shield, FileText, Activity, MapPin, LogIn, Bug } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+
+
 
 const publicLinks = [
   { href: "/", label: "Home", icon: Home },
@@ -36,6 +38,7 @@ export default function OfflinePage() {
       const hasOfflineCookie = document.cookie.includes("tb360_offline")
       if (hasOfflineCookie) setHasCachedAuth(true)
     } catch {}
+    import("@/lib/offline-auth").then(({ seedDemoUser }) => seedDemoUser()).catch(() => {})
     const timer = setInterval(() => {
       setSeconds((s) => Math.max(0, s - 1))
     }, 1000)
@@ -148,6 +151,38 @@ export default function OfflinePage() {
                 {loginLoading ? "Verifying..." : "Sign In (Offline)"}
               </Button>
             </form>
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">Quick testing:</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full gap-2"
+                onClick={async () => {
+                  setLoginLoading(true)
+                  try {
+                    const { verifyOfflineLogin, createOfflineSessionCookie, getDemoCredentials } = await import("@/lib/offline-auth")
+                    const { email, password } = getDemoCredentials()
+                    const user = await verifyOfflineLogin(email, password)
+                    if (user) {
+                      const cookie = createOfflineSessionCookie(user)
+                      document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+                      router.push("/company/dashboard")
+                    } else {
+                      setLoginError("Demo account not cached. Log in online first with admin@trustbank.com / Admin@123.")
+                    }
+                  } catch {
+                    setLoginError("Demo login failed.")
+                  } finally {
+                    setLoginLoading(false)
+                  }
+                }}
+                disabled={loginLoading}
+              >
+                <Bug className="h-4 w-4" />
+                Demo Login (admin@trustbank.com)
+              </Button>
+            </div>
           </div>
         )}
 

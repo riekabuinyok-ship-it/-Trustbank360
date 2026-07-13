@@ -106,3 +106,30 @@ export async function clearCachedSession(email: string): Promise<void> {
   const cached = await getCachedUser(email)
   if (cached) await deleteRecord(AUTH_STORE, cached.id)
 }
+
+// Demo credentials for offline testing
+const DEMO_EMAIL = "admin@trustbank.com"
+const DEMO_PASSWORD = "Admin@123"
+
+export async function seedDemoUser(): Promise<void> {
+  const existing = await getCachedUser(DEMO_EMAIL)
+  if (existing) return
+  const passwordHash = await sha256(DEMO_PASSWORD)
+  const cached: CachedUser = {
+    id: "demo-offline",
+    email: DEMO_EMAIL,
+    name: "Admin Demo",
+    role: "company_owner",
+    companyId: "demo-company",
+    branchId: null,
+    companyName: "Demo Company",
+    image: null,
+    passwordHash,
+    cachedAt: Date.now(),
+  }
+  await storeRecord(AUTH_STORE, cached)
+}
+
+export function getDemoCredentials(): { email: string; password: string } {
+  return { email: DEMO_EMAIL, password: DEMO_PASSWORD }
+}

@@ -83,12 +83,37 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
   async function handleDemoLogin(email: string) {
     setLoading(email)
     try {
-      await signIn("credentials", {
+      const result = await signIn("credentials", {
         email,
         password: PASSWORD,
-        redirect: true,
-        callbackUrl: "/company/dashboard",
+        redirect: false,
       })
+      if (result?.error) {
+        setLoading(null)
+        return
+      }
+      const sessionRes = await fetch("/api/auth/session")
+      const session = await sessionRes.json()
+      const userData = session?.user
+      if (userData) {
+        try {
+          const { cacheSession } = await import("@/lib/offline-auth")
+          await cacheSession({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            companyId: userData.companyId,
+            branchId: userData.branchId,
+            companyName: userData.companyName,
+            image: userData.image,
+            password: PASSWORD,
+          })
+        } catch {}
+      }
+      document.cookie = "tb360_offline=; path=/; max-age=0"
+      const role = userData?.role
+      window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
     } catch {
       setLoading(null)
     }
@@ -164,12 +189,37 @@ export function TryDemoAccountsSection() {
   async function handleDemoLogin(email: string) {
     setLoading(email)
     try {
-      await signIn("credentials", {
+      const result = await signIn("credentials", {
         email,
         password: PASSWORD,
-        redirect: true,
-        callbackUrl: "/company/dashboard",
+        redirect: false,
       })
+      if (result?.error) {
+        setLoading(null)
+        return
+      }
+      const sessionRes = await fetch("/api/auth/session")
+      const session = await sessionRes.json()
+      const userData = session?.user
+      if (userData) {
+        try {
+          const { cacheSession } = await import("@/lib/offline-auth")
+          await cacheSession({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            companyId: userData.companyId,
+            branchId: userData.branchId,
+            companyName: userData.companyName,
+            image: userData.image,
+            password: PASSWORD,
+          })
+        } catch {}
+      }
+      document.cookie = "tb360_offline=; path=/; max-age=0"
+      const role = userData?.role
+      window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
     } catch {
       setLoading(null)
     }
