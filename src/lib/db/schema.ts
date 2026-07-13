@@ -126,4 +126,11 @@ export const STORES: StoreSchema[] = [
       { name: "by_status", keyPath: "status" },
     ],
   },
+  {
+    name: "auth",
+    keyPath: "id",
+    indexes: [
+      { name: "by_email", keyPath: "email" },
+    ],
+  },
 ]

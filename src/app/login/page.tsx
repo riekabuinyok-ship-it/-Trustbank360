@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -8,25 +8,61 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, WifiOff } from "lucide-react"
 import toast from "react-hot-toast"
 import { TryDemoButton } from "@/components/try-demo-button"
+import { cacheSession, getCachedUser, verifyOfflineLogin, createOfflineSessionCookie } from "@/lib/offline-auth"
 
 function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isOffline, setIsOffline] = useState(false)
+  const [cachedUserEmail, setCachedUserEmail] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
 
-  // Get clean homepage URL without callbackUrl
-  const cleanHomepageUrl = () => "/"
+  useEffect(() => {
+    setIsOffline(typeof navigator !== "undefined" && !navigator.onLine)
+    const handler = () => setIsOffline(!navigator.onLine)
+    window.addEventListener("online", handler)
+    window.addEventListener("offline", handler)
+    return () => {
+      window.removeEventListener("online", handler)
+      window.removeEventListener("offline", handler)
+    }
+  }, [])
+
+  useEffect(() => {
+    async function checkCached() {
+      if (isOffline) {
+        const cached = await getCachedUser(email || "")
+        if (cached) setCachedUserEmail(cached.email)
+      }
+    }
+    checkCached()
+  }, [isOffline, email])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+
+    if (isOffline) {
+      const user = await verifyOfflineLogin(email, password)
+      if (user) {
+        const cookie = createOfflineSessionCookie(user)
+        document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+        toast.success("Signed in (offline mode)")
+        router.push(user.role === "platform_owner" ? "/platform" : "/company/dashboard")
+        router.refresh()
+      } else {
+        toast.error("Invalid credentials or no cached account found.")
+      }
+      setLoading(false)
+      return
+    }
 
     try {
       const result = await signIn("credentials", {
@@ -40,11 +76,30 @@ function LoginForm() {
         return
       }
 
-      toast.success("Welcome back!")
-      // Fetch session to determine role-based redirect
       const sessionRes = await fetch("/api/auth/session")
       const session = await sessionRes.json()
-      const role = session?.user?.role
+      const userData = session?.user
+
+      if (userData) {
+        try {
+          await cacheSession({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            companyId: userData.companyId,
+            branchId: userData.branchId,
+            companyName: userData.companyName,
+            image: userData.image,
+            password,
+          })
+        } catch {}
+      }
+
+      document.cookie = "tb360_offline=; path=/; max-age=0"
+
+      toast.success("Welcome back!")
+      const role = userData?.role
       router.push(role === "platform_owner" ? "/platform" : "/company/dashboard")
       router.refresh()
     } catch {
@@ -80,6 +135,21 @@ function LoginForm() {
                 Your account has been suspended. Contact your company administrator.
               </div>
             )}
+
+            {isOffline && (
+              <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">
+                  <WifiOff className="h-4 w-4" />
+                  Offline Mode
+                </div>
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {cachedUserEmail
+                    ? `Sign in with your cached account to continue offline.`
+                    : "No cached account found. Connect to the internet to sign in."}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -119,7 +189,7 @@ function LoginForm() {
               </div>
               <Button type="submit" className="w-full bg-[#0F4C81] hover:bg-[#0D3F6E] text-white font-semibold" size="lg" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Sign In
+                {isOffline ? "Sign In (Offline)" : "Sign In"}
               </Button>
             </form>
           </CardContent>

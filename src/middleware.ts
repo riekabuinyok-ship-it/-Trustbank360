@@ -8,6 +8,27 @@ function isCompanyRole(role: string): boolean {
   return ["company_owner", "company_admin", "branch_manager", "teller", "compliance_officer", "auditor"].includes(role)
 }
 
+interface OfflineClaims {
+  email: string
+  name: string
+  role: string
+  companyId: string | null
+  branchId: string | null
+  companyName: string | null
+  exp: number
+}
+
+function parseOfflineCookie(cookieValue: string | undefined): OfflineClaims | null {
+  if (!cookieValue) return null
+  try {
+    const decoded = JSON.parse(atob(cookieValue)) as OfflineClaims
+    if (decoded.exp * 1000 < Date.now()) return null
+    return decoded
+  } catch {
+    return null
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -26,8 +47,24 @@ export async function middleware(request: NextRequest) {
 
   const token = await getToken({ req: request })
 
-  // 3. Not authenticated → redirect to /login
+  // 3. Not authenticated → try offline session cookie
   if (!token) {
+    const offlineCookie = request.cookies.get("tb360_offline")?.value
+    const offlineUser = parseOfflineCookie(offlineCookie)
+
+    if (offlineUser && isCompanyRole(offlineUser.role) && pathname.startsWith("/company")) {
+      const response = NextResponse.next()
+      response.headers.set("X-Robots-Tag", "noindex, nofollow")
+      response.headers.set("X-Offline-Session", "true")
+      return response
+    }
+
+    if (offlineUser && offlineUser.role === "platform_owner" && pathname.startsWith("/platform")) {
+      const response = NextResponse.next()
+      response.headers.set("X-Offline-Session", "true")
+      return response
+    }
+
     const loginUrl = new URL("/login", request.url)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
