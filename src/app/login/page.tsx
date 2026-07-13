@@ -103,7 +103,17 @@ function LoginForm() {
       router.push(role === "platform_owner" ? "/platform" : "/company/dashboard")
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred during login. Please try again.")
+      // Network might be down despite navigator.onLine being true
+      const user = await verifyOfflineLogin(email, password).catch(() => null)
+      if (user) {
+        const cookie = createOfflineSessionCookie(user)
+        document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+        toast.success("Signed in (offline mode)")
+        router.push(user.role === "platform_owner" ? "/platform" : "/company/dashboard")
+        router.refresh()
+      } else {
+        toast.error("Unable to connect. Please check your internet connection and try again.")
+      }
     } finally {
       setLoading(false)
     }

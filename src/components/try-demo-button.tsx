@@ -89,6 +89,15 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
         redirect: false,
       })
       if (result?.error) {
+        const { seedDemoUser, verifyOfflineLogin, createOfflineSessionCookie } = await import("@/lib/offline-auth")
+        await seedDemoUser()
+        const user = await verifyOfflineLogin(email, PASSWORD)
+        if (user) {
+          const cookie = createOfflineSessionCookie(user)
+          document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+          window.location.href = "/company/dashboard"
+          return
+        }
         setLoading(null)
         return
       }
@@ -195,6 +204,15 @@ export function TryDemoAccountsSection() {
         redirect: false,
       })
       if (result?.error) {
+        const { seedDemoUser, verifyOfflineLogin, createOfflineSessionCookie } = await import("@/lib/offline-auth")
+        await seedDemoUser()
+        const user = await verifyOfflineLogin(email, PASSWORD)
+        if (user) {
+          const cookie = createOfflineSessionCookie(user)
+          document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+          window.location.href = "/company/dashboard"
+          return
+        }
         setLoading(null)
         return
       }
