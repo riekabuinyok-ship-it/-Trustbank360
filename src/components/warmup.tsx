@@ -5,11 +5,8 @@ import { useEffect } from "react"
 export function Warmup() {
   useEffect(() => {
     const warm = () => {
-      fetch("/api/auth/callback/credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      }).catch(() => {})
+      // Warm the NextAuth serverless function by hitting the session endpoint
+      fetch("/api/auth/session", { method: "GET" }).catch(() => {})
       fetch("/api/heartbeat", { method: "POST" }).catch(() => {})
     }
     warm()

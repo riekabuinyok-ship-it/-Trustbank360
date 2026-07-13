@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v3.3.0
+// TrustBank360 Service Worker v3.4.0
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -133,6 +133,9 @@ self.addEventListener("fetch", (event) => {
 
   // Skip HMR only
   if (url.pathname.startsWith("/_next/webpack-hmr")) return
+
+  // Skip auth routes entirely — never cache or intercept login/session/CSRF calls
+  if (url.pathname.startsWith("/api/auth")) return
 
   // 1. STATIC ASSETS — cache-first
   //   Includes Next.js static chunks, public images, manifest, fonts

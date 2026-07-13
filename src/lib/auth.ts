@@ -37,46 +37,79 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) return null
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("[auth] Missing credentials")
+            return null
+          }
 
-        const ip = (req?.headers as any)?.["x-forwarded-for"] || "unknown"
-        const rl = await checkRateLimit(`login:${ip}`, "login")
-        if (!rl.allowed) return null
+          console.log("[auth] Login attempt:", credentials.email)
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: { company: true, branch: true },
-        })
+          const ip = (req?.headers as any)?.["x-forwarded-for"] || "unknown"
+          console.log("[auth] IP:", ip)
 
-        if (!user || !user.password) return null
-        if (user.status === "SUSPENDED" || user.status === "INACTIVE") return null
+          const rl = await checkRateLimit(`login:${ip}`, "login")
+          if (!rl.allowed) {
+            console.log("[auth] Rate limited:", credentials.email)
+            return null
+          }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-        if (!isValid) return null
+          console.log("[auth] Looking up user:", credentials.email)
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: { company: true, branch: true },
+          })
 
-        const now = new Date()
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: now, lastActiveAt: now },
-        })
+          if (!user || !user.password) {
+            console.log("[auth] User not found or no password:", credentials.email)
+            return null
+          }
 
-        const isPlatformOwner = mapRole(user.role) === "platform_owner"
+          if (user.status === "SUSPENDED" || user.status === "INACTIVE") {
+            console.log("[auth] User suspended/inactive:", credentials.email, user.status)
+            return null
+          }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: mapRole(user.role),
-          image: user.image,
-          companyId: isPlatformOwner ? null : user.companyId,
-          branchId: isPlatformOwner ? null : user.branchId,
-          companyName: isPlatformOwner ? null : user.company?.name ?? null,
-          businessTypes: isPlatformOwner ? [] : user.company?.businessTypes ?? [],
-          isActive: isPlatformOwner ? true : user.company?.isActive ?? false,
-          companyIsActive: isPlatformOwner ? true : user.company?.isActive ?? false,
-          onboardingComplete: isPlatformOwner ? true : user.company?.onboardingComplete ?? false,
-          twoFactorEnabled: user.twoFactorEnabled,
-          mustChangePassword: user.mustChangePassword,
+          console.log("[auth] Verifying password for:", credentials.email)
+          const isValid = await bcrypt.compare(credentials.password, user.password)
+          if (!isValid) {
+            console.log("[auth] Invalid password for:", credentials.email)
+            return null
+          }
+
+          console.log("[auth] Password valid, updating lastLogin for:", credentials.email)
+          const now = new Date()
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: now, lastActiveAt: now },
+          })
+
+          const isPlatformOwner = mapRole(user.role) === "platform_owner"
+
+          console.log("[auth] Login successful:", credentials.email, "role:", mapRole(user.role))
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: mapRole(user.role),
+            image: user.image,
+            companyId: isPlatformOwner ? null : user.companyId,
+            branchId: isPlatformOwner ? null : user.branchId,
+            companyName: isPlatformOwner ? null : user.company?.name ?? null,
+            businessTypes: isPlatformOwner ? [] : user.company?.businessTypes ?? [],
+            isActive: isPlatformOwner ? true : user.company?.isActive ?? false,
+            companyIsActive: isPlatformOwner ? true : user.company?.isActive ?? false,
+            onboardingComplete: isPlatformOwner ? true : user.company?.onboardingComplete ?? false,
+            twoFactorEnabled: user.twoFactorEnabled,
+            mustChangePassword: user.mustChangePassword,
+          }
+        } catch (error: any) {
+          console.error("[auth] authorize CRASH:", {
+            email: credentials?.email,
+            error: error?.message || error,
+            stack: error?.stack?.split("\n").slice(0, 5).join("\n"),
+          })
+          return null
         }
       },
     }),
@@ -97,13 +130,17 @@ export const authOptions: NextAuthOptions = {
         token.mustChangePassword = (user as any).mustChangePassword
       }
       if (trigger === "update" && token.companyId) {
-        const company = await prisma.company.findUnique({ where: { id: token.companyId as string } })
-        if (company) {
-          token.companyName = company.name ?? null
-          token.businessTypes = company.businessTypes ?? []
-          token.isActive = company.isActive
-          token.companyIsActive = company.isActive
-          token.onboardingComplete = company.onboardingComplete
+        try {
+          const company = await prisma.company.findUnique({ where: { id: token.companyId as string } })
+          if (company) {
+            token.companyName = company.name ?? null
+            token.businessTypes = company.businessTypes ?? []
+            token.isActive = company.isActive
+            token.companyIsActive = company.isActive
+            token.onboardingComplete = company.onboardingComplete
+          }
+        } catch (error: any) {
+          console.error("[auth] jwt update error:", error?.message || error)
         }
       }
       return token
