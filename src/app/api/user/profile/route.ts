@@ -16,12 +16,14 @@ export async function PATCH(request: Request) {
   }
 
   let normalizedPhone = phone
-  if (phone) {
+  if (phone !== undefined && phone !== "") {
     const phoneResult = validatePhone(phone)
     if (!phoneResult.valid) {
       return NextResponse.json({ error: phoneResult.error }, { status: 400 })
     }
     normalizedPhone = phoneResult.normalized!
+  } else if (phone === "") {
+    normalizedPhone = null
   }
 
   if (email && email !== user.email) {

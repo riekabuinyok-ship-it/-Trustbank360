@@ -64,7 +64,7 @@ export function getTrialDays(planName: string): number {
   switch (planName) {
     case "Small Company": return 30
     case "Medium Company": return 60
-    case "Enterprise": return 90
+    case "Enterprise": return 30
     default: return 30
   }
 }

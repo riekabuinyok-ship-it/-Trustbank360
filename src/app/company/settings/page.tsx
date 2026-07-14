@@ -181,10 +181,6 @@ export default function SettingsPage() {
   }
 
   async function handleSaveProfile() {
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match")
-      return
-    }
     setSavingProfile(true)
     try {
       let imageUrl = profileImage

@@ -44,14 +44,16 @@ export async function PATCH(request: Request) {
   const user = session.user as any
 
   const body = await request.json()
-  const { name, email, phone, address, website, primaryColor, secondaryColor, logo } = body
+  const { name, registrationNumber, email, phone, address, website, primaryColor, secondaryColor, logo } = body
 
-  if (phone) {
+  if (phone !== undefined && phone !== "") {
     const phoneResult = validatePhone(phone)
     if (!phoneResult.valid) {
       return NextResponse.json({ error: phoneResult.error }, { status: 400 })
     }
     body.phone = phoneResult.normalized!
+  } else if (phone === "") {
+    body.phone = null
   }
 
   if (primaryColor !== undefined || secondaryColor !== undefined || logo !== undefined) {
@@ -65,19 +67,24 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const updatedCompany = await prisma.company.update({
-    where: { id: user.companyId },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(email !== undefined && { email }),
-      ...(phone !== undefined && { phone }),
-      ...(address !== undefined && { address }),
-      ...(website !== undefined && { website }),
-      ...(primaryColor !== undefined && { primaryColor }),
-      ...(secondaryColor !== undefined && { secondaryColor }),
-      ...(logo !== undefined && { logo }),
-    },
-  })
+  try {
+    const updatedCompany = await prisma.company.update({
+      where: { id: user.companyId },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(registrationNumber !== undefined && { registrationNumber }),
+        ...(email !== undefined && { email }),
+        ...(phone !== undefined && { phone: body.phone }),
+        ...(address !== undefined && { address }),
+        ...(website !== undefined && { website }),
+        ...(primaryColor !== undefined && { primaryColor }),
+        ...(secondaryColor !== undefined && { secondaryColor }),
+        ...(logo !== undefined && { logo }),
+      },
+    })
 
-  return NextResponse.json(updatedCompany)
+    return NextResponse.json(updatedCompany)
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to update company settings" }, { status: 500 })
+  }
 }
