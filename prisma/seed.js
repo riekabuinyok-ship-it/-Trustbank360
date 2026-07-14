@@ -33,9 +33,13 @@ async function main() {
   ]
 
   // Remove old plans (Small/Medium) if they exist
-  await prisma.subscriptionPlan.deleteMany({
-    where: { name: { in: ['Small Company', 'Medium Company'] } },
-  })
+  try {
+    await prisma.subscriptionPlan.deleteMany({
+      where: { name: { in: ['Small Company', 'Medium Company'] } },
+    })
+  } catch {
+    // Ignore — old plans may be referenced by subscriptions
+  }
 
   const plans = await Promise.all(
     planData.map(async (p) => {

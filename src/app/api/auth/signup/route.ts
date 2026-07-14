@@ -63,6 +63,7 @@ export async function POST(request: Request) {
         email,
         numberOfBranches: branchCount,
         numberOfStaff: staffCount,
+        onboardingComplete: true,
         users: {
           create: {
             name,
