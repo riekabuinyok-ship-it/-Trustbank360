@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v3.5.0
+// TrustBank360 Service Worker v3.5.1
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -87,8 +87,7 @@ async function cacheFirst(request, cacheName) {
   try {
     const response = await fetch(request)
     if (response.ok) {
-      const cache = await caches.open(cacheName)
-      cache.put(request, response.clone())
+      try { const cache = await caches.open(cacheName); cache.put(request, response.clone()) } catch {}
     }
     return response
   } catch {
@@ -107,8 +106,7 @@ async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request)
     if (response.ok) {
-      const cache = await caches.open(cacheName)
-      cache.put(request, response.clone())
+      try { const cache = await caches.open(cacheName); cache.put(request, response.clone()) } catch {}
     }
     return response
   } catch {
