@@ -45,13 +45,14 @@ export function dedupResponse(id: string): Response {
 }
 
 export async function checkDuplicateCustomer(
+  companyId: string,
   phone?: string,
   idNumber?: string,
   excludeId?: string
 ): Promise<any | null> {
   if (!phone && !idNumber) return null
 
-  const where: any[] = []
+  const where: any[] = [{ companyId }]
   if (phone) {
     where.push({ phone: { equals: phone } })
   }
@@ -59,12 +60,12 @@ export async function checkDuplicateCustomer(
     where.push({ idNumber: { equals: idNumber } })
   }
 
-  if (where.length === 0) return null
+  if (where.length <= 1) return null
 
   const existing = await prisma.customer.findFirst({
     where: {
       AND: [
-        { OR: where },
+        { AND: where },
         ...(excludeId ? [{ id: { not: excludeId } }] : []),
       ],
     },
@@ -74,13 +75,14 @@ export async function checkDuplicateCustomer(
 }
 
 export async function checkDuplicateTransfer(
+  companyId: string,
   transactionNumber?: string,
   secretCode?: string,
   excludeId?: string
 ): Promise<any | null> {
   if (!transactionNumber && !secretCode) return null
 
-  const where: any[] = []
+  const where: any[] = [{ companyId }]
   if (transactionNumber) {
     where.push({ transactionNumber: { equals: transactionNumber } })
   }
@@ -88,12 +90,12 @@ export async function checkDuplicateTransfer(
     where.push({ secretCode: { equals: secretCode } })
   }
 
-  if (where.length === 0) return null
+  if (where.length <= 1) return null
 
   const existing = await prisma.transfer.findFirst({
     where: {
       AND: [
-        { OR: where },
+        { AND: where },
         ...(excludeId ? [{ id: { not: excludeId } }] : []),
       ],
     },

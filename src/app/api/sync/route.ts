@@ -183,29 +183,45 @@ async function processTransferSync(
 
   let transfer
   if (action === "CREATE") {
-    transfer = await prisma.transfer.create({
-      data: {
-        transactionNumber: payload.transactionNumber,
-        secretCode: payload.secretCode,
-        transactionType: payload.transactionType,
-        amount: payload.amount,
-        currency: payload.currency,
-        exchangeRate: payload.exchangeRate,
-        commission: payload.commission || 0,
-        commissionType: payload.commissionType || "INCLUDED",
-        totalAmount: payload.totalAmount || payload.amount,
-        senderAmount: payload.senderAmount,
-        receiverAmount: payload.receiverAmount,
-        status: payload.status || "PENDING",
-        notes: payload.notes,
-        senderId: payload.senderId,
-        receiverId: payload.receiverId,
-        companyId,
-        issuedById: user.id,
-        mobileProviderId: payload.mobileProviderId,
-        receiverMobile: payload.receiverMobile,
-        receiverIdNumber: payload.receiverIdNumber,
-      },
+    transfer = await prisma.$transaction(async (tx) => {
+      const t = await tx.transfer.create({
+        data: {
+          transactionNumber: payload.transactionNumber,
+          secretCode: payload.secretCode,
+          transactionType: payload.transactionType,
+          amount: payload.amount,
+          currency: payload.currency,
+          exchangeRate: payload.exchangeRate || 1,
+          commission: payload.commission || 0,
+          commissionType: payload.commissionType || "INCLUDED",
+          totalAmount: payload.totalAmount || payload.amount,
+          senderAmount: payload.senderAmount,
+          receiverAmount: payload.receiverAmount,
+          status: payload.status || "PENDING",
+          notes: payload.notes,
+          senderId: payload.senderId,
+          receiverId: payload.receiverId,
+          companyId,
+          issuedById: user.id,
+          mobileProviderId: payload.mobileProviderId,
+          receiverMobile: payload.receiverMobile,
+          receiverIdNumber: payload.receiverIdNumber,
+        },
+      })
+
+      const senderBranchId = payload.senderBranchId || user.branchId
+      const receiverBranchId = payload.receiverBranchId || payload.destinationBranchId
+      if (senderBranchId && receiverBranchId) {
+        await tx.branchTransaction.create({
+          data: {
+            transferId: t.id,
+            senderBranchId,
+            receiverBranchId,
+          },
+        })
+      }
+
+      return t
     })
 
     await createAuditLog({
@@ -213,6 +229,24 @@ async function processTransferSync(
       action: "TRANSFER_CREATED",
       resource: "Transfer",
       details: `Sync created transfer: ${payload.transactionNumber}`,
+      companyId,
+    })
+  } else if (action === "UPDATE" && recordId) {
+    transfer = await prisma.transfer.update({
+      where: { id: recordId },
+      data: {
+        ...(payload.status !== undefined && { status: payload.status }),
+        ...(payload.notes !== undefined && { notes: payload.notes }),
+        ...(payload.paidById !== undefined && { paidById: payload.paidById }),
+        ...(payload.paidAt !== undefined && { paidAt: payload.paidAt }),
+      },
+    })
+
+    await createAuditLog({
+      userId: user.id,
+      action: "TRANSFER_UPDATED",
+      resource: "Transfer",
+      details: `Sync updated transfer: ${transfer.transactionNumber}`,
       companyId,
     })
   }

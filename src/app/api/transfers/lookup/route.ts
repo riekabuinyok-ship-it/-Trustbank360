@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   }
 
   const transfer = await prisma.transfer.findFirst({
-    where: { secretCode: code },
+    where: { secretCode: code, companyId: user.companyId },
     include: {
       sender: { select: { fullName: true } },
       receiver: { select: { fullName: true, phone: true, nationality: true, idType: true, idNumber: true } },
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     },
   })
 
-  if (!transfer || transfer.companyId !== user.companyId) {
+  if (!transfer) {
     return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
   }
 

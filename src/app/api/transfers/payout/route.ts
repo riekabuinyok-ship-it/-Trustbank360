@@ -23,11 +23,11 @@ export async function POST(request: Request) {
     }
 
     const transfer = await prisma.transfer.findFirst({
-      where: { secretCode },
+      where: { secretCode, companyId: user.companyId },
       include: { branchLink: true, receiver: true },
     })
 
-    if (!transfer || transfer.companyId !== user.companyId) {
+    if (!transfer) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
     }
 
