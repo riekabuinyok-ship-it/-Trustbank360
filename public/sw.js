@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v3.4.0
+// TrustBank360 Service Worker v3.5.0
 // Basic PWA: offline-first financial platform for low-connectivity regions
 //
 // Strategies:
@@ -158,14 +158,37 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 3. API/DYNAMIC CONTENT — network-first
+  // 3. API/DYNAMIC CONTENT — network-only for authenticated routes, network-first with cache for public
   if (url.pathname.startsWith("/api/")) {
+    // Never cache auth routes
+    if (url.pathname.startsWith("/api/auth")) {
+      event.respondWith(fetch(request))
+      return
+    }
+    // Never cache user-specific API routes (company-scoped data)
+    // These must always fetch fresh to prevent cross-company data leaks
+    const NO_CACHE_APIS = [
+      "/api/transfers", "/api/customers", "/api/staff", "/api/branches",
+      "/api/dashboard", "/api/exchange-rates", "/api/commissions",
+      "/api/company", "/api/user", "/api/audit-logs", "/api/fraud-alerts",
+      "/api/notifications", "/api/messages", "/api/reports", "/api/sync",
+      "/api/admin/", "/api/plan",
+    ]
+    const shouldSkipCache = NO_CACHE_APIS.some((prefix) => url.pathname.startsWith(prefix))
+    if (shouldSkipCache) {
+      event.respondWith(fetch(request))
+      return
+    }
     event.respondWith(networkFirst(request, API_CACHE))
     return
   }
 
   // 4. HTML PAGES (navigation requests)
   if (request.mode === "navigate") {
+    // Clear API cache when navigating to login/logout to prevent cross-company data leaks
+    if (url.pathname === "/login" || url.pathname === "/") {
+      caches.delete(API_CACHE)
+    }
     // Public SSG pages → cache-first (load instantly, always fresh from precache)
     if (PUBLIC_PAGES.has(url.pathname)) {
       event.respondWith(cacheFirst(request, STATIC_CACHE))
