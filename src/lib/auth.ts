@@ -1,8 +1,8 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import bcrypt from "bcryptjs"
-import { prisma } from "./prisma"
+import bcrypt from "bcrypt"
+import { prisma, checkDbConnection } from "./prisma"
 import { checkRateLimit } from "./rate-limit"
 
 function mapRole(role: string): string {
@@ -37,16 +37,23 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials, req) {
+        const t0 = Date.now()
         try {
           if (!credentials?.email || !credentials?.password) {
             console.log("[auth] Missing credentials")
             return null
           }
 
-          console.log("[auth] Login attempt:", credentials.email)
+          console.log("[auth] Login attempt:", credentials.email, "| cold-start since deploy")
 
           const ip = (req?.headers as any)?.["x-forwarded-for"] || "unknown"
-          console.log("[auth] IP:", ip)
+
+          const dbOk = await checkDbConnection()
+          if (!dbOk) {
+            console.error("[auth] DB connection failed")
+            return null
+          }
+          console.log("[auth] DB connected | elapsed:", Date.now() - t0, "ms")
 
           const rl = await checkRateLimit(`login:${ip}`, "login")
           if (!rl.allowed) {
@@ -54,14 +61,15 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          console.log("[auth] Looking up user:", credentials.email)
+          console.log("[auth] Rate limit passed | elapsed:", Date.now() - t0, "ms")
+
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
             include: { company: true, branch: true },
           })
 
           if (!user || !user.password) {
-            console.log("[auth] User not found or no password:", credentials.email)
+            console.log("[auth] User not found or no password:", credentials.email, "| elapsed:", Date.now() - t0, "ms")
             return null
           }
 
@@ -70,14 +78,16 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          console.log("[auth] Verifying password for:", credentials.email)
+          console.log("[auth] User found | elapsed:", Date.now() - t0, "ms")
+
           const isValid = await bcrypt.compare(credentials.password, user.password)
           if (!isValid) {
             console.log("[auth] Invalid password for:", credentials.email)
             return null
           }
 
-          console.log("[auth] Password valid, updating lastLogin for:", credentials.email)
+          console.log("[auth] Password valid | elapsed:", Date.now() - t0, "ms")
+
           const now = new Date()
           await prisma.user.update({
             where: { id: user.id },
@@ -86,7 +96,7 @@ export const authOptions: NextAuthOptions = {
 
           const isPlatformOwner = mapRole(user.role) === "platform_owner"
 
-          console.log("[auth] Login successful:", credentials.email, "role:", mapRole(user.role))
+          console.log("[auth] Login successful:", credentials.email, "role:", mapRole(user.role), "| total elapsed:", Date.now() - t0, "ms")
           return {
             id: user.id,
             email: user.email,
@@ -107,6 +117,7 @@ export const authOptions: NextAuthOptions = {
           console.error("[auth] authorize CRASH:", {
             email: credentials?.email,
             error: error?.message || error,
+            elapsed: Date.now() - t0,
             stack: error?.stack?.split("\n").slice(0, 5).join("\n"),
           })
           return null

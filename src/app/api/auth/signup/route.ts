@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { prisma } from "@/lib/prisma"
 import { generateBranchCode } from "@/lib/utils"
 import { createStripeCustomer, createStripeSubscription } from "@/lib/subscription"
