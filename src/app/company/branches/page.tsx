@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ColumnDef } from "@tanstack/react-table"
-import { Building2, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2 } from "lucide-react"
+import { Building2, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, WifiOff } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
@@ -21,21 +21,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useOfflineBranches } from "@/lib/hooks/use-offline-data"
 
 export default function BranchesPage() {
   const { data: session } = useSession()
   const user = session?.user as any
   const router = useRouter()
-  const [branches, setBranches] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: branches, loading, isFromCache } = useOfflineBranches()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
-
-  useEffect(() => {
-    fetch("/api/branches").then((r) => r.json()).then(setBranches).finally(() => setLoading(false))
-  }, [])
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
   async function toggleStatus(branchId: string, currentStatus: boolean) {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     setActionLoading(branchId)
     try {
       const res = await fetch(`/api/branches/${branchId}`, {
@@ -44,7 +42,6 @@ export default function BranchesPage() {
         body: JSON.stringify({ isActive: !currentStatus }),
       })
       if (res.ok) {
-        setBranches(branches.map((b) => (b.id === branchId ? { ...b, isActive: !currentStatus } : b)))
         toast.success(`Branch ${currentStatus ? "suspended" : "activated"} successfully`)
       } else {
         const data = await res.json()
@@ -59,11 +56,11 @@ export default function BranchesPage() {
 
   async function deleteBranch() {
     if (!deleteTarget) return
+    if (isOffline) { toast.error("An internet connection is required."); setDeleteTarget(null); return }
     setActionLoading(deleteTarget.id)
     try {
       const res = await fetch(`/api/branches/${deleteTarget.id}`, { method: "DELETE" })
       if (res.ok) {
-        setBranches(branches.filter((b) => b.id !== deleteTarget.id))
         toast.success("Branch deleted successfully")
       } else {
         const data = await res.json()
@@ -138,7 +135,14 @@ export default function BranchesPage() {
 
       <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-lg">All Branches</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg">All Branches</CardTitle>
+              {isFromCache && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                  <WifiOff className="h-3 w-3" /> Cached
+                </Badge>
+              )}
+            </div>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
           <DataTable columns={columns} data={branches} />

@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowLeftRight, Plus, Search, Eye, Printer, XCircle, RotateCcw, CheckCircle2, Loader2, Clock, FileText } from "lucide-react"
+import { ArrowLeftRight, Plus, Search, Eye, Printer, XCircle, RotateCcw, CheckCircle2, Loader2, Clock, FileText, WifiOff } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency, getTransactionTypeLabel } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
 import { SlaTimer } from "@/components/sla-timer"
+import { useOfflineTransfers } from "@/lib/hooks/use-offline-data"
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
@@ -54,8 +55,7 @@ const actionLabels: Record<string, string> = {
 export default function TransfersPage() {
   const { data: session } = useSession()
   const user = session?.user as any
-  const [transfers, setTransfers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: transfers, loading, isFromCache, refetch: refetchTransfers } = useOfflineTransfers()
   const [selected, setSelected] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -66,31 +66,8 @@ export default function TransfersPage() {
   const [payoutError, setPayoutError] = useState("")
   const [cancelReason, setCancelReason] = useState("")
   const [reverseReason, setReverseReason] = useState("")
-  const abortRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    loadTransfers()
-    const interval = setInterval(loadTransfers, 60000)
-    return () => { clearInterval(interval); abortRef.current?.abort() }
-  }, [])
-
-  async function loadTransfers() {
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
-    try {
-      const res = await fetch("/api/transfers", { signal: controller.signal })
-      if (!res.ok) return
-      const data = await res.json()
-      setTransfers(data)
-    } catch (e: any) {
-      if (e.name !== "AbortError") console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filtered = transfers.filter((t: any) =>
+  const filtered = (transfers || []).filter((t: any) =>
     !searchQuery ||
     t.transactionNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.secretCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,7 +89,7 @@ export default function TransfersPage() {
         body: JSON.stringify({ transferId: selected.id, reason: cancelReason }),
       })
       if (!res.ok) throw new Error(await res.text())
-      await loadTransfers()
+      await refetchTransfers()
       setShowCancelDialog(false)
       setCancelReason("")
       setSelected(null)
@@ -136,7 +113,7 @@ export default function TransfersPage() {
         const errorData = await res.json().catch(() => ({ error: "Failed to reverse transaction" }))
         throw new Error(errorData.message || errorData.error || "Failed to reverse transaction")
       }
-      await loadTransfers()
+      await refetchTransfers()
       setShowReverseDialog(false)
       setReverseReason("")
       setSelected(null)
@@ -163,7 +140,7 @@ export default function TransfersPage() {
         setPayoutError(data.error || "Payout failed")
         return
       }
-      await loadTransfers()
+      await refetchTransfers()
       setShowPayoutDialog(false)
       setPayoutSecretCode("")
       setSelected(null)
@@ -184,7 +161,7 @@ export default function TransfersPage() {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       window.open(url, "_blank")
-      loadTransfers()
+      refetchTransfers()
     } catch (e: any) {
       toast.error(e.message || "Failed to print receipt")
     } finally {
@@ -274,7 +251,14 @@ export default function TransfersPage() {
       <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-lg">All Transactions</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg">All Transactions</CardTitle>
+              {isFromCache && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                  <WifiOff className="h-3 w-3" /> Cached
+                </Badge>
+              )}
+            </div>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search by code or name..." className="pl-9 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />

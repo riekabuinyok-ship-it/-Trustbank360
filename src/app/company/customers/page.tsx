@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import { Users2, Search, Plus } from "lucide-react"
+import { Users2, Search, Plus, WifiOff } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { verificationStatusColors, riskLevelColors } from "@/lib/permissions"
 import Link from "next/link"
@@ -15,20 +15,32 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PhoneInput } from "@/components/ui/phone-input"
 import toast from "react-hot-toast"
+import { useOfflineCustomers } from "@/lib/hooks/use-offline-data"
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newCustomer, setNewCustomer] = useState({ fullName: "", phone: "", nationality: "", idType: "", idNumber: "" })
+  const { data: customers, loading, isFromCache } = useOfflineCustomers()
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
-  useEffect(() => {
-    fetch(`/api/customers${search ? `?q=${search}` : ""}`)
-      .then((r) => r.json()).then(setCustomers).catch(() => setCustomers([])).finally(() => setLoading(false))
-  }, [search])
+  const filtered = useMemo(() => {
+    if (!customers) return []
+    if (!search) return customers
+    const q = search.toLowerCase()
+    return customers.filter((c: any) =>
+      c.fullName?.toLowerCase().includes(q) ||
+      c.phone?.includes(q) ||
+      c.nationality?.toLowerCase().includes(q) ||
+      c.idNumber?.toLowerCase().includes(q)
+    )
+  }, [customers, search])
 
   async function createCustomer() {
+    if (isOffline) {
+      toast.error("An internet connection is required to create customers.")
+      return
+    }
     try {
       const res = await fetch("/api/customers", {
         method: "POST",
@@ -39,7 +51,6 @@ export default function CustomersPage() {
         toast.success("Customer created")
         setDialogOpen(false)
         setNewCustomer({ fullName: "", phone: "", nationality: "", idType: "", idNumber: "" })
-        fetch(`/api/customers`).then((r) => r.json()).then(setCustomers)
       }
     } catch {
       toast.error("Unable to create customer. Please try again.")
@@ -89,7 +100,14 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
-          <DataTable columns={columns} data={customers} />
+          <div className="flex items-center gap-2 mb-2">
+            {isFromCache && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                <WifiOff className="h-3 w-3" /> Cached
+              </Badge>
+            )}
+          </div>
+          <DataTable columns={columns} data={filtered} />
         </CardContent>
       </Card>
 

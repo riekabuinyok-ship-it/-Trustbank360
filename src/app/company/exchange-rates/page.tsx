@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import { Percent, Plus, Loader2, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react"
+import { Percent, Plus, Loader2, Pencil, Trash2, ToggleLeft, ToggleRight, WifiOff } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -19,6 +19,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import toast from "react-hot-toast"
+import { useOfflineExchangeRates } from "@/lib/hooks/use-offline-data"
 
 const currencies = [
   { value: "SSP", label: "SSP" },
@@ -35,8 +36,7 @@ export default function ExchangeRatesPage() {
   const isAdmin = role === "COMPANY_OWNER" || role === "company_owner" || role === "COMPANY_ADMIN" || role === "company_admin"
   const isOwner = role === "COMPANY_OWNER" || role === "company_owner"
 
-  const [rates, setRates] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: rates, loading, isFromCache, refetch: refetchRates } = useOfflineExchangeRates()
   const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED"])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -45,19 +45,16 @@ export default function ExchangeRatesPage() {
   const [form, setForm] = useState({ fromCurrency: "USD", toCurrency: "SSP", buyRate: "", sellRate: "" })
   const [editForm, setEditForm] = useState({ buyRate: "", sellRate: "" })
   const [saving, setSaving] = useState(false)
-
-  const fetchRates = () => {
-    fetch("/api/exchange-rates").then(async (r) => { if (r.ok) setRates(await r.json()) })
-  }
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
   useEffect(() => {
-    fetch("/api/exchange-rates").then(async (r) => { if (r.ok) setRates(await r.json()) }).finally(() => setLoading(false))
     fetch("/api/company/plan").then((r) => r.json()).then((d) => {
       if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
     }).catch(() => {})
   }, [])
 
   async function handleSubmit() {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     setSaving(true)
     try {
       const res = await fetch("/api/exchange-rates", {
@@ -69,7 +66,7 @@ export default function ExchangeRatesPage() {
         toast.success("Exchange rate created successfully")
         setDialogOpen(false)
         setForm({ fromCurrency: "USD", toCurrency: "SSP", buyRate: "", sellRate: "" })
-        fetchRates()
+        refetchRates()
       } else {
         const data = await res.json()
         toast.error(data.error || "Unable to create exchange rate")
@@ -82,6 +79,7 @@ export default function ExchangeRatesPage() {
   }
 
   async function handleEdit() {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     if (!selectedRate) return
     setSaving(true)
     try {
@@ -97,7 +95,7 @@ export default function ExchangeRatesPage() {
         toast.success("Exchange rate updated successfully")
         setEditDialogOpen(false)
         setSelectedRate(null)
-        fetchRates()
+        refetchRates()
       } else {
         const data = await res.json()
         toast.error(data.error || "Unable to update exchange rate")
@@ -110,6 +108,7 @@ export default function ExchangeRatesPage() {
   }
 
   async function handleDelete() {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     if (!selectedRate) return
     try {
       const res = await fetch(`/api/exchange-rates/${selectedRate.id}`, { method: "DELETE" })
@@ -117,7 +116,7 @@ export default function ExchangeRatesPage() {
         toast.success("Exchange rate deleted successfully")
         setDeleteDialogOpen(false)
         setSelectedRate(null)
-        fetchRates()
+        refetchRates()
       } else {
         const data = await res.json()
         toast.error(data.error || "Unable to delete exchange rate")
@@ -128,6 +127,7 @@ export default function ExchangeRatesPage() {
   }
 
   async function handleToggleActive(rate: any) {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     try {
       const res = await fetch(`/api/exchange-rates/${rate.id}`, {
         method: "PATCH",
@@ -136,7 +136,7 @@ export default function ExchangeRatesPage() {
       })
       if (res.ok) {
         toast.success(rate.isActive ? "Exchange rate deactivated" : "Exchange rate activated")
-        fetchRates()
+        refetchRates()
       } else {
         const data = await res.json()
         toast.error(data.error || "Unable to update exchange rate status")
@@ -213,10 +213,17 @@ export default function ExchangeRatesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Current Rates</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg">Current Rates</CardTitle>
+              {isFromCache && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                  <WifiOff className="h-3 w-3" /> Cached
+                </Badge>
+              )}
+            </div>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={rates} />
+          <DataTable columns={columns} data={rates || []} />
         </CardContent>
       </Card>
 

@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ColumnDef } from "@tanstack/react-table"
-import { Users, Plus, UserPlus, Pencil, Trash2 } from "lucide-react"
+import { Users, Plus, UserPlus, Pencil, Trash2, WifiOff } from "lucide-react"
 import Link from "next/link"
 import { roleLabels, roleColors, roleHierarchy } from "@/lib/permissions"
 import toast from "react-hot-toast"
@@ -23,25 +23,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useOfflineStaff } from "@/lib/hooks/use-offline-data"
 
 export default function StaffPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user as any
-  const [staff, setStaff] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: staff, loading, isFromCache } = useOfflineStaff()
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleteName, setDeleteName] = useState<string>("")
 
   const currentUserRole = user?.role?.toLowerCase() || ""
   const isSupervisor = currentUserRole === "company_owner" || currentUserRole === "company_admin"
   const isBranchManager = currentUserRole === "branch_manager"
-
-  useEffect(() => {
-    fetch("/api/staff").then((r) => r.json()).then(setStaff).finally(() => setLoading(false))
-  }, [])
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
   async function toggleStatus(userId: string, currentStatus: string) {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     const newStatus = currentStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE"
     try {
       const res = await fetch(`/api/staff/${userId}`, {
@@ -50,7 +48,6 @@ export default function StaffPage() {
         body: JSON.stringify({ status: newStatus }),
       })
       if (res.ok) {
-        setStaff(staff.map((s) => (s.id === userId ? { ...s, status: newStatus } : s)))
         toast.success(`Staff ${newStatus === "ACTIVE" ? "activated" : "suspended"} successfully`)
       } else {
         const data = await res.json()
@@ -62,12 +59,12 @@ export default function StaffPage() {
   }
 
   async function handleDelete(userId: string) {
+    if (isOffline) { toast.error("An internet connection is required."); setDeleteId(null); return }
     try {
       const res = await fetch(`/api/staff/${userId}`, {
         method: "DELETE",
       })
       if (res.ok) {
-        setStaff(staff.filter((s) => s.id !== userId))
         toast.success("Staff member removed successfully")
       } else {
         const data = await res.json()
@@ -152,10 +149,17 @@ export default function StaffPage() {
 
       <Card className="w-full max-w-full overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-lg">All Staff</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg">All Staff</CardTitle>
+              {isFromCache && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                  <WifiOff className="h-3 w-3" /> Cached
+                </Badge>
+              )}
+            </div>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
-          <DataTable columns={columns} data={staff} />
+          <DataTable columns={columns} data={staff || []} />
         </CardContent>
       </Card>
 
