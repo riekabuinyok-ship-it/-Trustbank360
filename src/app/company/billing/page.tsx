@@ -18,6 +18,7 @@ import {
   Users,
   Globe,
   Zap,
+  WifiOff,
 } from "lucide-react"
 
 interface Plan {
@@ -62,6 +63,7 @@ export default function BillingPage() {
   const { data: session } = useSession()
   const user = session?.user as any
   const isOwnerOrAdmin = user?.role === "company_owner" || user?.role === "company_admin"
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
   const [plans, setPlans] = useState<Plan[]>([])
   const [subscription, setSubscription] = useState<Subscription | null>(null)
@@ -138,6 +140,24 @@ export default function BillingPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (isOffline) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <Card className="text-center border-amber-200 dark:border-amber-800">
+          <CardContent className="p-10">
+            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mx-auto mb-6">
+              <WifiOff className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h2 className="text-xl font-bold mb-3">Internet Connection Required</h2>
+            <p className="text-muted-foreground leading-relaxed max-w-md mx-auto">
+              An internet connection is required to manage subscriptions and process payments. All other features remain available offline.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
