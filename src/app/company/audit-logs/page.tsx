@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollText, Loader2, Shield } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ScrollText, Loader2, Shield, WifiOff } from "lucide-react"
+import { getAllRecords, storeMany } from "@/lib/db/client"
 
 interface AuditLog {
   id: string
@@ -37,23 +39,47 @@ function timeAgo(date: string) {
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [isFromCache, setIsFromCache] = useState(false)
 
-  useEffect(() => {
-    fetch("/api/audit-logs").then(async (res) => {
+  useEffect(() => { loadAll() }, [])
+
+  async function loadAll() {
+    try {
+      const res = await fetch("/api/audit-logs")
       if (res.ok) {
         const data = await res.json()
-        const sorted = (Array.isArray(data) ? data : []).sort(
+        const items = Array.isArray(data) ? data : []
+        const sorted = items.sort(
           (a: AuditLog, b: AuditLog) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
         setLogs(sorted)
+        setIsFromCache(false)
+        storeMany("offlineAuditLogs", items).catch(() => {})
+        return
       }
-    }).finally(() => setLoading(false))
-  }, [])
+    } catch {}
+    const cached = await getAllRecords<AuditLog>("offlineAuditLogs").catch(() => [])
+    if (cached.length > 0) {
+      const sorted = cached.sort(
+        (a: AuditLog, b: AuditLog) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      setLogs(sorted)
+      setIsFromCache(true)
+    }
+    setLoading(false)
+  }
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
       <div>
-        <h1 className="text-2xl font-bold">Audit Logs</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Audit Logs</h1>
+          {isFromCache && (
+            <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+              <WifiOff className="h-3 w-3" /> Cached
+            </Badge>
+          )}
+        </div>
         <p className="text-muted-foreground text-sm">Track all system activities</p>
       </div>
 
@@ -90,7 +116,7 @@ export default function AuditLogsPage() {
                       <p className="text-sm text-muted-foreground">{log.resource}</p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-xs text-muted-foreground">{log.user.name}</p>
+                      <p className="text-xs text-muted-foreground">{log.user?.name || "Unknown"}</p>
                       <span className="text-muted-foreground/30">|</span>
                       <p className="text-xs text-muted-foreground/60">{timeAgo(log.createdAt)}</p>
                     </div>

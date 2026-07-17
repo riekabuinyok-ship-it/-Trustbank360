@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Bell, CheckCheck, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Bell, CheckCheck, Loader2, WifiOff } from "lucide-react"
 import toast from "react-hot-toast"
+import { getAllRecords, storeMany } from "@/lib/db/client"
 
 interface Notification {
   id: string
@@ -28,6 +30,8 @@ const typeIcons: Record<string, string> = {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const [isFromCache, setIsFromCache] = useState(false)
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
   useEffect(() => { loadAll() }, [])
 
@@ -36,12 +40,23 @@ export default function NotificationsPage() {
       const res = await fetch("/api/notifications")
       if (res.ok) {
         const data = await res.json()
-        setNotifications(data.notifications || data)
+        const items = data.notifications || data
+        setNotifications(items)
+        setIsFromCache(false)
+        storeMany("notifications", items).catch(() => {})
+        return
       }
-    } catch {} finally { setLoading(false) }
+    } catch {}
+    const cached = await getAllRecords<Notification>("notifications").catch(() => [])
+    if (cached.length > 0) {
+      setNotifications(cached)
+      setIsFromCache(true)
+    }
+    setLoading(false)
   }
 
   async function markAsRead(id: string) {
+    if (isOffline) { toast.error("Cannot mark as read while offline."); return }
     await fetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -51,6 +66,7 @@ export default function NotificationsPage() {
   }
 
   async function markAllAsRead() {
+    if (isOffline) { toast.error("Cannot mark as read while offline."); return }
     await fetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -77,7 +93,14 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Notifications</h1>
+            {isFromCache && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                <WifiOff className="h-3 w-3" /> Cached
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
             {loading ? "" : unread.length > 0 ? `${unread.length} unread` : "All caught up"}
           </p>

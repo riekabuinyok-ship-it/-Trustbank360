@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, CheckCircle2, XCircle, AlertTriangle, TrendingUp, DollarSign, Activity, Clock, MessageSquare, Mail } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Building2, CheckCircle2, XCircle, AlertTriangle, TrendingUp, DollarSign, Activity, Clock, MessageSquare, Mail, WifiOff } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { storeRecord, getRecord } from "@/lib/db/client"
 
 interface ActivityItem {
   id: string
@@ -30,26 +32,43 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [supportStats, setSupportStats] = useState({ open: 0, inProgress: 0 })
   const [subscriberCount, setSubscriberCount] = useState(0)
+  const [isFromCache, setIsFromCache] = useState(false)
 
   useEffect(() => {
     async function load() {
+      let anyFailed = false
       try {
         const [analyticsRes, supportRes, subRes] = await Promise.all([
-          fetch("/api/admin/analytics"),
-          fetch("/api/support/reports/stats"),
-          fetch("/api/newsletter/stats"),
+          fetch("/api/admin/analytics").catch(() => { anyFailed = true; return null }),
+          fetch("/api/support/reports/stats").catch(() => { anyFailed = true; return null }),
+          fetch("/api/newsletter/stats").catch(() => { anyFailed = true; return null }),
         ])
-        if (analyticsRes.ok) setData(await analyticsRes.json())
-        if (supportRes.ok) setSupportStats(await supportRes.json())
-        if (subRes.ok) {
-          const subData = await subRes.json()
-          setSubscriberCount(subData.last7days ?? subData.total ?? 0)
+        if (analyticsRes?.ok) {
+          const d = await analyticsRes.json()
+          setData(d)
+          storeRecord("apiCache", { key: "admin_analytics", ...d, cachedAt: Date.now() }).catch(() => {})
         }
-      } catch {
-        console.error("Failed to load admin data")
-      } finally {
-        setLoading(false)
+        if (supportRes?.ok) {
+          const d = await supportRes.json()
+          setSupportStats(d)
+          storeRecord("apiCache", { key: "support_stats", ...d, cachedAt: Date.now() }).catch(() => {})
+        }
+        if (subRes?.ok) {
+          const d = await subRes.json()
+          setSubscriberCount(d.last7days ?? d.total ?? 0)
+          storeRecord("apiCache", { key: "newsletter_stats", ...d, cachedAt: Date.now() }).catch(() => {})
+        }
+      } catch { anyFailed = true }
+
+      if (anyFailed) {
+        const [cachedAnalytics, cachedSupport] = await Promise.all([
+          getRecord<any>("apiCache", "admin_analytics"),
+          getRecord<any>("apiCache", "support_stats"),
+        ])
+        if (cachedAnalytics) { setData(cachedAnalytics); setIsFromCache(true) }
+        if (cachedSupport) { setSupportStats(cachedSupport); setIsFromCache(true) }
       }
+      setLoading(false)
     }
     load()
   }, [])
@@ -83,7 +102,14 @@ export default function AdminPage() {
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
       <div>
-        <h1 className="text-2xl font-bold">Admin Overview</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Admin Overview</h1>
+          {isFromCache && (
+            <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+              <WifiOff className="h-3 w-3" /> Cached
+            </Badge>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground mt-1">Platform-wide metrics and activity</p>
       </div>
 

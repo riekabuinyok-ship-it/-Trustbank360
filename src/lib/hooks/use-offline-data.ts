@@ -431,3 +431,23 @@ export function useOfflineKYC(customerId?: string) {
 
   return { kycData, loading: loading === "loading", updateKycOffline }
 }
+
+// ---- NOTIFICATIONS ----
+export function useOfflineNotifications() {
+  return useOfflineData<any>("notifications", "/api/notifications", {})
+}
+
+// ---- AUDIT LOGS ----
+export function useOfflineAuditLogs() {
+  return useOfflineData<any>("auditLogs", "/api/audit-logs", {})
+}
+
+// ---- COMPANY SETTINGS ----
+export function useOfflineCompanySettings() {
+  return useOfflineData<any>("settings", "/api/company", {})
+}
+
+// ---- ADMIN STATS (Platform Dashboard) ----
+export function useOfflineAdminStats() {
+  return useOfflineData<any>("apiCache", "/api/admin/analytics", { maxAge: 5 * 60 * 1000 })
+}

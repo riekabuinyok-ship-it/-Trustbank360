@@ -9,8 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { PhoneInput } from "@/components/ui/phone-input"
-import { Building2, Palette, Shield, User, Camera, Loader2 } from "lucide-react"
+import { Building2, Palette, Shield, User, Camera, Loader2, WifiOff } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import toast from "react-hot-toast"
+import { storeRecord, getRecord } from "@/lib/db/client"
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
@@ -41,32 +43,46 @@ export default function SettingsPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
   const [loading, setLoading] = useState(true)
+  const [isFromCache, setIsFromCache] = useState(false)
   const [savingGeneral, setSavingGeneral] = useState(false)
   const [savingBranding, setSavingBranding] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine
 
-  useEffect(() => {
-    if (user?.companyId) {
-      fetch("/api/company")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.name) setCompanyName(data.name)
-          if (data.registrationNumber) setRegistrationNumber(data.registrationNumber)
-          if (data.email) setEmail(data.email)
-          if (data.phone) setPhone(data.phone)
-          if (data.address) setAddress(data.address)
-          if (data.website) setWebsite(data.website)
-          if (data.primaryColor) setPrimaryColor(data.primaryColor)
-          if (data.secondaryColor) setSecondaryColor(data.secondaryColor)
-          if (data.logo) setLogo(data.logo)
-        })
-        .catch(() => toast.error("Unable to load company data. Please try again."))
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
+  async function loadCompanyData() {
+    if (!user?.companyId) { setLoading(false); return }
+    try {
+      const res = await fetch("/api/company")
+      if (res.ok) {
+        const data = await res.json()
+        applyCompanyData(data)
+        setIsFromCache(false)
+        storeRecord("settings", { key: "company", ...data }).catch(() => {})
+        return
+      }
+    } catch {}
+    const cached = await getRecord<any>("settings", "company").catch(() => null)
+    if (cached) {
+      applyCompanyData(cached)
+      setIsFromCache(true)
     }
-  }, [user])
+    setLoading(false)
+  }
+
+  function applyCompanyData(data: any) {
+    if (data.name) setCompanyName(data.name)
+    if (data.registrationNumber) setRegistrationNumber(data.registrationNumber)
+    if (data.email) setEmail(data.email)
+    if (data.phone) setPhone(data.phone)
+    if (data.address) setAddress(data.address)
+    if (data.website) setWebsite(data.website)
+    if (data.primaryColor) setPrimaryColor(data.primaryColor)
+    if (data.secondaryColor) setSecondaryColor(data.secondaryColor)
+    if (data.logo) setLogo(data.logo)
+  }
+
+  useEffect(() => { loadCompanyData() }, [user])
 
   useEffect(() => {
     if (user) {
@@ -79,6 +95,7 @@ export default function SettingsPage() {
   }, [user])
 
   async function handleSaveGeneral() {
+    if (isOffline) { toast.error("An internet connection is required to save settings."); return }
     setSavingGeneral(true)
     try {
       const res = await fetch("/api/company", {
@@ -106,6 +123,7 @@ export default function SettingsPage() {
   }
 
   async function handleSaveBranding() {
+    if (isOffline) { toast.error("An internet connection is required to save settings."); return }
     setSavingBranding(true)
     try {
       let logoUrl = logo
@@ -150,6 +168,7 @@ export default function SettingsPage() {
   }
 
   async function handleChangePassword() {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match")
       return
@@ -181,6 +200,7 @@ export default function SettingsPage() {
   }
 
   async function handleSaveProfile() {
+    if (isOffline) { toast.error("An internet connection is required."); return }
     setSavingProfile(true)
     try {
       let imageUrl = profileImage
