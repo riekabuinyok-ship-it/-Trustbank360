@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v7.0.0
+// TrustBank360 Service Worker v7.1.0
 // Offline-first PWA — ChunkLoadError-free deployment strategy
 //
 // Key design principle: NEVER cache Next.js hashed assets (/_next/static/*)
@@ -20,12 +20,26 @@ const STATIC_CACHE = `tb360-static-${CACHE_VERSION}`
 const API_CACHE = `tb360-api-${CACHE_VERSION}`
 
 // ---- PRECACHE LIST ----
-// Only truly static assets that we control and never change with deployments
+// Static assets + public SSG pages that are available offline immediately.
 const PRECACHE_URLS = [
-  // Offline fallback (self-contained static HTML, zero JS dependencies)
+  // Offline fallback
   "/offline.html",
+  "/offline",
 
-  // PWA manifest + SW itself
+  // Public SSG pages (load instantly offline)
+  "/login",
+  "/signup",
+  "/features",
+  "/pricing",
+  "/about",
+  "/contact",
+  "/help",
+  "/track",
+  "/privacy",
+  "/terms",
+  "/forgot-password",
+
+  // PWA manifest
   "/manifest.json",
 
   // ALL manifest icons (7 sizes)
@@ -180,22 +194,30 @@ self.addEventListener("fetch", (event) => {
   // Skip HMR
   if (url.pathname.startsWith("/_next/webpack-hmr")) return
 
-  // 1. NEXT.JS HASHED ASSETS — network-only (NEVER cache)
-  //    Next.js sets immutable cache headers on these. The browser's built-in
-  //    HTTP cache handles them correctly across deployments. Caching them in
-  //    the SW causes ChunkLoadError when old cached chunks reference removed files.
+  // 1. NEXT.JS STATIC CSS — cache-first (immutable hash filenames, safe to cache)
+  //    CSS chunks are versioned with content hashes and never change.
+  //    Caching them ensures styles load immediately even when offline.
+  if (url.pathname.startsWith("/_next/static/css/")) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE))
+    return
+  }
+
+  // 2. NEXT.JS STATIC CHUNKS (JS, images, other) — network-only
+  //    JS chunks reference each other. Caching them risks ChunkLoadError
+  //    when a cached chunk imports a chunk that was removed.
+  //    The browser's HTTP cache handles them when online.
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(networkOnly(request))
     return
   }
 
-  // 2. NEXT.JS DATA FETCHES — network-only (never cache stale data)
+  // 3. NEXT.JS DATA FETCHES — network-only (never cache stale data)
   if (url.pathname.startsWith("/_next/data/")) {
     event.respondWith(networkOnly(request))
     return
   }
 
-  // 3. AUTH ROUTES — pass through to network
+  // 4. AUTH ROUTES — pass through to network
   //    IMPORTANT: Do NOT intercept /api/auth/csrf — the browser must handle
   //    Set-Cookie directly. SW interception can prevent CSRF cookies from
   //    being applied to the document, which breaks signIn.
@@ -213,7 +235,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 4. USER-SCOPED API ROUTES — never cache (prevent cross-company leaks)
+  // 5. USER-SCOPED API ROUTES — never cache (prevent cross-company leaks)
   if (url.pathname.startsWith("/api/")) {
     const NO_CACHE_APIS = [
       "/api/transfers", "/api/customers", "/api/staff", "/api/branches",
@@ -239,7 +261,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 5. STATIC APP ASSETS — cache-first (icons, fonts, images, logos, manifest)
+  // 6. STATIC APP ASSETS — cache-first (icons, fonts, images, logos, manifest)
   //    These files don't change between deployments and are safe to cache permanently.
   const isStaticAppAsset =
     url.pathname.startsWith("/images/") ||
@@ -253,15 +275,26 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 6. HTML PAGES / NAVIGATIONS — network-only with offline fallback
-  //    NEVER serve cached HTML — stale HTML references old chunk filenames
-  //    that no longer exist on the server, causing ChunkLoadError.
+  // 7. PUBLIC SSG PAGES — cache-first (precached on install, load instantly offline)
+  const PUBLIC_PAGES = new Set([
+    "/", "/offline", "/login", "/signup", "/features",
+    "/pricing", "/about", "/contact", "/help", "/track",
+    "/privacy", "/terms", "/forgot-password", "/exchange-rates", "/tutorials",
+  ])
+  if (request.mode === "navigate" && PUBLIC_PAGES.has(url.pathname)) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE))
+    return
+  }
+
+  // 8. AUTHENTICATED PAGES / NAVIGATIONS — network-only with offline fallback
+  //    NEVER serve cached HTML — stale HTML references old chunk filenames.
+  //    The app's offline hooks provide data from IndexedDB for these pages.
   if (request.mode === "navigate") {
     event.respondWith(networkOnly(request))
     return
   }
 
-  // 7. Everything else — network-only
+  // 9. Everything else — network-only
   event.respondWith(networkOnly(request))
 })
 
