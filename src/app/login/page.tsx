@@ -11,7 +11,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Eye, EyeOff, Loader2, WifiOff } from "lucide-react"
 import toast from "react-hot-toast"
 import { TryDemoButton } from "@/components/try-demo-button"
-import { cacheSession, getCachedUser, verifyOfflineLogin, createOfflineSessionCookie } from "@/lib/offline-auth"
+import { UpdateBanner } from "@/components/update-banner"
+import { cacheSession, cacheFullSession, getCachedUser, verifyOfflineLogin, createOfflineSessionCookie, registerDevice } from "@/lib/offline-auth"
 
 function LoginForm() {
   const [email, setEmail] = useState("")
@@ -53,7 +54,27 @@ function LoginForm() {
       const user = await verifyOfflineLogin(email, password)
       if (user) {
         const cookie = createOfflineSessionCookie(user)
-        document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+        document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+        await cacheFullSession({
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+            companyId: user.companyId,
+            branchId: user.branchId,
+            companyName: user.companyName,
+            businessTypes: null,
+            isActive: true,
+            companyIsActive: true,
+            onboardingComplete: true,
+            twoFactorEnabled: false,
+            mustChangePassword: false,
+          },
+          expires: new Date(Date.now() + 30 * 86400000).toISOString(),
+          cachedAt: Date.now(),
+        })
         toast.success("Signed in (offline mode)")
         router.push(user.role === "platform_owner" ? "/platform" : "/company/dashboard")
         router.refresh()
@@ -72,6 +93,16 @@ function LoginForm() {
       })
 
       if (result?.error) {
+        // Network error or invalid credentials — try offline login
+        const offlineUser = await verifyOfflineLogin(email, password).catch(() => null)
+        if (offlineUser) {
+          const cookie = createOfflineSessionCookie(offlineUser)
+          document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+          toast.success("Signed in (offline mode)")
+          router.push(offlineUser.role === "platform_owner" ? "/platform" : "/company/dashboard")
+          router.refresh()
+          return
+        }
         toast.error("Invalid email or password")
         return
       }
@@ -93,6 +124,8 @@ function LoginForm() {
             image: userData.image,
             password,
           })
+          await cacheFullSession(session)
+          await registerDevice(userData.id, userData.companyId, userData.branchId)
         } catch {}
       }
 
@@ -103,11 +136,37 @@ function LoginForm() {
       router.push(role === "platform_owner" ? "/platform" : "/company/dashboard")
       router.refresh()
     } catch {
-      // Network might be down despite navigator.onLine being true
+      // If online, signIn threw — show clear error instead of silently going offline
+      if (navigator.onLine) {
+        toast.error("Unable to connect to the server. Please try again.")
+        return
+      }
+
+      // Genuinely offline — try cached credentials
       const user = await verifyOfflineLogin(email, password).catch(() => null)
       if (user) {
         const cookie = createOfflineSessionCookie(user)
-        document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+        document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+        await cacheFullSession({
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+            companyId: user.companyId,
+            branchId: user.branchId,
+            companyName: user.companyName,
+            businessTypes: null,
+            isActive: true,
+            companyIsActive: true,
+            onboardingComplete: true,
+            twoFactorEnabled: false,
+            mustChangePassword: false,
+          },
+          expires: new Date(Date.now() + 30 * 86400000).toISOString(),
+          cachedAt: Date.now(),
+        })
         toast.success("Signed in (offline mode)")
         router.push(user.role === "platform_owner" ? "/platform" : "/company/dashboard")
         router.refresh()
@@ -227,7 +286,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-50 via-surface-100 to-surface-200 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-50 via-surface-100 to-surface-200 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 p-4">
+      <UpdateBanner />
         <div className="w-10 h-10 rounded-xl gradient-primary animate-pulse flex items-center justify-center">
           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
         </div>
