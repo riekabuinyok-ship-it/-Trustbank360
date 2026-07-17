@@ -125,9 +125,14 @@ export async function POST(request: Request) {
     const company = await prisma.company.findUnique({ where: { id: user.companyId } })
     if (!company) return NextResponse.json({ error: "Company not found" }, { status: 404 })
 
-    const transactionNumber = generateTransactionNumber()
+    const isOfflineSync = request.headers.get("x-offline-sync") === "true"
+    const transactionNumber = (isOfflineSync && body.transactionNumber)
+      ? body.transactionNumber
+      : generateTransactionNumber()
     const isMobileMoney = transactionType && MOBILE_MONEY_TYPES.includes(transactionType)
-    const secretCode = isMobileMoney ? null : generateSecretCode(company.name)
+    const secretCode = (isOfflineSync && body.secretCode !== undefined)
+      ? body.secretCode
+      : (isMobileMoney ? null : generateSecretCode(company.name))
 
     const commissionSetting = await getCommissionSetting(user.companyId, currency)
     const { commission, senderAmount, receiverAmount } = calculateCommission(

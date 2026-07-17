@@ -13,7 +13,7 @@ import { ArrowLeftRight, Loader2, ArrowLeft } from "lucide-react"
 import { filterTransactionTypes } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
-import { useOfflineTransfers } from "@/lib/hooks/use-offline-data"
+import { useOfflineTransfers, useOfflineBranches, useOfflineProviders, useOfflineCommissionSettings } from "@/lib/hooks/use-offline-data"
 import { useNetworkStore } from "@/store/network-store"
 
 function calcCommission(amount: number, mode: string, value: number, minFee: number | null, commissionType: string) {
@@ -42,13 +42,14 @@ export default function NewTransferPage() {
   const { data: session } = useSession()
   const user = session?.user as any
   const [loading, setLoading] = useState(false)
-  const [branches, setBranches] = useState<any[]>([])
-  const [providers, setProviders] = useState<any[]>([])
   const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD", "EUR", "GBP", "AED"])
 
   const availableTypes = filterTransactionTypes(user?.businessTypes || [])
   const isOnline = useNetworkStore((s) => s.isOnline)
   const { createOfflineTransfer } = useOfflineTransfers(user?.companyId)
+  const { data: branches } = useOfflineBranches(user?.companyId)
+  const { data: providers } = useOfflineProviders(user?.companyId)
+  const { data: commissionSettings } = useOfflineCommissionSettings(user?.companyId)
 
   const [form, setForm] = useState({
     senderName: "",
@@ -65,15 +66,11 @@ export default function NewTransferPage() {
     mobileProviderId: "",
     notes: "",
   })
-  const [commissionSettings, setCommissionSettings] = useState<any[]>([])
 
   useEffect(() => {
-    fetch("/api/branches").then((r) => r.json()).then(setBranches).catch(() => setBranches([]))
-    fetch("/api/providers").then((r) => r.json()).then(setProviders).catch(() => setProviders([]))
     fetch("/api/company/plan").then((r) => r.json()).then((d) => {
       if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
     }).catch(() => {})
-    fetch("/api/commissions/settings").then((r) => r.json()).then(setCommissionSettings).catch(() => {})
   }, [])
 
   function updateField(field: string, value: string) {
@@ -88,8 +85,12 @@ export default function NewTransferPage() {
       const payload = { ...form, amount: parseFloat(form.amount) }
 
       if (!isOnline) {
-        await createOfflineTransfer(payload, user.id, user.companyId)
-        toast.success("Transaction saved offline. It will sync automatically when you're back online.")
+        const offlineResult = await createOfflineTransfer(payload, user.id, user.companyId, user.companyName)
+        if (offlineResult.secretCode) {
+          toast.success(`Transaction saved offline! Secret Code: ${offlineResult.secretCode}`, { duration: 10000 })
+        } else {
+          toast.success("Transaction saved offline. It will sync automatically when you're back online.")
+        }
         router.push("/company/transfers")
         return
       }

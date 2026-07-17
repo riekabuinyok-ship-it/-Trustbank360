@@ -155,6 +155,55 @@ export function detectStaleEdit(
   const localUpdated = new Date(localObject.updatedAt || localObject.createdAt || 0).getTime()
   const serverUpdated = new Date(serverObject.updatedAt || serverObject.createdAt || 0).getTime()
 
-  // If server has a newer version and local also has changes, it's stale
   return serverUpdated > localUpdated
+}
+
+export interface FieldDiff {
+  field: string
+  local: any
+  server: any
+  changed: boolean
+}
+
+export function getFieldDiffs(local: any, server: any): FieldDiff[] {
+  if (!local || !server) return []
+
+  const allKeys = new Set([...Object.keys(local), ...Object.keys(server)])
+  const diffs: FieldDiff[] = []
+
+  for (const key of allKeys) {
+    if (key.startsWith("_") || key === "id" || key === "createdAt") continue
+    const localVal = local[key]
+    const serverVal = server[key]
+    const localStr = JSON.stringify(localVal)
+    const serverStr = JSON.stringify(serverVal)
+    diffs.push({
+      field: key,
+      local: localVal,
+      server: serverVal,
+      changed: localStr !== serverStr,
+    })
+  }
+
+  return diffs
+}
+
+export async function resolveConflictKeepLocal(id: string, resolvedBy: string): Promise<void> {
+  const conflict = await getRecord<SyncConflict>("syncConflicts", id)
+  if (!conflict) return
+
+  conflict.status = "RESOLVED"
+  conflict.resolvedBy = resolvedBy
+  conflict.resolvedAt = Date.now()
+  await storeRecord("syncConflicts", conflict)
+}
+
+export async function resolveConflictKeepServer(id: string, resolvedBy: string): Promise<void> {
+  const conflict = await getRecord<SyncConflict>("syncConflicts", id)
+  if (!conflict) return
+
+  conflict.status = "RESOLVED"
+  conflict.resolvedBy = resolvedBy
+  conflict.resolvedAt = Date.now()
+  await storeRecord("syncConflicts", conflict)
 }

@@ -20,6 +20,7 @@ export function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
+      const tx = (event.target as IDBOpenDBRequest).transaction
 
       for (const store of STORES) {
         if (!db.objectStoreNames.contains(store.name)) {
@@ -30,6 +31,15 @@ export function openDB(): Promise<IDBDatabase> {
           if (store.indexes) {
             for (const index of store.indexes) {
               objectStore.createIndex(index.name, index.keyPath, index.options)
+            }
+          }
+        } else if (tx && store.indexes) {
+          // Store exists — ensure all indexes exist (handles version upgrades
+          // where new indexes are added to existing stores)
+          const existingStore = tx.objectStore(store.name)
+          for (const index of store.indexes) {
+            if (!existingStore.indexNames.contains(index.name)) {
+              existingStore.createIndex(index.name, index.keyPath, index.options)
             }
           }
         }

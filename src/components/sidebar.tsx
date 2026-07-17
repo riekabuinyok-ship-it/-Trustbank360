@@ -59,6 +59,7 @@ import { getNavItems } from "@/lib/permissions"
 import { useUnreadMessages } from "@/components/notifications/use-unread-messages"
 import { useUnreadTicketReplies } from "@/components/notifications/use-unread-ticket-replies"
 import { InstallPrompt } from "@/components/install-prompt"
+import { getPendingCount } from "@/lib/db/sync-queue"
 
 const iconMap: Record<string, any> = {
   LayoutDashboard,
@@ -98,6 +99,19 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
 
   const unreadMessages = useUnreadMessages()
   const unreadTicketReplies = useUnreadTicketReplies()
+  const [pendingSyncCount, setPendingSyncCount] = useState(0)
+
+  useEffect(() => {
+    const checkPending = async () => {
+      try {
+        const count = await getPendingCount()
+        setPendingSyncCount(count)
+      } catch {}
+    }
+    checkPending()
+    const interval = setInterval(checkPending, 15000)
+    return () => clearInterval(interval)
+  }, [])
 
   const navItems = useMemo(() => {
     if (!role) return []
@@ -167,6 +181,11 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
                       {(item.href === "/company/my-tickets" && unreadTicketReplies > 0) && (
                         <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                           {unreadTicketReplies > 9 ? "9+" : unreadTicketReplies}
+                        </span>
+                      )}
+                      {(item.href === "/company/sync-center" && pendingSyncCount > 0) && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                          {pendingSyncCount > 99 ? "99+" : pendingSyncCount}
                         </span>
                       )}
                     </div>

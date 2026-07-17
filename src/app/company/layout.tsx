@@ -6,8 +6,12 @@ import { redirect } from "next/navigation"
 import { Sidebar, MobileNav, MobileBottomNav } from "@/components/sidebar"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { NetworkStatusIndicator } from "@/components/network-status"
+import { OfflineBanner } from "@/components/offline-banner"
+import { UpdateBanner } from "@/components/update-banner"
 import { useBackgroundSync } from "@/lib/sync/use-background-sync"
 import { initConnectionMonitoring } from "@/store/network-store"
+import { seedAll } from "@/lib/db/data-seeder"
+import { refreshOfflineDaysCache } from "@/lib/offline-auth"
 
 function LoadingSpinner() {
   return (
@@ -57,6 +61,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (status !== "authenticated") return
+    const user = session?.user as any
+    if (!user?.companyId) return
+
+    refreshOfflineDaysCache()
+
+    if (navigator.onLine) {
+      seedAll(user.companyId).catch(() => {})
+    }
 
     const checkCompanyStatus = async () => {
       try {
@@ -73,9 +85,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     checkCompanyStatus()
-  }, [status])
+  }, [status, session])
 
-  // Initialize offline-first features
   useBackgroundSync()
 
   useEffect(() => {
@@ -112,6 +123,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 overflow-x-hidden w-full max-w-full">
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <MobileNav />
+      <UpdateBanner />
+      <OfflineBanner />
       <main className={`${sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"} pt-16 lg:pt-0 pb-20 lg:pb-0 transition-all duration-300 min-w-0 overflow-x-hidden w-full max-w-full`}>
         <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full min-w-0">
           <Breadcrumb />

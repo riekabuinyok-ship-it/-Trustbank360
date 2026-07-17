@@ -28,13 +28,11 @@ export const metadata: Metadata = {
     title: "TrustBank360 - Enterprise Fintech Platform for Money Transfer & Remittance",
     description: "Multi-company money transfer and remittance management platform serving Africa and beyond.",
     url: siteUrl,
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "TrustBank360" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "TrustBank360 - Enterprise Fintech Platform",
     description: "Multi-company money transfer and remittance management platform serving Africa and beyond.",
-    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,

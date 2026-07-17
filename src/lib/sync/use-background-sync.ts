@@ -1,5 +1,5 @@
 // TrustBank360 Background Sync Hook
-// Automatically syncs pending offline data when connectivity returns
+// v2: Adds visibility/focus triggers, faster interval
 
 "use client"
 
@@ -8,8 +8,8 @@ import { useNetworkStore } from "@/store/network-store"
 import { useSyncStore } from "@/store/sync-store"
 import { syncAll } from "./sync-engine"
 
-const SYNC_INTERVAL = 5 * 60 * 1000 // 5 minutes
-const IMMEDIATE_SYNC_DELAY = 3000 // 3 seconds after coming online
+const SYNC_INTERVAL = 3 * 60 * 1000
+const IMMEDIATE_SYNC_DELAY = 2000
 
 export function useBackgroundSync() {
   const mounted = useRef(false)
@@ -22,8 +22,10 @@ export function useBackgroundSync() {
 
     const performSync = async () => {
       if (syncInProgress.current) return
-      syncInProgress.current = true
+      const networkState = useNetworkStore.getState()
+      if (!networkState.isOnline || networkState.isSyncing) return
 
+      syncInProgress.current = true
       try {
         await syncAll()
       } catch {
@@ -39,12 +41,26 @@ export function useBackgroundSync() {
       setTimeout(performSync, 2000)
     }
 
-    // Sync when coming back online
     const handleOnline = () => {
       setTimeout(performSync, IMMEDIATE_SYNC_DELAY)
     }
 
-    // Listen for manual sync triggers
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        const networkState = useNetworkStore.getState()
+        if (networkState.isOnline && !networkState.isSyncing) {
+          performSync()
+        }
+      }
+    }
+
+    const handleFocus = () => {
+      const networkState = useNetworkStore.getState()
+      if (networkState.isOnline && !networkState.isSyncing) {
+        performSync()
+      }
+    }
+
     const handleTriggerSync = () => {
       const state = useNetworkStore.getState()
       if (state.isOnline) {
@@ -54,8 +70,9 @@ export function useBackgroundSync() {
 
     window.addEventListener("online", handleOnline)
     window.addEventListener("trigger-sync", handleTriggerSync)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("focus", handleFocus)
 
-    // Periodic sync
     intervalRef.current = setInterval(() => {
       const state = useNetworkStore.getState()
       if (state.isOnline && !state.isSyncing) {
@@ -69,6 +86,8 @@ export function useBackgroundSync() {
       }
       window.removeEventListener("online", handleOnline)
       window.removeEventListener("trigger-sync", handleTriggerSync)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("focus", handleFocus)
     }
   }, [])
 }

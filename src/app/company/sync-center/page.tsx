@@ -14,8 +14,9 @@ import {
   AlertTriangle,
   Clock,
   Loader2,
-  ArrowUpDown,
   Database,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react"
 import { useNetworkStore } from "@/store/network-store"
 import { useSyncStore } from "@/store/sync-store"
@@ -27,10 +28,16 @@ import {
   retryFailedItem,
   retryAllFailed,
 } from "@/lib/db/sync-queue"
-import { getUnresolvedConflicts, resolveConflict } from "@/lib/db/conflicts"
+import {
+  getUnresolvedConflicts,
+  resolveConflict,
+  getFieldDiffs,
+  resolveConflictKeepLocal,
+  resolveConflictKeepServer,
+} from "@/lib/db/conflicts"
 import { getUnsyncedAuditCount } from "@/lib/db/offline-audit"
 import type { SyncQueueItem } from "@/lib/db/sync-queue"
-import type { SyncConflict } from "@/lib/db/conflicts"
+import type { SyncConflict, FieldDiff } from "@/lib/db/conflicts"
 
 export default function SyncCenterPage() {
   const networkStatus = useNetworkStore((s) => s.status)
@@ -46,6 +53,9 @@ export default function SyncCenterPage() {
   const [unsyncedAuditCount, setUnsyncedAuditCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [syncResult, setSyncResult] = useState<{ synced: number; failed: number; conflicts: number } | null>(null)
+  const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null)
+  const [fieldDiffs, setFieldDiffs] = useState<FieldDiff[]>([])
+  const [resolvingConflict, setResolvingConflict] = useState(false)
 
   const refreshAll = useCallback(async () => {
     setLoading(true)
@@ -102,7 +112,36 @@ export default function SyncCenterPage() {
 
   const handleResolveConflict = async (id: string, resolution: "RESOLVED" | "DISCARDED") => {
     await resolveConflict(id, resolution, "manual")
+    setSelectedConflict(null)
     refreshAll()
+  }
+
+  const handleKeepLocal = async (conflict: SyncConflict) => {
+    setResolvingConflict(true)
+    try {
+      await resolveConflictKeepLocal(conflict.id, "manual")
+      setSelectedConflict(null)
+      refreshAll()
+    } finally {
+      setResolvingConflict(false)
+    }
+  }
+
+  const handleKeepServer = async (conflict: SyncConflict) => {
+    setResolvingConflict(true)
+    try {
+      await resolveConflictKeepServer(conflict.id, "manual")
+      setSelectedConflict(null)
+      refreshAll()
+    } finally {
+      setResolvingConflict(false)
+    }
+  }
+
+  const selectConflict = (conflict: SyncConflict) => {
+    setSelectedConflict(conflict)
+    const diffs = getFieldDiffs(conflict.localPayload, conflict.serverPayload)
+    setFieldDiffs(diffs)
   }
 
   const totalItems = pendingItems.length + failedItems.length + syncedItems.length
@@ -373,68 +412,127 @@ export default function SyncCenterPage() {
         </TabsContent>
 
         <TabsContent value="conflicts" className="mt-4">
-          <Card>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...
+          {selectedConflict ? (
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedConflict(null)}
+                    className="gap-1"
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </Button>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      {selectedConflict.conflictType} — {selectedConflict.tableName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(selectedConflict.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <Badge variant="warning" className="text-[10px] ml-auto">{selectedConflict.conflictType}</Badge>
                 </div>
-              ) : conflicts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-2" />
-                  <p className="font-medium text-foreground">No conflicts</p>
-                  <p className="text-sm">All data is in sync with the server.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/10 p-3">
+                    <p className="text-xs font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-1">
+                      <ArrowLeft className="h-3 w-3" /> Your Local Data
+                    </p>
+                    <div className="space-y-1.5">
+                      {fieldDiffs.filter(d => d.changed).map((diff) => (
+                        <div key={diff.field} className="text-xs">
+                          <span className="font-medium text-red-800 dark:text-red-300">{diff.field}:</span>
+                          <span className="ml-1 break-anywhere">{String(diff.local ?? "—")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/10 p-3">
+                    <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1">
+                      Server Data <ArrowRight className="h-3 w-3" />
+                    </p>
+                    <div className="space-y-1.5">
+                      {fieldDiffs.filter(d => d.changed).map((diff) => (
+                        <div key={diff.field} className="text-xs">
+                          <span className="font-medium text-blue-800 dark:text-blue-300">{diff.field}:</span>
+                          <span className="ml-1 break-anywhere">{String(diff.server ?? "—")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="divide-y">
-                  {conflicts.map((conflict) => (
-                    <div key={conflict.id} className="p-3 space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={resolvingConflict}
+                    onClick={() => handleKeepLocal(selectedConflict)}
+                  >
+                    Keep Local
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={resolvingConflict}
+                    onClick={() => handleKeepServer(selectedConflict)}
+                  >
+                    Keep Server
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={resolvingConflict}
+                    onClick={() => handleResolveConflict(selectedConflict.id, "DISCARDED")}
+                  >
+                    Discard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...
+                  </div>
+                ) : conflicts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-2" />
+                    <p className="font-medium text-foreground">No conflicts</p>
+                    <p className="text-sm">All data is in sync with the server.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {conflicts.map((conflict) => (
+                      <button
+                        key={conflict.id}
+                        className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50 transition-colors"
+                        onClick={() => selectConflict(conflict)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium">
-                              {conflict.conflictType} — {conflict.tableName}
+                            <p className="text-sm font-medium truncate">
+                              {conflict.tableName}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(conflict.createdAt).toLocaleString()}
+                              {conflict.conflictType} &middot; {new Date(conflict.createdAt).toLocaleString()}
                             </p>
                           </div>
                         </div>
-                        <Badge variant="warning" className="text-[10px]">{conflict.conflictType}</Badge>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        <div className="p-2 rounded bg-red-50 dark:bg-red-950/10 border border-red-200 dark:border-red-900">
-                          <p className="font-semibold text-red-700 dark:text-red-400 mb-1">Local</p>
-                          <pre className="truncate">{JSON.stringify(conflict.localPayload).slice(0, 100)}</pre>
-                        </div>
-                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/10 border border-blue-200 dark:border-blue-900">
-                          <p className="font-semibold text-blue-700 dark:text-blue-400 mb-1">Server</p>
-                          <pre className="truncate">{JSON.stringify(conflict.serverPayload).slice(0, 100)}</pre>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleResolveConflict(conflict.id, "RESOLVED")}
-                        >
-                          Accept Local
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleResolveConflict(conflict.id, "DISCARDED")}
-                        >
-                          Accept Server
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        <Badge variant="warning" className="text-[10px] flex-shrink-0">{conflict.conflictType}</Badge>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

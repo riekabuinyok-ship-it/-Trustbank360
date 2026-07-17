@@ -32,6 +32,11 @@ function parseOfflineCookie(cookieValue: string | undefined): OfflineClaims | nu
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // 0. RSC flight requests → pass through (prevent broken App Router navigation)
+  if (request.headers.get("RSC") === "1") {
+    return NextResponse.next()
+  }
+
   // 1. Public routes → allow
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
     const response = NextResponse.next()
@@ -60,9 +65,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (offlineUser && offlineUser.role === "platform_owner" && pathname.startsWith("/platform")) {
-      const response = NextResponse.next()
-      response.headers.set("X-Offline-Session", "true")
-      return response
+      const loginUrl = new URL("/login", request.url)
+      loginUrl.searchParams.set("error", "platform-offline")
+      return NextResponse.redirect(loginUrl)
     }
 
     const loginUrl = new URL("/login", request.url)

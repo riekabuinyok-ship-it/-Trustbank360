@@ -22,6 +22,7 @@ export interface SyncQueueItem {
   status: "PENDING" | "SYNCING" | "SYNCED" | "FAILED"
   retryCount: number
   lastError: string | null
+  lastAttemptAt: number | null
   createdAt: number
   syncedAt: number | null
 }
@@ -45,6 +46,7 @@ export async function enqueue(params: {
     status: "PENDING",
     retryCount: 0,
     lastError: null,
+    lastAttemptAt: null,
     createdAt: Date.now(),
     syncedAt: null,
   }
@@ -88,6 +90,7 @@ export async function markSyncing(id: string): Promise<void> {
   if (!item) return
 
   item.status = "SYNCING"
+  item.lastAttemptAt = Date.now()
   await storeRecord("syncQueue", item)
 }
 
@@ -176,4 +179,17 @@ export async function clearSyncedItems(): Promise<void> {
 
 export async function clearAllQueueItems(): Promise<void> {
   await clearStore("syncQueue")
+}
+
+export async function getStaleSyncingItems(
+  thresholdMs: number
+): Promise<SyncQueueItem[]> {
+  const all = await getAllRecords<SyncQueueItem>("syncQueue")
+  const now = Date.now()
+  return all.filter(
+    (item) =>
+      item.status === "SYNCING" &&
+      item.lastAttemptAt &&
+      now - item.lastAttemptAt > thresholdMs
+  )
 }

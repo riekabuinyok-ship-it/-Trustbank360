@@ -1,9 +1,9 @@
 // TrustBank360 IndexedDB Schema
 // Database: trustbank360_v1
-// Version: 1
+// Version: 3 (added providers, commissionSettings stores)
 
 export const DB_NAME = "trustbank360_v1"
-export const DB_VERSION = 1
+export const DB_VERSION = 5
 
 export interface StoreSchema {
   name: string
@@ -26,6 +26,7 @@ export const STORES: StoreSchema[] = [
     keyPath: "id",
     indexes: [
       { name: "by_transactionNumber", keyPath: "transactionNumber", options: { unique: true } },
+      { name: "by_secretCode", keyPath: "secretCode" },
       { name: "by_status", keyPath: "status" },
       { name: "by_companyId", keyPath: "companyId" },
       { name: "by_createdAt", keyPath: "createdAt" },
@@ -131,6 +132,53 @@ export const STORES: StoreSchema[] = [
     keyPath: "id",
     indexes: [
       { name: "by_email", keyPath: "email" },
+    ],
+  },
+  {
+    name: "devices",
+    keyPath: "id",
+    indexes: [
+      { name: "by_userId", keyPath: "userId" },
+      { name: "by_companyId", keyPath: "companyId" },
+      { name: "by_fingerprint", keyPath: "fingerprint" },
+    ],
+  },
+  {
+    name: "settings",
+    keyPath: "key",
+  },
+  {
+    name: "seedMeta",
+    keyPath: "companyId",
+  },
+  {
+    name: "apiCache",
+    keyPath: "key",
+    indexes: [
+      { name: "by_cachedAt", keyPath: "cachedAt" },
+    ],
+  },
+  {
+    name: "notifications",
+    keyPath: "id",
+    indexes: [
+      { name: "by_userId", keyPath: "userId" },
+      { name: "by_companyId", keyPath: "companyId" },
+      { name: "by_readAt", keyPath: "readAt" },
+    ],
+  },
+  {
+    name: "providers",
+    keyPath: "id",
+    indexes: [
+      { name: "by_companyId", keyPath: "companyId" },
+    ],
+  },
+  {
+    name: "commissionSettings",
+    keyPath: "id",
+    indexes: [
+      { name: "by_companyId", keyPath: "companyId" },
     ],
   },
 ]

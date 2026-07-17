@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, CheckCircle2, Loader2, XCircle, Building2, User, ArrowRight, ShieldCheck } from "lucide-react"
+import { Search, CheckCircle2, Loader2, XCircle, Building2, User, ArrowRight, ShieldCheck, WifiOff } from "lucide-react"
 import toast from "react-hot-toast"
 import { formatCurrency, getTransactionTypeLabel } from "@/lib/utils"
+import { lookupOfflineTransfer, useOfflinePayouts } from "@/lib/hooks/use-offline-data"
+import { useNetworkStore } from "@/store/network-store"
+import { useSession } from "next-auth/react"
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800",
@@ -19,12 +22,18 @@ const statusColors: Record<string, string> = {
 }
 
 export default function PayoutPage() {
+  const { data: session } = useSession()
+  const user = session?.user as any
+  const isOnline = useNetworkStore((s) => s.isOnline)
+  const { createOfflinePayout } = useOfflinePayouts()
+
   const [secretCode, setSecretCode] = useState("")
   const [searching, setSearching] = useState(false)
   const [transfer, setTransfer] = useState<any>(null)
   const [error, setError] = useState("")
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [step, setStep] = useState<"search" | "found" | "completed">("search")
+  const [foundOffline, setFoundOffline] = useState(false)
 
   // USD ID verification fields
   const [receiverNationality, setReceiverNationality] = useState("")
@@ -46,22 +55,33 @@ export default function PayoutPage() {
     setError("")
     setTransfer(null)
     setStep("search")
+    setFoundOffline(false)
     try {
-      const res = await fetch(`/api/transfers/lookup?secretCode=${secretCode}`)
-      if (!res.ok) {
+      if (isOnline) {
+        const res = await fetch(`/api/transfers/lookup?secretCode=${secretCode}`)
+        if (!res.ok) {
+          const data = await res.json()
+          setError(data.error || "Transaction not found")
+          return
+        }
         const data = await res.json()
-        setError(data.error || "Transaction not found")
+        setTransfer(data)
+        setStep("found")
         return
       }
-      const data = await res.json()
-      setTransfer(data)
-      if (data.status === "COMPLETED") {
-        setStep("completed")
-      } else {
-        setStep("found")
+
+      // Offline: look up in IndexedDB
+      const localTransfer = await lookupOfflineTransfer(secretCode)
+      if (!localTransfer) {
+        setError("Transaction not found in offline data. Make sure the transfer was synced before going offline.")
+        return
       }
-    } catch {
-      setError("Failed to look up transaction")
+      setFoundOffline(true)
+      setTransfer(localTransfer)
+      setStep("found")
+    } catch (err) {
+      console.error("[Payout] Lookup failed:", err)
+      setError("Failed to look up transaction. Try searching again or check your connection.")
     } finally {
       setSearching(false)
     }
@@ -82,6 +102,33 @@ export default function PayoutPage() {
     }
     setActionLoading("payout")
     try {
+      if (!isOnline) {
+        // Check if user's branch is the receiver branch
+        const receiverBranchId = transfer.branchLink?.receiverBranchId || transfer.branchLink?.receiverBranch?.id
+        if (receiverBranchId && receiverBranchId !== user.branchId) {
+          setError("Only the receiver branch can process this payout. Contact the receiving branch to complete this transaction.")
+          return
+        }
+
+        // Queue payout for sync when back online
+        try {
+          await createOfflinePayout(
+            { transferId: transfer.id, secretCode },
+            user.id,
+            user.companyId,
+            transfer
+          )
+        } catch (err: any) {
+          const msg = err?.message || "Failed to queue payout"
+          setError(msg)
+          return
+        }
+        setTransfer({ ...transfer, status: "COMPLETED" })
+        setStep("completed")
+        toast.success("Payout queued — will sync when you're back online", { duration: 6000 })
+        return
+      }
+
       const body: any = { transferId: transfer.id, secretCode }
       if (requiresUsdId) {
         body.receiverNationality = receiverNationality.trim()
@@ -112,6 +159,13 @@ export default function PayoutPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {!isOnline && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <WifiOff className="h-4 w-4 flex-shrink-0" />
+          <span>You&apos;re offline. Transfer lookup uses cached data. Payout will sync when reconnected.</span>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold">Payout</h1>
         <p className="text-muted-foreground">Process customer payout using secret code</p>
@@ -154,9 +208,14 @@ export default function PayoutPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Transaction Found</CardTitle>
-              <Badge className={statusColors[transfer.status]}>
-                {transfer.status === "PENDING" ? "Pending Payout" : transfer.status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                {foundOffline && (
+                  <Badge className="bg-blue-100 text-blue-800">Offline Data</Badge>
+                )}
+                <Badge className={statusColors[transfer.status]}>
+                  {transfer.status === "PENDING" ? "Pending Payout" : transfer.status}
+                </Badge>
+              </div>
             </div>
             <CardDescription>Verify the details and complete the payout.</CardDescription>
           </CardHeader>
@@ -277,19 +336,49 @@ export default function PayoutPage() {
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <Button
-              className="w-full gap-2"
-              size="lg"
-              onClick={handleCompletePayout}
-              disabled={actionLoading === "payout" || !usdIdValid}
-            >
-              {actionLoading === "payout" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5" />
-              )}
-              Complete Payout
-            </Button>
+            {transfer.status === "PENDING" ? (
+              <>
+                <Button
+                  className="w-full gap-2"
+                  size="lg"
+                  onClick={handleCompletePayout}
+                  disabled={actionLoading === "payout" || !usdIdValid}
+                >
+                  {actionLoading === "payout" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5" />
+                  )}
+                  {!isOnline ? "Queue Payout (Offline)" : "Complete Payout"}
+                </Button>
+                {!isOnline && (
+                  <p className="text-xs text-amber-600 text-center">
+                    This payout will sync to the server when you reconnect.
+                  </p>
+                )}
+              </>
+            ) : transfer.status === "COMPLETED" ? (
+              <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                    This transaction was already paid
+                  </p>
+                </div>
+                {transfer.paidBy && (
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                    Processed by {transfer.paidBy.name}{transfer.paidBy.branch?.name ? ` (${transfer.paidBy.branch.name})` : ""}
+                    {transfer.paidAt ? ` on ${new Date(transfer.paidAt).toLocaleDateString()} at ${new Date(transfer.paidAt).toLocaleTimeString()}` : ""}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  This transaction was {transfer.status?.toLowerCase() || "cancelled"} and cannot be processed.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

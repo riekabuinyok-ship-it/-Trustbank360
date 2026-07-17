@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
+import { useNetworkStore } from "@/store/network-store"
 
 export function Warmup() {
   const { data: session } = useSession()
@@ -10,21 +11,15 @@ export function Warmup() {
 
   useEffect(() => {
     function warm() {
-      if (typeof navigator !== "undefined" && !navigator.onLine) return
-      fetch("/api/auth/session", { method: "GET" }).catch(() => {})
+      if (!useNetworkStore.getState().isOnline) return
       fetch("/api/heartbeat", { method: "POST" }).catch(() => {})
     }
 
-    // Warm immediately (session endpoint keeps NextAuth function warm)
-    fetch("/api/auth/session", { method: "GET" }).catch(() => {})
-
-    // Only do periodic heartbeat if authenticated
     if (isAuthenticated) {
-      fetch("/api/heartbeat", { method: "POST" }).catch(() => {})
+      warm()
       intervalRef.current = setInterval(warm, 60000)
     }
 
-    // Listen for online/offline to pause/resume
     function handleOnline() {
       if (isAuthenticated && !intervalRef.current) {
         intervalRef.current = setInterval(warm, 60000)

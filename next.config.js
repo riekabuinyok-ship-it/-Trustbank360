@@ -6,9 +6,7 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' }
     ]
   },
-  experimental: {
-    serverExternalPackages: ['bcryptjs', 'pdfkit']
-  },
+  serverExternalPackages: ['bcryptjs', 'pdfkit'],
   async headers() {
     return [
       {
@@ -38,9 +36,15 @@ const nextConfig = {
         ],
       },
       {
-        source: '/images/icons/:path*',
+        source: "/images/icons/:path*",
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {

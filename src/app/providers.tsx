@@ -1,6 +1,6 @@
 "use client"
 
-import { SessionProvider } from "next-auth/react"
+import { OfflineSessionProvider } from "@/components/offline-session-provider"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "react-hot-toast"
 import { ErrorBoundary } from "@/components/error-boundary"
@@ -8,7 +8,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
-      <SessionProvider>
+      <OfflineSessionProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
           <Toaster
@@ -23,7 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             }}
           />
         </ThemeProvider>
-      </SessionProvider>
+      </OfflineSessionProvider>
     </ErrorBoundary>
   )
 }

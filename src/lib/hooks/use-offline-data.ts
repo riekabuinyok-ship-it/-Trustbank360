@@ -6,8 +6,9 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNetworkStore } from "@/store/network-store"
 import { useOfflineStore } from "@/store/offline-store"
-import { storeRecord, getRecord, getAllRecords, getByIndex, storeMany } from "@/lib/db/client"
+import { storeRecord, getRecord, getAllRecords, getByIndex, getFirstByIndex, storeMany } from "@/lib/db/client"
 import { enqueue } from "@/lib/db/sync-queue"
+import { generateTransactionNumber, generateSecretCode, MOBILE_MONEY_TYPES } from "@/lib/utils"
 
 type LoadingState = "loading" | "ready" | "error"
 
@@ -76,12 +77,12 @@ function useOfflineData<T>(
         setError(null)
       }
     } catch (err) {
-      if (mounted.current && !isFromCache) {
+      if (mounted.current) {
         setError(err instanceof Error ? err.message : "Fetch failed")
         setLoading("ready")
       }
     }
-  }, [cacheTable, apiUrl, isFromCache])
+  }, [cacheTable, apiUrl])
 
   const refetch = useCallback(async () => {
     setLoading("loading")
@@ -102,19 +103,14 @@ function useOfflineData<T>(
   }, [])
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>
     const init = async () => {
       await loadFromCache()
       await fetchFromServer()
-
-      // Periodic refresh
-      const interval = setInterval(() => {
-        fetchFromServer()
-      }, 30000)
-
-      return () => clearInterval(interval)
+      interval = setInterval(fetchFromServer, 30000)
     }
-
     init()
+    return () => clearInterval(interval)
   }, [loadFromCache, fetchFromServer])
 
   return {
@@ -142,10 +138,15 @@ export function useOfflineTransfers(companyId?: string) {
     filterByCompany: true,
   })
 
-  const createOfflineTransfer = useCallback(async (transferData: any, userId: string, companyId: string) => {
-    // Save to IndexedDB immediately
+  const createOfflineTransfer = useCallback(async (transferData: any, userId: string, companyId: string, companyName?: string) => {
+    const transactionNumber = generateTransactionNumber()
+    const isMobileMoney = MOBILE_MONEY_TYPES.includes(transferData.transactionType)
+    const secretCode = isMobileMoney ? null : generateSecretCode(companyName || "TBN")
+
     const offlineTransfer = {
       ...transferData,
+      transactionNumber,
+      secretCode,
       id: transferData.id || `offline_${Date.now()}`,
       _syncStatus: "PENDING",
       _createdOffline: true,
@@ -155,14 +156,13 @@ export function useOfflineTransfers(companyId?: string) {
     await storeRecord("transfers", offlineTransfer)
     await base.saveLocally([offlineTransfer, ...base.data])
 
-    // Queue for sync
     await enqueue({
       companyId,
       userId,
       tableName: "transfers",
       recordId: offlineTransfer.id,
       action: "CREATE",
-      payload: transferData,
+      payload: { ...transferData, transactionNumber, secretCode },
     })
 
     useOfflineStore.getState().incrementQueuedOperations()
@@ -184,6 +184,22 @@ export function useOfflineStaff(companyId?: string) {
 // ---- BRANCHES ----
 export function useOfflineBranches(companyId?: string) {
   return useOfflineData<any>("branches", "/api/branches", {
+    companyId,
+    filterByCompany: true,
+  })
+}
+
+// ---- PROVIDERS ----
+export function useOfflineProviders(companyId?: string) {
+  return useOfflineData<any>("providers", "/api/providers", {
+    companyId,
+    filterByCompany: true,
+  })
+}
+
+// ---- COMMISSION SETTINGS ----
+export function useOfflineCommissionSettings(companyId?: string) {
+  return useOfflineData<any>("commissionSettings", "/api/commissions/settings", {
     companyId,
     filterByCompany: true,
   })
@@ -268,6 +284,21 @@ export function useOfflineDashboard(companyId?: string) {
   return { dashboardData, loading: loading === "loading", isFromCache, refresh: fetchDashboard }
 }
 
+// ---- OFFLINE TRANSFER LOOKUP ----
+export async function lookupOfflineTransfer(secretCode: string): Promise<any | null> {
+  try {
+    return await getFirstByIndex<any>("transfers", "by_secretCode", secretCode)
+  } catch {
+    // Index might not exist (e.g., stale DB version) — fallback to full scan
+    try {
+      const all = await getAllRecords<any>("transfers")
+      return all.find((t) => t.secretCode === secretCode) || null
+    } catch {
+      return null
+    }
+  }
+}
+
 // ---- PAYOUTS ----
 export function useOfflinePayouts() {
   const [payouts, setPayouts] = useState<any[]>([])
@@ -276,8 +307,24 @@ export function useOfflinePayouts() {
   const createOfflinePayout = useCallback(async (
     payoutData: any,
     userId: string,
-    companyId: string
+    companyId: string,
+    transferData?: any
   ) => {
+    // Dedup: check if a payout for this transfer is already queued
+    if (payoutData.transferId) {
+      const allItems = await getAllRecords<any>("syncQueue")
+      const hasPending = allItems.some(
+        (item: any) =>
+          item.recordId === payoutData.transferId &&
+          item.tableName === "transfers" &&
+          item.action === "UPDATE" &&
+          (item.status === "PENDING" || item.status === "SYNCING")
+      )
+      if (hasPending) {
+        throw new Error("A payout for this transaction is already queued for sync")
+      }
+    }
+
     const offlinePayout = {
       ...payoutData,
       id: `payout_${Date.now()}`,
@@ -290,11 +337,28 @@ export function useOfflinePayouts() {
     await enqueue({
       companyId,
       userId,
-      tableName: "payouts",
+      tableName: "transfers",
       recordId: payoutData.transferId,
       action: "UPDATE",
-      payload: payoutData,
+      payload: {
+        status: "COMPLETED",
+        paidById: userId,
+        paidAt: new Date().toISOString(),
+        secretCode: payoutData.secretCode,
+      },
     })
+
+    // Update local transfer record so subsequent lookups show it as paid
+    if (transferData && payoutData.transferId) {
+      const updated = {
+        ...transferData,
+        status: "COMPLETED",
+        paidById: userId,
+        paidAt: new Date().toISOString(),
+        _localSyncStatus: "payout_queued",
+      }
+      await storeRecord("transfers", updated)
+    }
 
     useOfflineStore.getState().incrementQueuedOperations()
     return offlinePayout
@@ -314,7 +378,7 @@ export function useOfflinePayouts() {
 
 // ---- REPORTS ----
 export function useOfflineReports(companyId?: string) {
-  const base = useOfflineData<any>("reports", "/api/reports", {
+  const base = useOfflineData<any>("reports", "/api/support/reports", {
     companyId,
     filterByCompany: true,
   })

@@ -5,13 +5,15 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Banknote, ArrowLeftRight, Building2, Users, TrendingUp, ArrowUpRight, Clock, Plus, Search, Award, Trophy, BarChart3, DollarSign, Percent, Smartphone, Target, AlertTriangle, Megaphone, ShieldAlert, X } from "lucide-react"
+import { Banknote, ArrowLeftRight, Building2, Users, TrendingUp, ArrowUpRight, Clock, Plus, Search, Award, Trophy, BarChart3, DollarSign, Percent, Smartphone, Target, AlertTriangle, Megaphone, ShieldAlert, X, WifiOff } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
 import { BusinessTypeBadges } from "@/components/business-type-badge"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { EnterpriseBanner } from "@/components/plan-usage-dashboard"
+import { offlineFetchWithCache } from "@/lib/api/client"
+import { getCachedDashboard, getLastSeedTime } from "@/lib/db/data-seeder"
 
 const STORAGE_KEY_ANNOUNCEMENTS = "dismissedAnnouncements"
 const STORAGE_KEY_WARNINGS = "dismissedWarnings"
@@ -43,20 +45,41 @@ export default function DashboardPage() {
   const [alerts, setAlerts] = useState<any>(null)
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(new Set())
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set())
+  const [isOfflineData, setIsOfflineData] = useState(false)
+  const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null)
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/dashboard")
-      if (res.ok) setData(await res.json())
-      setLoading(false)
+      const companyId = user?.companyId
+      try {
+        const result = await offlineFetchWithCache("/api/dashboard", `dashboard_${companyId}`)
+        if (result) {
+          setData(result)
+          setIsOfflineData(!navigator.onLine)
+          setLastDataUpdate(new Date())
+        }
+      } catch {
+        const cached = await getCachedDashboard(companyId)
+        if (cached) {
+          setData(cached)
+          setIsOfflineData(true)
+          const lastSeed = await getLastSeedTime(companyId)
+          setLastDataUpdate(lastSeed)
+        }
+      } finally {
+        setLoading(false)
+      }
     }
-    load()
-  }, [])
+    if (user?.companyId) load()
+  }, [user?.companyId])
 
   useEffect(() => {
     async function loadAlerts() {
-      const res = await fetch("/api/company/dashboard-alerts")
-      if (res.ok) setAlerts(await res.json())
+      if (!navigator.onLine) return
+      try {
+        const res = await fetch("/api/company/dashboard-alerts")
+        if (res.ok) setAlerts(await res.json())
+      } catch {}
     }
     loadAlerts()
   }, [])
@@ -106,6 +129,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+
+      {/* OFFLINE DATA INDICATOR */}
+      {isOfflineData && (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/10">
+          <CardContent className="p-3 flex items-center gap-3">
+            <WifiOff className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Offline Mode — Displaying cached data</p>
+              {lastDataUpdate && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Last updated: {lastDataUpdate.toLocaleString()}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 1. ACTIVE WARNINGS */}
       {alerts && warnings?.length > 0 && (

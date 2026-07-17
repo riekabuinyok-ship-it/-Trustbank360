@@ -7,6 +7,10 @@ interface OfflineState {
   queuedOperations: number
   cachedDataStale: boolean
 
+  // Update system
+  updateAvailable: boolean
+  waitingWorker: ServiceWorker | null
+
   setEnabled: (enabled: boolean) => void
   setOfflineMode: (mode: "auto" | "forced" | "disabled") => void
   setLastSync: (time: number) => void
@@ -14,6 +18,7 @@ interface OfflineState {
   incrementQueuedOperations: () => void
   decrementQueuedOperations: () => void
   setCachedDataStale: (stale: boolean) => void
+  setUpdateAvailable: (available: boolean, worker?: ServiceWorker | null) => void
   reset: () => void
 }
 
@@ -23,6 +28,9 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   lastSyncAt: null,
   queuedOperations: 0,
   cachedDataStale: false,
+
+  updateAvailable: false,
+  waitingWorker: null,
 
   setEnabled: (enabled: boolean) => set({ isEnabled: enabled }),
 
@@ -45,6 +53,9 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   setCachedDataStale: (stale: boolean) =>
     set({ cachedDataStale: stale }),
 
+  setUpdateAvailable: (available: boolean, worker: ServiceWorker | null = null) =>
+    set({ updateAvailable: available, waitingWorker: worker }),
+
   reset: () =>
     set({
       isEnabled: true,
@@ -52,5 +63,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
       lastSyncAt: null,
       queuedOperations: 0,
       cachedDataStale: false,
+      updateAvailable: false,
+      waitingWorker: null,
     }),
 }))

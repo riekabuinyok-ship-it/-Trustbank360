@@ -13,6 +13,7 @@ import {
   validatePayoutForSync,
   validateStaffForSync,
 } from "@/lib/sync/validators"
+import { generateTransactionNumber, generateSecretCode, MOBILE_MONEY_TYPES } from "@/lib/utils"
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -183,11 +184,16 @@ async function processTransferSync(
 
   let transfer
   if (action === "CREATE") {
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } })
+    const transactionNumber = payload.transactionNumber || generateTransactionNumber()
+    const isMobileMoney = MOBILE_MONEY_TYPES.includes(payload.transactionType)
+    const secretCode = payload.secretCode || (isMobileMoney ? null : generateSecretCode(company?.name || "TBN"))
+
     transfer = await prisma.$transaction(async (tx) => {
       const t = await tx.transfer.create({
         data: {
-          transactionNumber: payload.transactionNumber,
-          secretCode: payload.secretCode,
+          transactionNumber,
+          secretCode,
           transactionType: payload.transactionType,
           amount: payload.amount,
           currency: payload.currency,
@@ -228,7 +234,7 @@ async function processTransferSync(
       userId: user.id,
       action: "TRANSFER_CREATED",
       resource: "Transfer",
-      details: `Sync created transfer: ${payload.transactionNumber}`,
+      details: `Sync created transfer: ${transactionNumber}`,
       companyId,
     })
   } else if (action === "UPDATE" && recordId) {

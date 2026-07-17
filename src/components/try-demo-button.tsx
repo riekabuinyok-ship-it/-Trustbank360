@@ -65,6 +65,7 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
   const [users, setUsers] = useState<DemoUser[]>(FALLBACK_USERS)
 
   useEffect(() => {
+    if (!navigator.onLine) return
     fetch("/api/auth/demo-users")
       .then((r) => r.json())
       .then((data) => {
@@ -89,40 +90,64 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
         redirect: false,
       })
       if (result?.error) {
-        const { seedDemoUser, verifyOfflineLogin, createOfflineSessionCookie } = await import("@/lib/offline-auth")
+        const { seedDemoUser, verifyOfflineLogin, createOfflineSessionCookie, cacheFullSession } = await import("@/lib/offline-auth")
         await seedDemoUser()
         const user = await verifyOfflineLogin(email, PASSWORD)
         if (user) {
           const cookie = createOfflineSessionCookie(user)
-          document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+          document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+          await cacheFullSession({
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              role: user.role,
+              companyId: user.companyId,
+              branchId: user.branchId,
+              companyName: user.companyName,
+              businessTypes: null,
+              isActive: true,
+              companyIsActive: true,
+              onboardingComplete: true,
+              twoFactorEnabled: false,
+              mustChangePassword: false,
+            },
+            expires: new Date(Date.now() + 30 * 86400000).toISOString(),
+            cachedAt: Date.now(),
+          })
           window.location.href = "/company/dashboard"
           return
         }
         setLoading(null)
         return
       }
-      const sessionRes = await fetch("/api/auth/session")
-      const session = await sessionRes.json()
-      const userData = session?.user
-      if (userData) {
-        try {
-          const { cacheSession } = await import("@/lib/offline-auth")
-          await cacheSession({
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role,
-            companyId: userData.companyId,
-            branchId: userData.branchId,
-            companyName: userData.companyName,
-            image: userData.image,
-            password: PASSWORD,
-          })
-        } catch {}
+      if (navigator.onLine) {
+        const sessionRes = await fetch("/api/auth/session")
+        const session = await sessionRes.json()
+        const userData = session?.user
+        if (userData) {
+          try {
+            const { cacheSession } = await import("@/lib/offline-auth")
+            await cacheSession({
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+              companyId: userData.companyId,
+              branchId: userData.branchId,
+              companyName: userData.companyName,
+              image: userData.image,
+              password: PASSWORD,
+            })
+          } catch {}
+        }
+        const role = userData?.role
+        document.cookie = "tb360_offline=; path=/; max-age=0"
+        window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
+      } else {
+        window.location.href = "/company/dashboard"
       }
-      document.cookie = "tb360_offline=; path=/; max-age=0"
-      const role = userData?.role
-      window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
     } catch {
       setLoading(null)
     }
@@ -180,6 +205,7 @@ export function TryDemoAccountsSection() {
   const [users, setUsers] = useState<DemoUser[]>(FALLBACK_USERS)
 
   useEffect(() => {
+    if (!navigator.onLine) return
     fetch("/api/auth/demo-users")
       .then((r) => r.json())
       .then((data) => {
@@ -204,40 +230,64 @@ export function TryDemoAccountsSection() {
         redirect: false,
       })
       if (result?.error) {
-        const { seedDemoUser, verifyOfflineLogin, createOfflineSessionCookie } = await import("@/lib/offline-auth")
+        const { seedDemoUser, verifyOfflineLogin, createOfflineSessionCookie, cacheFullSession } = await import("@/lib/offline-auth")
         await seedDemoUser()
         const user = await verifyOfflineLogin(email, PASSWORD)
         if (user) {
           const cookie = createOfflineSessionCookie(user)
-          document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+          document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+          await cacheFullSession({
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              role: user.role,
+              companyId: user.companyId,
+              branchId: user.branchId,
+              companyName: user.companyName,
+              businessTypes: null,
+              isActive: true,
+              companyIsActive: true,
+              onboardingComplete: true,
+              twoFactorEnabled: false,
+              mustChangePassword: false,
+            },
+            expires: new Date(Date.now() + 30 * 86400000).toISOString(),
+            cachedAt: Date.now(),
+          })
           window.location.href = "/company/dashboard"
           return
         }
         setLoading(null)
         return
       }
-      const sessionRes = await fetch("/api/auth/session")
-      const session = await sessionRes.json()
-      const userData = session?.user
-      if (userData) {
-        try {
-          const { cacheSession } = await import("@/lib/offline-auth")
-          await cacheSession({
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role,
-            companyId: userData.companyId,
-            branchId: userData.branchId,
-            companyName: userData.companyName,
-            image: userData.image,
-            password: PASSWORD,
-          })
-        } catch {}
+      if (navigator.onLine) {
+        const sessionRes = await fetch("/api/auth/session")
+        const session = await sessionRes.json()
+        const userData = session?.user
+        if (userData) {
+          try {
+            const { cacheSession } = await import("@/lib/offline-auth")
+            await cacheSession({
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+              companyId: userData.companyId,
+              branchId: userData.branchId,
+              companyName: userData.companyName,
+              image: userData.image,
+              password: PASSWORD,
+            })
+          } catch {}
+        }
+        const role = userData?.role
+        document.cookie = "tb360_offline=; path=/; max-age=0"
+        window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
+      } else {
+        window.location.href = "/company/dashboard"
       }
-      document.cookie = "tb360_offline=; path=/; max-age=0"
-      const role = userData?.role
-      window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
     } catch {
       setLoading(null)
     }
