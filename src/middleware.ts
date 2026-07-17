@@ -18,13 +18,26 @@ interface OfflineClaims {
   exp: number
 }
 
+function base64Decode(str: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+  let result = ""
+  const arr = str.replace(/=/g, "").split("")
+  for (let i = 0; i < arr.length; i += 4) {
+    const a = chars.indexOf(arr[i])
+    const b = chars.indexOf(arr[i + 1])
+    const c = chars.indexOf(arr[i + 2])
+    const d = chars.indexOf(arr[i + 3])
+    result += String.fromCharCode((a << 2) | (b >> 4))
+    if (c !== -1) result += String.fromCharCode(((b & 15) << 4) | (c >> 2))
+    if (d !== -1) result += String.fromCharCode(((c & 3) << 6) | d)
+  }
+  return result
+}
+
 function parseOfflineCookie(cookieValue: string | undefined): OfflineClaims | null {
   if (!cookieValue) return null
   try {
-    const text = typeof atob === "function"
-      ? atob(cookieValue)
-      : Buffer.from(cookieValue, "base64").toString("ascii")
-    const decoded = JSON.parse(text) as OfflineClaims
+    const decoded = JSON.parse(base64Decode(cookieValue)) as OfflineClaims
     if (decoded.exp * 1000 < Date.now()) return null
     return decoded
   } catch {
