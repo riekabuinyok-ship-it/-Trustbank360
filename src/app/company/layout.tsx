@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import { Sidebar, MobileNav, MobileBottomNav } from "@/components/sidebar"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { NetworkStatusIndicator } from "@/components/network-status"
+import { NetworkStatusBar } from "@/components/network-status"
 import { OfflineBanner } from "@/components/offline-banner"
 import { UpdateBanner } from "@/components/update-banner"
 import { useBackgroundSync } from "@/lib/sync/use-background-sync"
@@ -126,13 +126,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <UpdateBanner />
       <OfflineBanner />
       <main className={`${sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"} pt-16 lg:pt-0 pb-20 lg:pb-0 transition-all duration-300 min-w-0 overflow-x-hidden w-full max-w-full`}>
+        <NetworkStatusBar />
         <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full min-w-0">
           <Breadcrumb />
           {children}
         </div>
       </main>
       <MobileBottomNav />
-      <NetworkStatusIndicator />
     </div>
   )
 }
