@@ -23,24 +23,24 @@ export function NetworkStatusBar() {
   const lastSyncAt = useSyncStore((s) => s.lastSyncAt)
   const pendingCount = useSyncStore((s) => s.syncStats.pendingCount)
   const [dismissed, setDismissed] = useState(false)
+  const [autoHide, setAutoHide] = useState(false)
 
-  // Re-show when status changes
   useEffect(() => {
     if (status === "offline" || status === "syncing") {
       setDismissed(false)
     }
   }, [status])
 
-  if (status === "online" && !isSyncing && pendingCount === 0 && dismissed) return null
-  if (status === "online" && !isSyncing && pendingCount === 0) {
-    // Auto-hide after 5 seconds when fully synced
-    const [autoHide, setAutoHide] = useState(false)
-    useEffect(() => {
+  useEffect(() => {
+    if (status === "online" && !isSyncing && pendingCount === 0) {
       const t = setTimeout(() => setAutoHide(true), 5000)
       return () => clearTimeout(t)
-    }, [])
-    if (autoHide) return null
-  }
+    }
+    setAutoHide(false)
+  }, [status, isSyncing, pendingCount])
+
+  const isIdle = status === "online" && !isSyncing && pendingCount === 0
+  if (isIdle && (dismissed || autoHide)) return null
 
   return (
     <div
