@@ -8,14 +8,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PhoneInput } from "@/components/ui/phone-input"
-import { ArrowLeftRight, Loader2, ArrowLeft } from "lucide-react"
+import { ArrowLeftRight, Loader2, ArrowLeft, WifiOff } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { useSession } from "next-auth/react"
 import toast from "react-hot-toast"
+import { storeMany, getAllRecords } from "@/lib/db/client"
 
 export default function NewDepositPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
+  const [loadingInit, setLoadingInit] = useState(true)
+  const [isFromCache, setIsFromCache] = useState(false)
   const [providers, setProviders] = useState<any[]>([])
   const [allowedCurrencies, setAllowedCurrencies] = useState<string[]>(["SSP", "KES", "UGX", "USD"])
 
@@ -30,10 +34,31 @@ export default function NewDepositPage() {
   })
 
   useEffect(() => {
-    fetch("/api/providers").then((r) => r.json()).then(setProviders).catch(() => setProviders([]))
-    fetch("/api/company/plan").then((r) => r.json()).then((d) => {
-      if (d.allowedCurrencies) setAllowedCurrencies(d.allowedCurrencies)
-    }).catch(() => {})
+    async function init() {
+      let anyFailed = false
+      try {
+        const res = await fetch("/api/providers")
+        if (res.ok) {
+          const data = await res.json()
+          const items = data?.providers || data || []
+          setProviders(items)
+          storeMany("providers", items).catch(() => {})
+        }
+      } catch { anyFailed = true }
+      try {
+        const res = await fetch("/api/company/plan")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.allowedCurrencies) setAllowedCurrencies(data.allowedCurrencies)
+        }
+      } catch { anyFailed = true }
+      if (anyFailed) {
+        const cached = await getAllRecords<any>("providers").catch(() => [])
+        if (cached.length > 0) { setProviders(cached); setIsFromCache(true) }
+      }
+      setLoadingInit(false)
+    }
+    init()
   }, [])
 
   function updateField(field: string, value: string) {
@@ -42,6 +67,7 @@ export default function NewDepositPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast.error("An internet connection is required to process deposits."); return }
     setLoading(true)
 
     try {
@@ -78,7 +104,14 @@ export default function NewDepositPage() {
           <ArrowLeftRight className="h-6 w-6 text-primary-500" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Deposit</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Deposit</h1>
+            {isFromCache && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                <WifiOff className="h-3 w-3" /> Cached
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">Cash deposit to mobile wallet</p>
         </div>
       </div>

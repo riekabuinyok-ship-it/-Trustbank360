@@ -4,11 +4,13 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MessageSquare, Send, Search, Loader2, ArrowLeft } from "lucide-react"
+import { MessageSquare, Send, Search, Loader2, ArrowLeft, WifiOff } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { useSession } from "next-auth/react"
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
+import { storeMany, getAllRecords } from "@/lib/db/client"
 
 interface StaffMember {
   id: string
@@ -43,6 +45,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
+  const [isFromCache, setIsFromCache] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null)
   const [text, setText] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -58,23 +61,45 @@ export default function MessagesPage() {
   async function loadMessages() {
     try {
       const res = await fetch("/api/messages")
-      if (res.ok) setMessages(await res.json())
-    } catch {} finally { setLoading(false) }
+      if (res.ok) {
+        const data = await res.json()
+        const items = Array.isArray(data) ? data : []
+        setMessages(items)
+        setIsFromCache(false)
+        storeMany("messages", items).catch(() => {})
+        setLoading(false)
+        return
+      }
+    } catch {}
+    const cached = await getAllRecords<Message>("messages").catch(() => [])
+    if (cached.length > 0) { setMessages(cached); setIsFromCache(true) }
+    setLoading(false)
   }
 
   async function loadStaff() {
     try {
       const res = await fetch("/api/staff")
-      if (res.ok) setStaff(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        const items = Array.isArray(data) ? data : []
+        setStaff(items)
+        storeMany("staff", items).catch(() => {})
+        return
+      }
     } catch {}
+    const cached = await getAllRecords<StaffMember>("staff").catch(() => [])
+    if (cached.length > 0) setStaff(cached)
   }
 
   const markAsRead = useCallback(async (senderId: string) => {
-    await fetch("/api/messages", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ senderId }),
-    })
+    if (typeof navigator !== "undefined" && !navigator.onLine) return
+    try {
+      await fetch("/api/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senderId }),
+      })
+    } catch {}
     setMessages((prev) => prev.map((m) => m.senderId === senderId && m.receiverId === user?.id ? { ...m, readAt: new Date().toISOString() } : m))
   }, [user?.id])
 
@@ -105,6 +130,7 @@ export default function MessagesPage() {
 
   async function handleSend() {
     if (!text.trim() || !selectedStaff) return
+    if (typeof navigator !== "undefined" && !navigator.onLine) { setSending(false); return }
     setSending(true)
     try {
       const res = await fetch("/api/messages", {
@@ -127,7 +153,14 @@ export default function MessagesPage() {
   return (
     <div className="space-y-4 w-full max-w-full overflow-hidden">
       <div>
-        <h1 className="text-2xl font-bold">Messages</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Messages</h1>
+          {isFromCache && (
+            <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+              <WifiOff className="h-3 w-3" /> Cached
+            </Badge>
+          )}
+        </div>
         <p className="text-muted-foreground text-sm">Internal communication</p>
       </div>
 

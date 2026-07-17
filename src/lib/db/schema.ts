@@ -168,6 +168,13 @@ export const STORES: StoreSchema[] = [
     ],
   },
   {
+    name: "messages",
+    keyPath: "id",
+    indexes: [
+      { name: "by_companyId", keyPath: "companyId" },
+    ],
+  },
+  {
     name: "providers",
     keyPath: "id",
     indexes: [

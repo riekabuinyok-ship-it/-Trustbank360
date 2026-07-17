@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowLeftRight, Search, Eye, CheckCircle2, Loader2, XCircle } from "lucide-react"
+import { ArrowLeftRight, Search, Eye, CheckCircle2, Loader2, XCircle, WifiOff } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
+import { storeMany, getAllRecords } from "@/lib/db/client"
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
@@ -24,6 +25,7 @@ export default function IncomingTransfersPage() {
   const user = session?.user as any
   const [transfers, setTransfers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isFromCache, setIsFromCache] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selected, setSelected] = useState<any>(null)
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
@@ -40,12 +42,19 @@ export default function IncomingTransfersPage() {
   async function loadIncoming() {
     try {
       const res = await fetch("/api/transfers?incoming=true")
-      const data = await res.json()
-      setTransfers(data)
-    } catch {
-    } finally {
-      setLoading(false)
-    }
+      if (res.ok) {
+        const data = await res.json()
+        const items = Array.isArray(data) ? data : []
+        setTransfers(items)
+        setIsFromCache(false)
+        storeMany("transfers", items).catch(() => {})
+        setLoading(false)
+        return
+      }
+    } catch {}
+    const cached = await getAllRecords<any>("transfers").catch(() => [])
+    if (cached.length > 0) { setTransfers(cached); setIsFromCache(true) }
+    setLoading(false)
   }
 
   const filtered = transfers.filter((t: any) =>
@@ -58,6 +67,7 @@ export default function IncomingTransfersPage() {
 
   async function handlePayout() {
     if (!selected) return
+    if (typeof navigator !== "undefined" && !navigator.onLine) { setPayoutError("An internet connection is required to process payouts."); return }
     setActionLoading("payout")
     setPayoutError("")
     try {
@@ -149,7 +159,14 @@ export default function IncomingTransfersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Incoming Transfers</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Incoming Transfers</h1>
+            {isFromCache && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 gap-1">
+                <WifiOff className="h-3 w-3" /> Cached
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">Transactions assigned to your branch for payout</p>
         </div>
         <Link href="/company/transfers">
