@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v7.2.0
+// TrustBank360 Service Worker v8.0.0
 // Offline-first PWA — ChunkLoadError-free deployment strategy
 //
 // Key design principle: NEVER cache Next.js hashed assets (/_next/static/*)
@@ -15,7 +15,7 @@
 //  - Network-first with fallback: only used for API routes that benefit from caching
 //  - Graceful offline: /offline.html for failed navigations, empty 200 for sub-resources
 
-const CACHE_VERSION = "v7"
+const CACHE_VERSION = "v8"
 const STATIC_CACHE = `tb360-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `tb360-dynamic-${CACHE_VERSION}`
 const API_CACHE = `tb360-api-${CACHE_VERSION}`
@@ -265,12 +265,16 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 6. STATIC APP ASSETS — cache-first (icons, fonts, images, logos, manifest)
-  //    These files don't change between deployments and are safe to cache permanently.
+  // 6. MANIFEST — network-only (must always fetch fresh to get latest icons)
+  if (url.pathname === "/manifest.json") {
+    event.respondWith(networkOnly(request))
+    return
+  }
+
+  // 7. STATIC APP ASSETS — cache-first (icons, fonts, images, logos)
   const isStaticAppAsset =
     url.pathname.startsWith("/images/") ||
     url.pathname.startsWith("/fonts/") ||
-    url.pathname === "/manifest.json" ||
     url.pathname === "/sw.js" ||
     /\.(woff2?|ttf|otf|eot|png|jpg|jpeg|gif|webp|ico|svg)$/i.test(url.pathname)
 
@@ -279,7 +283,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 7. PUBLIC SSG PAGES — cache-first (precached on install, load instantly offline)
+  // 8. PUBLIC SSG PAGES — cache-first (precached on install, load instantly offline)
   const PUBLIC_PAGES = new Set([
     "/", "/offline", "/login", "/signup", "/features",
     "/pricing", "/about", "/contact", "/help", "/track",
@@ -290,7 +294,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 8. AUTHENTICATED PAGES / NAVIGATIONS — network-only with offline fallback
+  // 9. AUTHENTICATED PAGES / NAVIGATIONS — network-only with offline fallback
   //    NEVER serve cached HTML — stale HTML references old chunk filenames.
   //    The app's offline hooks provide data from IndexedDB for these pages.
   if (request.mode === "navigate") {
@@ -298,7 +302,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 9. Everything else — network-only
+  // 10. Everything else — network-only
   event.respondWith(networkOnly(request))
 })
 
