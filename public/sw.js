@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v7.1.0
+// TrustBank360 Service Worker v7.2.0
 // Offline-first PWA — ChunkLoadError-free deployment strategy
 //
 // Key design principle: NEVER cache Next.js hashed assets (/_next/static/*)
@@ -17,6 +17,7 @@
 
 const CACHE_VERSION = "v7"
 const STATIC_CACHE = `tb360-static-${CACHE_VERSION}`
+const DYNAMIC_CACHE = `tb360-dynamic-${CACHE_VERSION}`
 const API_CACHE = `tb360-api-${CACHE_VERSION}`
 
 // ---- PRECACHE LIST ----
@@ -77,7 +78,7 @@ self.addEventListener("install", (event) => {
 // ---- ACTIVATE ----
 // Wipe ALL old-versioned caches, then claim clients
 self.addEventListener("activate", (event) => {
-  const expectedCaches = new Set([STATIC_CACHE, API_CACHE])
+  const expectedCaches = new Set([STATIC_CACHE, DYNAMIC_CACHE, API_CACHE])
   event.waitUntil(
     caches
       .keys()
@@ -202,18 +203,21 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 2. NEXT.JS STATIC CHUNKS (JS, images, other) — network-only
-  //    JS chunks reference each other. Caching them risks ChunkLoadError
-  //    when a cached chunk imports a chunk that was removed.
-  //    The browser's HTTP cache handles them when online.
+  // 2. NEXT.JS STATIC CHUNKS (JS, WASM, images, fonts) — cache-first
+  //    Filenames contain content hashes (e.g., chunk-abc123.js), making them
+  //    immutable across deployments. Caching them enables full offline
+  //    functionality — the app shell loads and JavaScript hydrates correctly.
+  //    Old chunks from previous deployments are cleaned up on SW activate.
   if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(networkOnly(request))
+    event.respondWith(cacheFirst(request, STATIC_CACHE))
     return
   }
 
-  // 3. NEXT.JS DATA FETCHES — network-only (never cache stale data)
+  // 3. NEXT.JS DATA FETCHES (client-side navigation) — cache-first
+  //    Cached page data enables SPA-style navigation between pages offline.
+  //    Each route's JSON data is keyed by URL and cached on first visit.
   if (url.pathname.startsWith("/_next/data/")) {
-    event.respondWith(networkOnly(request))
+    event.respondWith(cacheFirst(request, DYNAMIC_CACHE))
     return
   }
 
