@@ -21,7 +21,10 @@ interface OfflineClaims {
 function parseOfflineCookie(cookieValue: string | undefined): OfflineClaims | null {
   if (!cookieValue) return null
   try {
-    const decoded = JSON.parse(atob(cookieValue)) as OfflineClaims
+    const text = typeof atob === "function"
+      ? atob(cookieValue)
+      : Buffer.from(cookieValue, "base64").toString("ascii")
+    const decoded = JSON.parse(text) as OfflineClaims
     if (decoded.exp * 1000 < Date.now()) return null
     return decoded
   } catch {
