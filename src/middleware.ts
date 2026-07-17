@@ -62,6 +62,9 @@ export async function middleware(request: NextRequest) {
 
   // 2. Next.js internals / static files → allow
   if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/api/") || pathname.startsWith("/robots") || pathname.startsWith("/sitemap")) {
+    if (pathname === "/favicon.ico") {
+      return NextResponse.redirect(new URL("/images/logo.svg", request.url))
+    }
     const response = NextResponse.next()
     return response
   }
