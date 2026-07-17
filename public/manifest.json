@@ -13,6 +13,7 @@
   "categories": ["finance", "business", "productivity"],
   "prefer_related_applications": false,
   "icons": [
+    { "src": "/images/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
     { "src": "/images/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
     { "src": "/images/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
     { "src": "/images/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
@@ -28,19 +29,22 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your company dashboard",
-      "url": "/company/dashboard"
+      "url": "/company/dashboard",
+      "icons": [{ "src": "/images/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "New Transfer",
       "short_name": "Transfer",
       "description": "Create a new money transfer",
-      "url": "/company/transfers/new"
+      "url": "/company/transfers/new",
+      "icons": [{ "src": "/images/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "Sync Center",
       "short_name": "Sync",
       "description": "View sync status and resolve conflicts",
-      "url": "/company/sync-center"
+      "url": "/company/sync-center",
+      "icons": [{ "src": "/images/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ]
 }
