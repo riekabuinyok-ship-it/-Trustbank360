@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, createContext, useContext } from "react"
+import { useRouter } from "next/navigation"
 import { SessionProvider, useSession as useNextAuthSession } from "next-auth/react"
 import {
   getCachedFullSession,
@@ -28,6 +29,7 @@ const OfflineSessionContext = createContext<OfflineSessionContextValue>({
 export const useOfflineSession = () => useContext(OfflineSessionContext)
 
 function InnerOfflineProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [offlineSession, setOfflineSession] = useState<any>(null)
   const [isOfflineMode, setIsOfflineMode] = useState(false)
   const [offlineSessionExpired, setOfflineSessionExpired] = useState(false)
@@ -50,13 +52,14 @@ function InnerOfflineProvider({ children }: { children: React.ReactNode }) {
       setIsOfflineMode(true)
       setOfflineSessionExpired(false)
       setLastSyncedAt(new Date(cached.cachedAt))
-      // Restore last visited route
+      // Restore last visited route — client-side navigation only (no new window, no middleware re-run)
       const savedRoute = getSavedRoute()
       if (savedRoute && !window.location.pathname.startsWith("/login")) {
         const currentPath = window.location.pathname
         const isOnLoginOrOffline = currentPath === "/login" || currentPath === "/offline" || currentPath === "/"
         if (isOnLoginOrOffline && savedRoute !== currentPath) {
-          window.location.href = savedRoute
+          router.replace(savedRoute)
+          setInitialized(true)
           return
         }
       }
