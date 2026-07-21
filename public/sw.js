@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v8.1.0
+// TrustBank360 Service Worker v8.2.0
 // Offline-first PWA — ChunkLoadError-free deployment strategy
 //
 // Key design principle: NEVER cache Next.js hashed assets (/_next/static/*)
@@ -156,6 +156,31 @@ async function networkOnly(request) {
     } catch {
       return new Response("", { status: 200 })
     }
+  }
+}
+
+// ---- NETWORK-FIRST: try network, fall back to cache, never throw ----
+async function networkFirst(request, cacheName) {
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      try {
+        const cache = await caches.open(cacheName)
+        cache.put(request, response.clone())
+      } catch {}
+    }
+    return response
+  } catch {
+    const cached = await caches.match(request)
+    if (cached) return cached
+    if (request.mode === "navigate") {
+      const offline = await getOfflinePage()
+      if (offline) return offline
+    }
+    return new Response("", {
+      status: 200,
+      headers: { "Content-Type": getMimeType(request.url) },
+    })
   }
 }
 
