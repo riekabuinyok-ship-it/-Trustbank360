@@ -10,6 +10,7 @@ import {
   refreshOfflineDaysCache,
   isDeviceRegistered,
 } from "@/lib/offline-auth"
+import { getSavedRoute } from "@/lib/route-persistence"
 import { useNetworkStore } from "@/store/network-store"
 
 interface OfflineSessionContextValue {
@@ -49,6 +50,16 @@ function InnerOfflineProvider({ children }: { children: React.ReactNode }) {
       setIsOfflineMode(true)
       setOfflineSessionExpired(false)
       setLastSyncedAt(new Date(cached.cachedAt))
+      // Restore last visited route
+      const savedRoute = getSavedRoute()
+      if (savedRoute && !window.location.pathname.startsWith("/login")) {
+        const currentPath = window.location.pathname
+        const isOnLoginOrOffline = currentPath === "/login" || currentPath === "/offline" || currentPath === "/"
+        if (isOnLoginOrOffline && savedRoute !== currentPath) {
+          window.location.href = savedRoute
+          return
+        }
+      }
     } else if (isSessionExpiredOffline()) {
       setOfflineSessionExpired(true)
       setIsOfflineMode(true)

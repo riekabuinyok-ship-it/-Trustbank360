@@ -59,6 +59,7 @@ import { getNavItems } from "@/lib/permissions"
 import { useUnreadMessages } from "@/components/notifications/use-unread-messages"
 import { useUnreadTicketReplies } from "@/components/notifications/use-unread-ticket-replies"
 import { InstallPrompt } from "@/components/install-prompt"
+import { clearSavedRoute } from "@/lib/route-persistence"
 import { getPendingCount } from "@/lib/db/sync-queue"
 
 const iconMap: Record<string, any> = {
@@ -248,6 +249,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
               Cancel
             </Button>
             <Button variant="destructive" onClick={() => {
+              clearSavedRoute()
               document.cookie = "tb360_offline=; path=/; max-age=0"
               signOut({ callbackUrl: "/" })
             }}>
@@ -387,6 +389,7 @@ export function MobileNav() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={() => {
+              clearSavedRoute()
               document.cookie = "tb360_offline=; path=/; max-age=0"
               signOut({ callbackUrl: "/" })
             }}>
@@ -480,6 +483,7 @@ export function MobileBottomNav() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => {
+              clearSavedRoute()
               document.cookie = "tb360_offline=; path=/; max-age=0"
               signOut({ callbackUrl: "/" })
             }}>

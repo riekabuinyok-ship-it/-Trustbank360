@@ -4,6 +4,7 @@ import { OfflineSessionProvider } from "@/components/offline-session-provider"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "react-hot-toast"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { RouteTracker } from "@/components/route-tracker"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <OfflineSessionProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
+          <RouteTracker />
           <Toaster
             position="top-right"
             toastOptions={{

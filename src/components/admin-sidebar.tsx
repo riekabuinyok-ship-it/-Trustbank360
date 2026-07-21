@@ -26,6 +26,7 @@ import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { signOut } from "next-auth/react"
+import { clearSavedRoute } from "@/lib/route-persistence"
 import {
   Dialog,
   DialogContent,
@@ -286,6 +287,7 @@ export function AdminMobileNav() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={() => {
+              clearSavedRoute()
               document.cookie = "tb360_offline=; path=/; max-age=0"
               signOut({ callbackUrl: "/" })
             }}>
