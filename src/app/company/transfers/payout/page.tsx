@@ -103,8 +103,13 @@ export default function PayoutPage() {
     setActionLoading("payout")
     try {
       if (!isOnline) {
-        // Check if user's branch is the receiver branch
+        // Check branch permissions
         const receiverBranchId = transfer.branchLink?.receiverBranchId || transfer.branchLink?.receiverBranch?.id
+        const senderBranchId = transfer.branchLink?.senderBranchId || transfer.branchLink?.senderBranch?.id
+        if (senderBranchId === user.branchId) {
+          setError("The sending branch cannot process payouts on their own transfers. Only the receiving branch can complete this transaction.")
+          return
+        }
         if (receiverBranchId && receiverBranchId !== user.branchId) {
           setError("Only the receiver branch can process this payout. Contact the receiving branch to complete this transaction.")
           return
