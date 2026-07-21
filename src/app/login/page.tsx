@@ -129,7 +129,16 @@ function LoginForm() {
         } catch {}
       }
 
-      document.cookie = "tb360_offline=; path=/; max-age=0"
+      // Refresh the offline cookie with fresh claims so it never expires while the user is active
+      try {
+        const freshCookie = createOfflineSessionCookie({
+          id: userData.id, email: userData.email, name: userData.name,
+          role: userData.role, companyId: userData.companyId,
+          branchId: userData.branchId, companyName: userData.companyName,
+          image: null, passwordHash: "", cachedAt: Date.now(),
+        })
+        document.cookie = `tb360_offline=${freshCookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+      } catch {}
 
       toast.success("Welcome back!")
       const role = userData?.role

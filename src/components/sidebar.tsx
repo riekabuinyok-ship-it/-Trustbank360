@@ -240,14 +240,17 @@ export function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; onToggle
           <DialogHeader>
             <DialogTitle>Sign Out</DialogTitle>
             <DialogDescription>
-              Are you sure you want to sign out?
+              Sign out of TrustBank360? Your offline session data will be cleared and you will need to reconnect to sign back in.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>
+            <Button variant="destructive" onClick={() => {
+              document.cookie = "tb360_offline=; path=/; max-age=0"
+              signOut({ callbackUrl: "/" })
+            }}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
@@ -376,14 +379,17 @@ export function MobileNav() {
           <DialogHeader>
             <DialogTitle>Sign Out</DialogTitle>
             <DialogDescription>
-              Are you sure you want to sign out?
+              Sign out of TrustBank360? Your offline session data will be cleared and you will need to reconnect to sign back in.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>
+            <Button variant="destructive" onClick={() => {
+              document.cookie = "tb360_offline=; path=/; max-age=0"
+              signOut({ callbackUrl: "/" })
+            }}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
@@ -469,11 +475,14 @@ export function MobileBottomNav() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Sign Out</DialogTitle>
-            <DialogDescription>Are you sure you want to sign out?</DialogDescription>
+            <DialogDescription>Sign out of TrustBank360? Your offline session data will be cleared.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>
+            <Button variant="destructive" onClick={() => {
+              document.cookie = "tb360_offline=; path=/; max-age=0"
+              signOut({ callbackUrl: "/" })
+            }}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>

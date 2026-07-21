@@ -65,7 +65,7 @@ export default function OfflinePage() {
       const user = await verifyOfflineLogin(loginEmail, loginPassword)
       if (user) {
         const cookie = createOfflineSessionCookie(user)
-        document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+        document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
         router.push(user.role === "platform_owner" ? "/platform" : "/company/dashboard")
       } else {
         setLoginError("Invalid credentials or no cached account found.")
@@ -166,7 +166,7 @@ export default function OfflinePage() {
                     const user = await verifyOfflineLogin(email, password)
                     if (user) {
                       const cookie = createOfflineSessionCookie(user)
-                      document.cookie = `tb360_offline=${cookie}; path=/; max-age=86400; SameSite=Lax`
+                      document.cookie = `tb360_offline=${cookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
                       router.push("/company/dashboard")
                     } else {
                       setLoginError("Demo account not cached. Log in online first with admin@trustbank.com / Admin@123.")

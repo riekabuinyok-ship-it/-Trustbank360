@@ -143,7 +143,16 @@ export function TryDemoButton({ showRoles = false }: { showRoles?: boolean }) {
           } catch {}
         }
         const role = userData?.role
-        document.cookie = "tb360_offline=; path=/; max-age=0"
+        try {
+          const { createOfflineSessionCookie } = await import("@/lib/offline-auth")
+          const freshCookie = createOfflineSessionCookie({
+            id: userData.id, email: userData.email, name: userData.name,
+            role: userData.role, companyId: userData.companyId,
+            branchId: userData.branchId, companyName: userData.companyName,
+            image: null, passwordHash: "", cachedAt: Date.now(),
+          })
+          document.cookie = `tb360_offline=${freshCookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+        } catch {}
         window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
       } else {
         window.location.href = "/company/dashboard"
@@ -283,7 +292,16 @@ export function TryDemoAccountsSection() {
           } catch {}
         }
         const role = userData?.role
-        document.cookie = "tb360_offline=; path=/; max-age=0"
+        try {
+          const { createOfflineSessionCookie } = await import("@/lib/offline-auth")
+          const freshCookie = createOfflineSessionCookie({
+            id: userData.id, email: userData.email, name: userData.name,
+            role: userData.role, companyId: userData.companyId,
+            branchId: userData.branchId, companyName: userData.companyName,
+            image: null, passwordHash: "", cachedAt: Date.now(),
+          })
+          document.cookie = `tb360_offline=${freshCookie}; path=/; max-age=${30 * 86400}; SameSite=Lax`
+        } catch {}
         window.location.href = role === "platform_owner" ? "/platform" : "/company/dashboard"
       } else {
         window.location.href = "/company/dashboard"
