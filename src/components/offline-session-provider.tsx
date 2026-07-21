@@ -40,32 +40,28 @@ function InnerOfflineProvider({ children }: { children: React.ReactNode }) {
   const initOfflineSession = useCallback(async () => {
     await refreshOfflineDaysCache()
 
-    if (navigator.onLine) {
-      setIsOfflineMode(false)
-      setInitialized(true)
-      return
-    }
-
+    // Always check for a cached session — it serves as a fallback when the JWT is expired
     const cached = await getCachedFullSession()
     if (cached) {
       setOfflineSession(cached)
-      setIsOfflineMode(true)
       setOfflineSessionExpired(false)
       setLastSyncedAt(new Date(cached.cachedAt))
-      // Restore last visited route — client-side navigation only (no new window, no middleware re-run)
+
+      // Restore last visited route when on login/offline/home page
       const savedRoute = getSavedRoute()
-      if (savedRoute && !window.location.pathname.startsWith("/login")) {
-        const currentPath = window.location.pathname
-        const isOnLoginOrOffline = currentPath === "/login" || currentPath === "/offline" || currentPath === "/"
-        if (isOnLoginOrOffline && savedRoute !== currentPath) {
-          router.replace(savedRoute)
-          setInitialized(true)
-          return
-        }
+      const currentPath = window.location.pathname
+      const isOnLoginOrOffline = currentPath === "/login" || currentPath === "/offline" || currentPath === "/"
+      if (savedRoute && isOnLoginOrOffline && savedRoute !== currentPath) {
+        router.replace(savedRoute)
+        setInitialized(true)
+        return
       }
     } else if (isSessionExpiredOffline()) {
       setOfflineSessionExpired(true)
-      setIsOfflineMode(true)
+    }
+
+    if (navigator.onLine) {
+      setIsOfflineMode(false)
     } else {
       setIsOfflineMode(true)
     }
