@@ -1,4 +1,4 @@
-// TrustBank360 Service Worker v8.0.0
+// TrustBank360 Service Worker v8.1.0
 // Offline-first PWA — ChunkLoadError-free deployment strategy
 //
 // Key design principle: NEVER cache Next.js hashed assets (/_next/static/*)
@@ -294,11 +294,12 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // 9. AUTHENTICATED PAGES / NAVIGATIONS — network-only with offline fallback
-  //    NEVER serve cached HTML — stale HTML references old chunk filenames.
-  //    The app's offline hooks provide data from IndexedDB for these pages.
+  // 9. AUTHENTICATED PAGES / NAVIGATIONS — network-first with cache fallback
+  //    Cached HTML + JS chunks (both cache-first from sections 1-2) are always
+  //    from the same deployment, so ChunkLoadError cannot occur.
+  //    On SW version update, all caches are wiped and rebuilt.
   if (request.mode === "navigate") {
-    event.respondWith(networkOnly(request))
+    event.respondWith(networkFirst(request, DYNAMIC_CACHE))
     return
   }
 
