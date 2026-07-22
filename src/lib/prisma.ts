@@ -4,9 +4,9 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
   const url = new URL(process.env.DATABASE_URL || "postgresql://localhost:5432/postgres")
-  url.searchParams.set("connection_limit", "5")
-  url.searchParams.set("pool_timeout", "5")
-  url.searchParams.set("connect_timeout", "10")
+  url.searchParams.set("connection_limit", "3")
+  url.searchParams.set("pool_timeout", "3")
+  url.searchParams.set("connect_timeout", "5")
 
   return new PrismaClient({
     datasources: { db: { url: url.toString() } },

@@ -6,7 +6,7 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' }
     ]
   },
-  serverExternalPackages: ['bcryptjs', 'pdfkit'],
+  serverExternalPackages: ['bcrypt', 'pdfkit'],
   async headers() {
     return [
       {

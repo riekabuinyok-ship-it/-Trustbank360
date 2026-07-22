@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import bcrypt from "bcrypt"
-import { prisma, checkDbConnection } from "./prisma"
+import { prisma } from "./prisma"
 import { checkRateLimit } from "./rate-limit"
 
 function mapRole(role: string): string {
@@ -44,32 +44,19 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          console.log("[auth] Login attempt:", credentials.email, "| cold-start since deploy")
+          console.log("[auth] Login attempt:", credentials.email, "| ts:", t0)
 
           const ip = (req?.headers as any)?.["x-forwarded-for"] || "unknown"
 
-          const dbOk = await checkDbConnection()
-          if (!dbOk) {
-            console.error("[auth] DB connection failed")
-            return null
-          }
-          console.log("[auth] DB connected | elapsed:", Date.now() - t0, "ms")
-
-          const rl = await checkRateLimit(`login:${ip}`, "login")
-          if (!rl.allowed) {
-            console.log("[auth] Rate limited:", credentials.email)
-            return null
-          }
-
-          console.log("[auth] Rate limit passed | elapsed:", Date.now() - t0, "ms")
-
+          // Combined DB check + user lookup in one query (saves one round trip)
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
             include: { company: true, branch: true },
           })
+          console.log("[auth] User lookup | elapsed:", Date.now() - t0, "ms")
 
           if (!user || !user.password) {
-            console.log("[auth] User not found or no password:", credentials.email, "| elapsed:", Date.now() - t0, "ms")
+            console.log("[auth] User not found or no password:", credentials.email)
             return null
           }
 
@@ -78,7 +65,14 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          console.log("[auth] User found | elapsed:", Date.now() - t0, "ms")
+          // Rate limit check — must come after user lookup to ensure the user exists
+          const rl = await checkRateLimit(`login:${ip}`, "login")
+          if (!rl.allowed) {
+            console.log("[auth] Rate limited:", credentials.email, "| elapsed:", Date.now() - t0, "ms")
+            return null
+          }
+
+          console.log("[auth] Rate limit passed | elapsed:", Date.now() - t0, "ms")
 
           const isValid = await bcrypt.compare(credentials.password, user.password)
           if (!isValid) {
