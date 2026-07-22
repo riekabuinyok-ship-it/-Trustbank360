@@ -4,7 +4,16 @@ import { ServiceWorkerRegister } from "@/components/sw-register"
 import { Warmup } from "@/components/warmup"
 import "./globals.css"
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://trustbank360.com"
+function getSafeUrl(): string {
+  try {
+    const url = process.env.NEXT_PUBLIC_APP_URL || "https://trustbank360.com"
+    new URL(url)
+    return url
+  } catch {
+    return "https://trustbank360.com"
+  }
+}
+const siteUrl = getSafeUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
